@@ -1,0 +1,502 @@
+     1→     1→# Worklog — سيدي يوسف بن علي العاصمة
+     2→     2→
+     3→     3→منصة المعروف الرقمي — Next.js 16 + TypeScript + Prisma + Tailwind 4
+     4→     4→لوحة الألوان: زليج مراكش · خطوط: Tajawal + IBM Plex Sans Arabic (محلية 100%)
+     5→     5→
+     6→     6→---
+     7→     7→Task ID: 0
+     8→     8→Agent: Main (Z.ai Code)
+     9→     9→Task: المرحلة 0 — التأسيس (RTL، الخطوط، الألوان، Layout، صفحة Hero)
+    10→    10→
+    11→    11→Work Log:
+    12→    12→- تثبيت الخطوط العربية محلياً: `bun add @fontsource/tajawal @fontsource/ibm-plex-sans-arabic` (OFL-1.1 و Apache 2)
+    13→    13→- كتابة `src/app/globals.css`:
+    14→    14→  * لوحة "زليج مراكش" كاملة: ترابي #B8492B، أخضر صنوبر #2D5A3D، كريم #FBF6EE، أسود #1F1A17، ذهبي النحاس #C8842A
+    15→    15→  * متغيّرات Dark Mode كاملة (#D4623E ترابي فاتح، #15110D بني داكن، #F5E9D5 كريم دافئ)
+    16→    16→  * 5 ألوان مغربية مميّزة إضافية (--zellige, --atlas, --copper, --gypsum)
+    17→    17→  * 4 أنماط فاصل زخرفي (diamond / wave / stars / minimal) كفئات utilities
+    18→    18→  * شريط تمرير مخصص + ظل دافئ + تدرّج المعروف
+    19→    19→  * line-height 1.8 للنصوص العربية، h1-h6 تستخدم Tajawal افتراضياً
+    20→    20→- ملاحظة مهمة: @import للـCSS في globals.css لا يُعالَج بشكل صحيح في Turbopack — الحل: استيراد ملفات @fontsource مباشرة في layout.tsx كـ JS imports
+    21→    21→- كتابة `src/app/layout.tsx`:
+    22→    22→  * `<html lang="ar" dir="rtl" suppressHydrationWarning>` (القاعدة 1)
+    23→    23→  * ThemeProvider من next-themes (attribute="class", defaultTheme="light", enableSystem)
+    24→    24→  * SiteHeader + SiteFooter + BottomNav
+    25→    25→  * Toaster + SonnerToaster (rtl)
+    26→    26→  * Metadata عربية كاملة (title, description, keywords, openGraph ar_MA, twitter)
+    27→    27→  * Viewport مع themeColor مزدوج (light/dark)
+    28→    28→- إنشاء 7 مكوّنات جديدة:
+    29→    29→  * `src/components/layout/theme-provider.tsx` — wrapper لـnext-themes
+    30→    30→  * `src/components/layout/site-header.tsx` — sticky top, RTL nav, sheet للجوال, 5 روابط + login
+    31→    31→  * `src/components/layout/site-footer.tsx` — sticky bottom (mt-auto), 4 أعمدة، معلومات اتصال، 2 ZelligeDivider
+    32→    32→  * `src/components/layout/bottom-nav.tsx` — تنقّل سفلي للجوال (md:hidden, 5 عناصر, safe-area-inset-bottom)
+    33→    33→  * `src/components/shared/site-logo.tsx` — شعار SVG بنجمة ثمانية زليجية + دائرة ذهبية
+    34→    34→  * `src/components/shared/zellige-divider.tsx` — فاصل SVG بـ4 أنماط (diamond/wave/stars/minimal)
+    35→    35→  * `src/components/shared/theme-toggle.tsx` — زر تبديل Light/Dark مع hydration-safe mounted state
+    36→    36→- إنشاء `public/favicon.svg` — نجمة ثمانية بترابي الزليج + نقطة ذهبية
+    37→    37→- كتابة `src/app/page.tsx` (صفحة Hero تجريبية للاختبار):
+    38→    38→  * Hero: "من حي إلى عاصمة... المعروف الرقمي" + badge إطلاق تجريبي + زرّا CTA + ZelligeDivider
+    39→    39→  * 3 إحصاءات حية (50 أسرة، 12,400 درهم مساهم، 8,250 درهم الرصيد)
+    40→    40→  * 5 مبادئ (الكرامة أولاً، الشفافية، الاستدامة، من حي إلى عاصمة، المعروف المغربي)
+    41→    41→  * 4 باقات إعلانات (برونزية 300 / فضية 600 / ذهبية 1200 [الأكثر طلباً] / بلاتينية 3000)
+    42→    42→  * CTA أخير بـ maarouf-gradient-soft
+    43→    43→
+    44→    44→Stage Summary:
+    45→    45→- ✅ اختبار Agent Browser شامل:
+    46→    46→  * الصفحة تُحمّل بعنوان عربي صحيح
+    47→    47→  * dir="rtl" + lang="ar" مُفعّلان على <html>
+    48→    48→  * H1 يستخدم Tajawal، Body يستخدم IBM Plex Sans Arabic (تحقّق عبر getComputedStyle)
+    49→    49→  * 11 @font-face rule محمّلة (Tajawal + IBM Plex + Geist افتراضي)
+    50→    50→  * Light mode: --primary=#b8492b ✅، --background=#fbf6ee ✅، --secondary=#2d5a3d ✅
+    51→    51→  * Dark mode: --primary=#d4623e ✅، --background=#15110d ✅، --accent=#e0a847 ✅
+    52→    52→  * تبديل Light/Dark يعمل عبر زر "تفعيل الوضع الفاتح/الداكن"
+    53→    53→  * Header sticky (position: sticky, top: 0px) يبقى ثابتاً عند التمرير
+    54→    54→  * Desktop 1440x900: القائمة العلوية تظهر (5 روابط + login + theme toggle)
+    55→    55→  * Mobile 375x812: BottomNav يظهر (5 عناصر)، Top nav مخفي عبر md:hidden
+    56→    56→  * لا أخطاء في console (فقط React DevTools promo عادي)
+    57→    57→  * لا أخطاء runtime، لا hydration mismatches
+    58→    58→  * كل روابط RTL تستخدم logical properties (ps-*, pe-*, ms-*, me-*)
+    59→    59→- ✅ ESLint نظيف 100% (لا أخطاء، لا تحذيرات)
+    60→    60→- ✅ Dev server يستجيب بـ 200 OK على `/`
+    61→    61→- ✅ Footer sticky في الأسفل (mt-auto على flex-col body) — يحترم القاعدة الإلزامية
+    62→    62→
+    63→    63→المكوّنات/الأصول المنتجة:
+    64→    64→- 1 ملف globals.css (لوحة الألوان الكاملة + RTL utilities)
+    65→    65→- 1 ملف layout.tsx (RTL + Theme + metadata)
+    66→    66→- 1 ملف page.tsx (Hero تجريبية كاملة)
+    67→    67→- 7 مكوّنات React (3 layout + 3 shared + 1 favicon)
+    68→    68→- جميع الـclassNames تستخدم logical properties (لا ml-/mr-/pl-/pr-)
+    69→    69→
+    70→    70→الخطوة التالية: المرحلة 1 — قاعدة البيانات (Prisma Schema كامل) + Seeders ببيانات مغربية واقعية (50 عائلة من حي سيدي يوسف بن علي، 200 عضو، 300 مساهمة، 40 طلب، 8 فعاليات، 5 مجموعات).
+    71→    71→
+    72→    72→---
+    73→    73→Task ID: 1-3
+    74→    74→Agent: Seed Generator (general-purpose)
+    75→    75→Task: كتابة prisma/seed.ts ببيانات مغربية واقعية
+    76→    76→
+    77→    77→Work Log:
+    78→    78→- قراءة prisma/schema.prisma كاملاً (616 سطر) لفهم جميع النماذج والـ enums والعلاقات الـ FK (Family↔User دائرية، _GroupLeader m-n implicit join table، SetNull/RESTRICT/CASCADE على FKs)
+    79→    79→- فحص قاعدة البيانات الموجودة: استخراج قائمة الجداول (تأكد من وجود جدول implicit `_GroupLeader` للعلاقة m-n بين GroupMember و User)
+    80→    80→- فحص تكوين FK: Family.headOfFamilyId → User.id ON DELETE SET NULL، User.familyId → Family.id ON DELETE SET NULL، Family.districtId → District.id ON DELETE CASCADE
+    81→    81→- كتابة `/home/z/my-project/prisma/seed.ts` (~1033 سطر) مع:
+    82→    82→  * Imports: `import { db } from "@/lib/db"`, `import bcrypt from "bcryptjs"`, `import { randomUUID } from "crypto"`
+    83→    83→  * دوال مساعدة: pick, pickN, randInt, randFloat, pad, randomPhone, daysFromNow, hoursAfter, uuid
+    84→    84→  * ثوابت: 50 اسم عائلة مغربي، 25 اسم ذكور، 25 اسم إناث، 16 مهنة، 3 مستويات اقتصادية، 6 أشهر (2024-07..2024-12)
+    85→    85→  * clearAll(): يستخدم PRAGMA foreign_keys = OFF + db.$transaction لـ 15 deleteMany بالترتيب الصحيح + DELETE FROM `_GroupLeader` للجدول الضمني
+    86→    86→  * createDistrict(): حي سيدي يوسف بن علي (slug, city, region, description, boundarySvg, isDefault=true)
+    87→    87→  * createFamilies(): 50 أسرة بأسماء مغربية فريدة + economicStatus عشوائي + address بالعربية
+    88→    88→  * createUsers(): 200 مستخدم موزعين (3-7 لكل أسرة، المجموع بالضبط 200) + hash واحد مشترك من bcrypt("Demo@1234", 10) للأداء + تعيين رؤوس الأسر + 1 SUPER_ADMIN (admin@syba-community.ma) + 1 TREASURER + 1 ADS_MANAGER + 1 DISTRICT_MOD + 5 ETHICS_COMMITTEE + 3 GROUP_LEADER + الباقي MEMBER + بعضهم PENDING
+    89→    89→  * createGroups(): 5 مجموعات افتراضية (الأمهات، الآباء، الشباب، الأطفال، كبار السن)
+    90→    90→  * createGroupMembers(): لكل مجموعة 10-30 عضو مع leader واحد (GROUP_LEADER للأمهات/الآباء/الشباب، MEMBER للأطفال/كبار السن)
+    91→    91→  * createContributions(): 300 مساهمة عبر 6 أشهر (50 شهرياً) + amounts موزونة (20/50/100/200) + methods (BANK_TRANSFER غالباً) + statuses (75% CONFIRMED، 15% PENDING، 10% REJECTED) + receiptNumber/digitalReceipt/confirmedAt
+    92→    92→  * createFundRequests(): 40 طلب موزعة (12 MEDICAL، 6 DEATH، 5 WEDDING، 8 EDUCATION، 7 EMERGENCY، 2 MICRO_PROJECT) + statuses (10 SUBMITTED، 6 UNDER_REVIEW، 10 APPROVED، 5 REJECTED، 6 DISBURSED، 3 COMPLETED) + requiresEthics > 1000 + anonymousCode (SY-001..SY-040) + لكل طلب > 1000: 3-5 موافقات لجنة النزاهة (APPROVE/REJECT/ABSTAIN)
+    93→    93→  * createEvents(): 8 فعاليات مغربية (ملتقى الحي، إفطار رمضاني، عرس جماعي، قافلة طبية، تبرع بالدم، أمسية شعرية، معرض زليج) + 155 تسجيل حضور (ATTENDED للمنجزة، REGISTERED للمقبلة)
+    94→    94→  * createAds(): 7 إعلانات (BRONZE/SILVER/3 GOLD/PLATINUM/SPONSOR) + 5 ACTIVE + 1 PENDING + 1 EXPIRED + advertisers مغاربة (مطعم الدار، صيدلية السلام، مكتبة الأطلس...)
+    95→    95→  * createComplaints(): 7 شكاوى (FINANCIAL/BEHAVIORAL/TECHNICAL/SUGGESTION) + 2 OPEN + 1 IN_PROGRESS + 2 RESOLVED + 1 CLOSED + 1 REJECTED + بعضها مجهول
+    96→    96→  * createNotifications(): 20 إشعار (CONTRIBUTION/FUND_REQUEST/EVENT/SYSTEM/ANNOUNCEMENT) + 50% isRead
+    97→    97→  * createAuditLogs(): 10 سجلات (user.login، fund.contribution.confirmed، fund.request.approved، admin.user.role_changed، system.fraud_detected [critical]...)
+    98→    98→  * createSettings(): 14 إعداد (site.name، site.tagline، site.description، fund.threshold.ethics=1000، fund.disbursement.deadline=72، community.target.families=500، ads.packages.*)
+    99→    99→  * printSummary(): جدول ملخص بالعربية لكل النماذج
+   100→   100→- خطأان تم إصلاحهما:
+   101→   101→  1. ReferenceError: `_isHead is not defined` — في الـ shorthand object property، استخدمت `_isHead` لكن المتغير اسمه `isHead`. الإصلاح: `_isHead: isHead`.
+   102→   102→  2. PrismaClientValidationError: `Unknown argument '_familyId'` — كنت أمرر الـ wrapper object كاملاً إلى `db.user.create(u)` بدلاً من `db.user.create({ data: u.data })`. الإصلاح: استخراج `data` فقط.
+   103→   103→- تشغيل `bun run db:seed` بعد الإصلاحين → نجح في زرع جميع البيانات (~15 ثانية بما فيها 200 bcrypt hash مُشترَك)
+   104→   104→- تشغيل استعلام التحقق المطلوب من المهمة → كل العدّادات مطابقة:
+   105→   105→  * 1 District ✓
+   106→   106→  * 50 Families ✓
+   107→   107→  * 200 Users ✓
+   108→   108→  * 300 Contributions ✓
+   109→   109→  * 40 FundRequests ✓
+   110→   110→  * 8 Events ✓
+   111→   111→  * 5 Groups + 105 GroupMembers ✓
+   112→   112→  * 130 Approvals + 155 Registrations ✓
+   113→   113→  * 7 Ads + 7 Complaints + 20 Notifications + 10 AuditLogs + 14 Settings ✓
+   114→   114→- تحقق إضافي من توزيع الأدوار والأنواع والحالات:
+   115→   115→  * الأدوار: 1 SUPER_ADMIN، 1 TREASURER، 5 ETHICS_COMMITTEE، 1 DISTRICT_MOD، 3 GROUP_LEADER، 1 ADS_MANAGER، 188 MEMBER = 200 ✓
+   116→   116→  * أنواع الطلبات: 12 MEDICAL، 6 DEATH، 5 WEDDING، 8 EDUCATION، 7 EMERGENCY، 2 MICRO_PROJECT = 40 ✓
+   117→   117→  * حالات الطلبات: 10 SUBMITTED، 6 UNDER_REVIEW، 10 APPROVED، 5 REJECTED، 6 DISBURSED، 3 COMPLETED = 40 ✓
+   118→   118→  * حالات الفعاليات: 3 PUBLISHED، 1 ONGOING، 3 COMPLETED، 1 CANCELLED = 8 ✓
+   119→   119→  * أول anonymousCode: SY-001 ✓
+   120→   120→  * SUPER_ADMIN: admin@syba-community.ma / السوبر المراكشي ✓
+   121→   121→
+   122→   122→Stage Summary:
+   123→   123→- ✅ ملف seed.ts أنشئ بنجاح في `/home/z/my-project/prisma/seed.ts` (~1033 سطر)
+   124→   124→- ✅ جميع البيانات مكتوبة بالعربية (أسماء، أوصاف، عناوين، رسائل إشعارات) — لا إنجليزي في المحتوى الموجه للمستخدم
+   125→   125→- ✅ bcrypt hash واحد مشترك (rounds=10) لكلمة مرور "Demo@1234" → يعملت بشكل صحيح عبر bcrypt.compare (الملح مضمّن في الـ hash نفسه)
+   126→   126→- ✅ التوزيع دقيق: 50 أسرة + 200 مستخدم (3-7 لكل أسرة، المجموع بالضبط 200) + 40 طلب بكل الأنواع والحالات + 8 فعاليات بكل الأنواع والحالات
+   127→   127→- ✅ العلاقات FK صحيحة: كل User.familyId → Family.id، كل Family.headOfFamilyId → User.id، GroupMember.[groupId,userId] unique، FundRequestApproval.[requestId,approverId] unique، EventRegistration.[eventId,userId] unique
+   128→   128→- ✅ البيانات التاريخية: المساهمات والطلبات datetimes في الماضي (1-120 يوم) — createdAt/updatedAt تم تجاوز الـ default @now()
+   129→   129→- ✅ التشغيل النهائي: `bun run db:seed` → نجح بدون أخطاء (بعد إصلاحين: `_isHead` shorthand + `db.user.create({ data: u.data })`)
+   130→   130→- ✅ ملف الـ log مفيد للمراجعة: console.log تقدّمي لكل مرحلة + جدول ملخص نهائي بالعربية
+   131→   131→
+   132→   132→العدّادات النهائية (موافقة للمتطلبات):
+   133→   133→- Districts: 1 | Families: 50 | Users: 200 | Groups: 5 | GroupMembers: 105
+   134→   134→- Contributions: 300 | FundRequests: 40 | FundRequestApprovals: 130
+   135→   135→- Events: 8 | EventRegistrations: 155 | Notifications: 20
+   136→   136→- Ads: 7 | Complaints: 7 | AuditLogs: 10 | Settings: 14
+   137→   137→
+   138→   138→---
+   139→   139→Task ID: 1
+   140→   140→Agent: Main (Z.ai Code)
+   141→   141→Task: المرحلة 1 — قاعدة البيانات + Seeders + Auth/RBAC lib
+   142→   142→
+   143→   143→Work Log:
+   144→   144→- كتابة prisma/schema.prisma كامل (~16 نموذج، 12 Enum):
+   145→   145→  * District, Family, User, Group, GroupMember
+   146→   146→  * Contribution, FundRequest, FundRequestApproval
+   147→   147→  * Event, EventRegistration
+   148→   148→  * Notification, Ad, Complaint, AuditLog, Setting
+   149→   149→  * كل نموذج له id, createdAt, updatedAt, deletedAt (Soft Delete)
+   150→   150→  * فهارس على الأعمدة المهمة (districtId, status, role, phone, إلخ)
+   151→   151→- تشغيل `bun run db:push` — نجاح، توليد Prisma Client
+   152→   152→- تثبيت bcryptjs + @types/bcryptjs لكلمة المرور
+   153→   153→- إضافة script `db:seed` و postinstall (prisma generate) لـpackage.json
+   154→   154→- استدعاء subagent (Task ID 1-3) لكتابة prisma/seed.ts:
+   155→   155→  * نجح في كتابة ملف ~1033 سطر ببيانات مغربية واقعية
+   156→   156→  * 1 حي (سيدي يوسف بن علي) + 50 عائلة (بنشقرون، الصقلي، الحمداوي، بدر، الزروالي، بلمهدي، الشرقاوي، بلحاج، العمراني، بنجلون، التازي، الفاسي، المراكشي، السوسي، الناصري، إلخ)
+   157→   157→  * 200 مستخدم (أسماء شخصية مغربية: محمد، فاطمة، خديجة، يوسف، عائشة، إبراهيم، مريم، سعيد، رضا، خالد، سعاد، نبيل، هشام، زكرياء، حمزة، إكرام، وفاء، إلخ)
+   158→   158→  * 5 مجموعات افتراضية (أمهات، آباء، شباب، أطفال، كبار السن) + 105 عضوية
+   159→   159→  * 300 مساهمة (موزّعة على 6 أشهر 2024-07 إلى 2024-12، قفف 20/50/100/200)
+   160→   160→  * 40 طلب صرف (12 مرض، 6 وفاة، 5 عرس، 8 تعليم، 7 طوارئ، 2 مشروع) + 130 موافقة لجنة
+   161→   161→  * 8 فعاليات (ملتقى شهري، قافلة طبية، إفطار رمضاني، عرس جماعي، مهرجان أطفال، أمسية شعرية، معرض حرف، تبرع بالدم) + 155 تسجيل
+   162→   162→  * 20 إشعار، 7 شكاوى، 10 سجلات تدقيق، 14 إعداد، 7 إعلانات
+   163→   163→  * توزيع الأدوار: 1 SUPER_ADMIN (admin@syba-community.ma)، 1 TREASURER، 5 ETHICS_COMMITTEE، 1 DISTRICT_MOD، 3 GROUP_LEADER، 1 ADS_MANAGER، 188 MEMBER
+   164→   164→  * كل الحسابات تستخدم نفس كلمة المرور: Demo@1234
+   165→   165→- كتابة src/lib/constants.ts (~290 سطر):
+   166→   166→  * ROLE_LABELS، ROLE_HIERARCHY، USER_STATUS_LABELS
+   167→   167→  * CONTRIBUTION_METHOD_LABELS، CONTRIBUTION_STATUS_LABELS
+   168→   168→  * FUND_REQUEST_TYPE_LABELS (مع emoji + color + description لكل نوع)
+   169→   169→  * FUND_REQUEST_STATUS_LABELS (مع step للترتيب)
+   170→   170→  * EVENT_TYPE_LABELS، EVENT_STATUS_LABELS، REGISTRATION_STATUS_LABELS
+   171→   171→  * NOTIFICATION_TYPE_LABELS، COMPLAINT_TYPE_LABELS، AD_PACKAGE_LABELS، AD_PLACEMENT_LABELS
+   172→   172→  * ETHICS_COMMITTEE_THRESHOLD=1000، DISBURSEMENT_DEADLINE_HOURS=72
+   173→   173→  * CONTRIBUTION_TIERS=[10,20,50,100,200]
+   174→   174→  * GROWTH_TARGETS، DEFAULT_GROUPS، PRINCIPLES، HOME_DISTRICT، SITE
+   175→   175→  * دوال مساعدة: formatMAD، formatNumber، formatDateArabic، formatDateTimeArabic، formatPercent
+   176→   176→- كتابة src/lib/roles.ts (~220 سطر):
+   177→   177→  * 56 صلاحية (Permission type) مُوزّعة على 8 مجالات (user/family/district/group/fund/event/ad/complaint/notification/admin)
+   178→   178→  * خريطة ROLE_PERMISSIONS لكل دور من الـ8
+   179→   179→  * دوال مساعدة: hasPermission، hasAnyPermission، hasAllPermissions، hasRoleLevel، isStaffRole، canDisburse، isEthicsCommittee، isSuperAdmin، getAdminAccessibleRoles
+   180→   180→- كتابة src/lib/auth.ts (~305 سطر):
+   181→   181→  * NextAuth Options مع Credentials Provider
+   182→   182→  * محاكاة OTP: DEMO_OTP_CODE="123456" + generateOtpDemo()
+   183→   183→  * JWT strategy (maxAge 30 يوم)
+   184→   184→  * صفحات مخصّصة: /login، /register، /verify-request
+   185→   185→  * bcrypt.compare + قفل الحساب بعد 5 محاولات فاشلة (15 دقيقة)
+   186→   186→  * فحص الحالة (ACTIVE/PENDING/SUSPENDED/DISABLED)
+   187→   187→  * تسجيل دخول تلقائي في AuditLog عبر events.signIn
+   188→   188→  * Callbacks: jwt + session (إضافة role, districtId, familyId, isFamilyHead, status, phone, avatar)
+   189→   189→  * نوع Session مُوسَّع بالكامل (TypeScript declarations)
+   190→   190→  * دوال: getCurrentSession، getCurrentUser، requireAuth، requireRole، requirePermission
+   191→   191→- إنشاء مسار NextAuth: src/app/api/auth/[...nextauth]/route.ts
+   192→   192→- إصلاح ترتيب الاستيراد الدائري في auth.ts (نقل hasPermission لأعلى)
+   193→   193→
+   194→   194→Stage Summary:
+   195→   195→- ✅ Prisma Schema كامل ومتوافق مع SQLite محلياً و PostgreSQL إنتاجياً
+   196→   196→- ✅ Seed ناجح بكل الأعداد المطلوبة (1/50/200/300/40/8/5/105/130/155/20/7/10/14)
+   197→   197→- ✅ bcrypt عمل بكلمة Demo@1234 لكل الحسابات
+   198→   198→- ✅ ESLint نظيف 100%
+   199→   199→- ✅ Dev server يعمل (200 OK على /، 404 متوقّعة على المسارات غير المنفّذة)
+   200→   200→- ✅ RBAC كامل (8 أدوار، 56 صلاحية، هرمية واضحة)
+   201→   201→- ✅ NextAuth API route جاهز (GET + POST)
+   202→   202→- ✅ نوع Session مُوسّع بنوعية كاملة (TypeScript strict)
+   203→   203→
+   204→   204→الخطوة التالية: المرحلة 2 — صفحات المصادقة (login, register, verify-request) + SessionProvider + middleware لحماية المسارات.
+   205→   205→
+   206→   206→---
+   207→   207→Task ID: 2-A
+   208→   208→Agent: Auth Pages Builder (general-purpose)
+   209→   209→Task: كتابة صفحات المصادقة (login, register, verify-request) + API register route
+   210→   210→
+   211→   211→Work Log:
+   212→   212→- قراءة سجلات الوكلاء السابقين (worklog.md + auth.ts + prisma/schema.prisma + globals.css + layout.tsx + site-logo.tsx + zellige-divider.tsx) لفهم السياق الكامل ولوحة الألوان (زليج مراكش) والتوافق مع الـ RTL
+   213→   213→- فحص مكوّنات shadcn/ui المتاحة في src/components/ui/ — تأكد من وجود card/button/input/label/checkbox/textarea/sonner/select
+   214→   214→- إنشاء 4 مجلّدات: src/app/login, src/app/register, src/app/verify-request, src/app/api/auth/register
+   215→   215→- كتابة `src/app/login/page.tsx` (~332 سطر):
+   216→   216→  * 'use client' + Suspense boundary (لأن useSearchParams يتطلب ذلك في Next.js 16)
+   217→   217→  * مكوّن `LoginForm` يستخدم `signIn("credentials", { redirect: false })` من `next-auth/react`
+   218→   218→  * نموذج: بريد (label="البريد الإلكتروني")، كلمة مرور (label="كلمة المرور") مع زر إظهار/إخفاء (Eye/EyeOff)
+   219→   219→  * Checkbox "تذكّرني" مع aria-describedby
+   220→   220→  * زر إرسال "تسجيل الدخول" مع حالة تحميل (h-11 = 44px touch target)
+   221→   221→  * ترجمة أخطاء NextAuth إلى العربية عبر AUTH_ERROR_TRANSLATIONS map (CredentialsSignin → "بيانات الدخول غير صحيحة"، Default → "حدث خطأ ما"، + 12 ترجمة إضافية)
+   222→   222→  * حالة state machine: idle | loading | error | success
+   223→   223→  * بعد نجاح الدخول: router.push(callbackUrl ?? "/community") + toast.success
+   224→   224→  * صندوق "وضع التجربة" يعرض admin@syba-community.ma / Demo@1234 (مشرف عام) + member@syba-community.ma / Demo@1234 (عضو عادي)
+   225→   225→  * روابط: /register ("ليس لديك حساب؟ سجّل الآن")، /forgot-password ("نسيت كلمة المرور؟")، / ("العودة للرئيسية")
+   226→   226→  * SiteLogo + ZelligeDivider (variant="diamond") + warm-shadow class
+   227→   227→  * framer-motion: entrance animation (opacity + y)
+   228→   228→  * min-h-screen flex flex-col items-center justify-center — توسيط عمودي
+   229→   229→- كتابة `src/app/register/page.tsx` (~976 سطر):
+   230→   230→  * 'use client' + fetch POST إلى /api/auth/register
+   231→   231→  * 4 أقسام (fieldset) في صفحة واحدة:
+   232→   232→    - بيانات الحساب: firstName, lastName, email, phone (مع +212 prefix), password, confirmPassword
+   233→   233→    - بيانات الأسرة: familyName, address, economicStatus (select), memberCount (number)
+   234→   234→    - بيانات إضافية: profession, skills (Textarea), interests (Textarea), gender (select), birthDate (date picker)
+   235→   235→    - التحقق والموافقة: nationalId (يُشفَّر)، Checkbox إلزامي للموافقة على الشروط
+   236→   236→  * مؤشر قوة كلمة المرور (weak/medium/strong) مع شريط ألوان ديناميكي (bg-destructive للضعيفة، bg-accent للمتوسطة، bg-secondary للقوية)
+   237→   237→  * منطق كامل للتحقّق العميلي قبل الإرسال (الاسم، البريد، الهاتف المغربي، كلمة المرور ≥ 8 مع حرف ورقم، تطابق التأكيد، الموافقة على الشروط)
+   238→   238→  * شاشة OTP بعد النجاح: عرض "123456" بشكل بارز + حقل إدخال رمز 6 أرقام (inputMode=numeric, autoComplete=one-time-code, maxLength=6)
+   239→   239→  * التحقق من OTP: مقارنة مع DEMO_OTP="123456"، بعد النجاح redirect إلى /login بعد 1.8s
+   240→   240→  * كل الحقول: required + autoComplete + aria-describedby + aria-invalid
+   241→   241→  * كل أزرار اللمس: h-11 (≥44px touch target)
+   242→   242→- كتابة `src/app/verify-request/page.tsx` (~136 سطر):
+   243→   243→  * 'use client' + Suspense boundary
+   244→   244→  * أيقونة Inbox + Mail (lucide-react) مع animation spring من framer-motion
+   245→   245→  * يعرض البريد من ?email=searchParam إن وجد
+   246→   246→  * 3 خطوات تعليمية بالعربية (افحص البريد → ابحث عن الرسالة → انقر الرابط)
+   247→   247→  * زر "العودة لتسجيل الدخول" (asChild Link) + SiteLogo + ZelligeDivider
+   248→   248→- كتابة `src/app/api/auth/register/route.ts` (~241 سطر):
+   249→   249→  * POST handler يستخدم NextRequest + NextResponse
+   250→   250→  * التحقّق الكامل من الحقول المطلوبة (firstName, lastName, email, phone, password, familyName)
+   251→   251→  * التحقّق من صيغة البريد (EMAIL_REGEX) + صيغة الهاتف المغربي (/^0[5-7]\d{8}$/)
+   252→   252→  * التحقّق من قوة كلمة المرور (≥8 أحرف، حرف ورقم على الأقل)
+   253→   253→  * التحقّق من تفرد البريد والهاتف (409 Conflict عند التكرار)
+   254→   254→  * bcrypt.hash(password, 10) + bcrypt.hash(nationalId, 10) للبطاقة الوطنية (اختياري)
+   255→   255→  * get-or-create District (slug="sidi-youssef-ben-ali")
+   256→   256→  * db.$transaction لحلّ التبعية الدائرية Family↔User: إنشاء الأسرة بدون headOfFamilyId أولاً → إنشاء المستخدم (isFamilyHead=true, role=MEMBER, status=ACTIVE, emailVerified=now()) → تحديث الأسرة لربط ربّها
+   257→   257→  * استجابة 201 مع { success: true, userId, familyId }؛ 400 لخطأ التحقق؛ 409 للتكرار؛ 500 لخطأ الخادم
+   258→   258→  * try/catch شامل مع console.error لتشخيص الأخطاء
+   259→   259→- إصلاح خطأ حرج ورثه الكود من المرحلة السابقة: `src/lib/auth.ts` كان يستورد `getServerSession` مرّتين (سطر 10 + سطر 274) مما سبّب خطأ "Ecmascript file had an error: the name `getServerSession` is defined multiple times" وكسر كل مسارات /api/auth/*. الإصلاح: حذف الاستيراد المكرر في سطر 274 (الاحتفاظ بالأول). هذا كان مانعاً حرجاً لعمل flow تسجيل الدخول.
+   260→   260→- اختبار الـ lint: ESLint نظيف 100% بعد الإصلاح
+   261→   261→- اختبارات HTTP شاملة:
+   262→   262→  * GET /login → 200 ✓
+   263→   263→  * GET /login?callbackUrl=/community → 200 ✓
+   264→   264→  * GET /login?error=CredentialsSignin → 200 ✓ (يعرض الخطأ مترجماً)
+   265→   265→  * GET /register → 200 ✓
+   266→   266→  * GET /verify-request → 200 ✓
+   267→   267→  * GET /verify-request?email=a@b.c → 200 ✓
+   268→   268→  * GET /api/auth/csrf → 200 ✓
+   269→   269→  * GET /api/auth/session → 200 ✓
+   270→   270→  * POST /api/auth/register (بيانات كاملة) → 201 + {success:true, userId, familyId} ✓
+   271→   271→  * POST /api/auth/register (بريد مكرر) → 409 + {error:"هذا البريد الإلكتروني مسجّل بالفعل"} ✓
+   272→   272→  * POST /api/auth/register (هاتف مكرر) → 409 + {error:"رقم الهاتف مسجّل بالفعل"} ✓
+   273→   273→  * POST /api/auth/register (حقول مفقودة) → 400 + {error:"الاسم الشخصي مطلوب"} ✓
+   274→   274→  * POST /api/auth/register (بريد سيّئ) → 400 + {error:"صيغة البريد الإلكتروني غير صحيحة"} ✓
+   275→   275→  * POST /api/auth/register (هاتف سيّئ 0123456789) → 400 + {error:"رقم الهاتف يجب أن يكون بصيغة مغربية..."} ✓
+   276→   276→  * POST /api/auth/register (كلمة مرور ضعيفة 1234) → 400 + {error:"كلمة المرور يجب ألاّ تقلّ عن 8 أحرف"} ✓
+   277→   277→  * Login flow عبر curl مع CSRF + cookies: POST /api/auth/callback/credentials → 200 + set-cookie:next-auth.session-token + response body `{"url":"http://localhost:3000"}` ✓
+   278→   278→  * Session بعد الدخول: GET /api/auth/session → 200 + {user:{name, email, id, role, districtId, familyId, isFamilyHead, status, phone, avatar}, expires} — كل الحقول الموسّعة موجودة ✓
+   279→   279→- تحقّق من سلامة البيانات: المستخدم المُنشأ في DB له status=ACTIVE، role=MEMBER، isFamilyHead=true، passwordHash صالح (bcrypt.compare("Test@1234", hash) = true)، والأسرة لها headOfFamilyId يشير إليه (التبعية الدائرية حُلّت بنجاح)
+   280→   280→- كل الأسماء والعناصر بالعربية 100%، RTL من السطر الأول، logical properties فقط (ps-*, pe-*, ms-*, me-*)، لا ml-/mr-/pl-/pr-، text-start بدل text-left، space-y-* بدل space-x-*
+   281→   281→
+   282→   282→Stage Summary:
+   283→   283→- ✅ 4 ملفات أنشئت (1685 سطر إجمالي):
+   284→   284→  * src/app/login/page.tsx (332 سطر)
+   285→   285→  * src/app/register/page.tsx (976 سطر)
+   286→   286→  * src/app/verify-request/page.tsx (136 سطر)
+   287→   287→  * src/app/api/auth/register/route.ts (241 سطر)
+   288→   288→- ✅ إصلاح 1 خطأ حرج في src/lib/auth.ts (استيراد مكرر getServerSession كان يكسر كل مصادقة)
+   289→   289→- ✅ ESLint نظيف 100%
+   290→   290→- ✅ كل المسارات ترجع 200 OK
+   291→   291→- ✅ API register: 201/400/409/500 كلها تعمل كما هو متوقع
+   292→   292→- ✅ Login flow كامل يعمل (CSRF + cookies + session token + extended user fields)
+   293→   293→- ✅ كل النصوص عربية 100%، RTL، logical properties، warm-shadow على البطاقات
+   294→   294→- ✅ Accessibility: aria-label، aria-describedby، aria-invalid، htmlFor، autoComplete، inputMode، sr-only للمساعدات
+   295→   295→- ✅ Touch targets: كل الأزرار h-11 (44px)
+   296→   296→- ✅ framer-motion: entrance animations خفيفة (opacity + y)
+   297→   297→- ✅ مؤشر قوة كلمة المرور + شاشة OTP بـ"123456" بارزة
+   298→   298→
+   299→   299→قرارات تنفيذية بارزة:
+   300→   300→- استخدمت Suspense boundary حول useSearchParams (متطلب Next.js 16)
+   301→   301→- استخدمت `<select>` الأصلي في حقلي economicStatus و gender بدل Select radix لتقصير الملف
+   302→   302→- استخدمت fetch API مباشرة بدل react-hook-form في صفحة التسجيل (كما طُلب)
+   303→   303→- استخدمت db.$transaction لحل التبعية الدائرية بين Family و User (Family.headOfFamilyId ↔ User.familyId)
+   304→   304→- أخطاء NextAuth تُرجمت عبر خريطة من 13 خطأ شائع
+   305→   305→- محاكاة OTP: DEMO_OTP="123456" ثابت في الواجهة الأمامية (لا backend) لأن الـ API route لا يولّد OTP — فقط يحاكي الإرسال
+   306→   306→- بعد التسجيل الناجح، status=ACTIVE مباشرة (وليس PENDING) كما طُلب في المهمة (لـ demo simplicity)
+   307→   307→
+   308→   308→الخطوة التالية: المرحلة 2ب — SessionProvider + middleware لحماية مسارات /community/* + لوحة المستخدم (dashboard).
+   309→   309→
+   310→   310→---
+   311→   311→Task ID: 3
+   312→   312→Agent: Fund Module Builder (full-stack-developer)
+   313→   313→Task: بناء صندوق المعروف (3 صفحات + 4 APIs)
+   314→   314→
+   315→   315→Work Log:
+   316→   316→- قراءة سجلات الوكلاء السابقين (worklog.md + auth.ts + prisma/schema.prisma + globals.css + constants.ts + roles.ts + layout.tsx + ZelligeDivider + Badge + Card + Alert + Tabs + Select + Textarea) لفهم السياق الكامل
+   317→   317→- فحص dev.log للتأكد من عمل dev server بدون أخطاء compile
+   318→   318→- إنشاء المجلّدات: src/app/api/fund/{contributions,requests}, src/components/community, src/app/community/{fund,events}
+   319→   319→- كتابة 4 API routes:
+   320→   320→  * POST /api/fund/contributions — إنشاء مساهمة (تحقّق 401/400، توليد receiptNumber RC-YYYY-NNNN + digitalReceipt UUID، إنشاء Contribution بحالة PENDING، إشعار TREASURER في نفس الحي، AuditLog، استجابة 201)
+   321→   321→  * GET /api/fund/contributions — آخر 10 مساهمات للمستخدم الحالي (مع family)
+   322→   322→  * POST /api/fund/requests — إنشاء طلب صرف (تحقّق من type في 6 أنواع، title ≥ 5 أحرف، description ≥ 20 حرفاً، amountRequested > 0، requiresEthics = amount > 1000، توليد anonymousCode SY-NNN، إشعار 5 ETHICS_COMMITTEE في الحي، AuditLog، استجابة 201)
+   323→   323→  * GET /api/fund/requests — آخر 10 طلبات مع _count.approvals (محوّل إلى approvalsCount)
+   324→   324→- كتابة 6 مكوّنات client في src/components/community:
+   325→   325→  * transparency-panel.tsx (587 سطر) — لوحة شفافية عامة: 3 بطاقات إحصائية كبيرة + LineChart (آخر 12 شهراً) + BarChart (الطلبات حسب النوع) + PieChart (توزيع طرق الدفع) + جدول آخر 10 مساهمات + جدول آخر 5 طلبات + زر تحميل تقرير PDF (toast placeholder)
+   326→   326→  * contribute-form.tsx (712 سطر) — نموذج مساهمة: اختيار 4 قفف جاهزة + مبلغ مخصّص + شهر + 3 طرق دفع (بطاقات radio) + تفاصيل حساب CFG + مرجع تحويل + إرفاق صورة إيصال (file input) + معلومات أمين الصندوق + ملاحظة + بطاقة إيصال رقمي بعد النجاح مع QR-like SVG pattern + جدول آخر 5 مساهمات
+   327→   327→  * request-form.tsx (593 سطر) — نموذج طلب: 6 بطاقات نوع (emoji + label + description) + title (≥5) + description (≥20) + amount + location + مرفقات متعددة + تنبيه لجنة النزاهة الديناميكي (amount > 1000) + بطاقة رمز تتبّع بعد النجاح + قائمة آخر 5 طلبات مع مؤشّر 5 خطوات أفقي (Progress + قائمة من 5 بنود ملوّنة)
+   328→   328→  * fund-tabs.tsx (174 سطر) — Tabs shadcn بـ 3 تبويبات (الشفافية/ساهم/اطلب) مع بوابات مصادقة AuthGate عند عدم الدخول
+   329→   329→  * events-filter-bar.tsx (192 سطر) — شريط فلترة: بحث debounced 300ms + Select للنوع (6 أنواع مع emoji) + Select للحالة (4 خيارات) + عدّاد نتائج + زر مسح الفلاتر، يستخدم useRouter + useSearchParams لتحديث الـURL
+   330→   330→  * dashboard-motion.tsx (20 سطر) — غلاف framer-motion للوحة المجتمع (opacity 0→1, y 8→0)
+   331→   331→- كتابة 3 صفحات server components:
+   332→   332→  * /community (660 سطر) — لوحة المجتمع: redirect لـ/login إن غير مسجّل، ترحيب باسم المستخدم + اسم الحي + Badge "عضو في صندوق المعروف"، 4 بطاقات KPI (أعضاء الحي، أسر مسجّلة، صندوق المعروف برصيد، فعاليات قادمة)، لوحة شفافية مصغّرة (مساهمات/صرف/رصيد هذا الشهر)، آخر 3 فعاليات (gradient + emoji + type badge + date + location + زر تسجيل)، مساهماتي الأخيرة (آخر 3 أو empty state)، طلباتي الأخيرة (آخر 3 مع شارات حالة)، 4 روابط سريعة (fund/groups/events/profile). كل البيانات من Prisma مباشرة، DashboardMotion wrapper للأنيميشن
+   333→   333→  * /community/fund (310 سطر) — صفحة الصندوق: استرجاع بيانات الشفافية للحي + أمين الصندوق (لاستخراج الاسم/الهاتف) + مساهمات وطلبات المستخدم الحالي (آخر 5 لكل واحد). بيانات الـ12 شهراً للرسم البياني تُبنى من حلقة subMonths(date-fns). getDefaultDistrictId() fallback عند عدم تسجيل الدخول
+   334→   334→  * /community/events (327 سطر) — صفحة الفعاليات: استرجاع searchParams من URL (q, type, status) + Promise.all لـ total + events، فلترة OR (title/description/location contains)، الشبكة (1/2/3 أعمدة)، كل بطاقة: gradient cover + emoji + type badge + title line-clamp-2 + description line-clamp-2 + clock + mapPin + maxAttendees + زر/شارة حسب الحالة (سجّل الآن/أنت مسجّل/منتهي/عرض التفاصيل)، empty state، ZelligeDivider، حديث نبوي في التذييل
+   335→   335→- إصلاح 1 خطأ compile حرج: صفحة events كانت تستخدم onClick handler على Button asChild + Link داخل server component → خطأ "Event handlers cannot be passed to Client Component props". الإصلاح: إزالة كل onClick handlers، الاكتفاء بـLink المجرد (وهو المتطلّب أصلاً: "just a link, the detail page is out of scope")
+   336→   336→- إصلاح 2 تحذيرات ESLint: إزالة directives @typescript-eslint/no-explicit-any و no-unused-vars غير الضرورية في GET /api/fund/requests (استبدال بـ void _count لإسكات تحذير unused)
+   337→   337→
+   338→   338→Stage Summary:
+   339→   339→- ✅ 11 ملفاً أنشئت (4020 سطر إجمالي):
+   340→   340→  * 3 صفحات server في src/app/community/: page.tsx (660), fund/page.tsx (310), events/page.tsx (327)
+   341→   341→  * 2 API routes: src/app/api/fund/contributions/route.ts (208), src/app/api/fund/requests/route.ts (237)
+   342→   342→  * 6 client components في src/components/community/: transparency-panel.tsx (587), contribute-form.tsx (712), request-form.tsx (593), fund-tabs.tsx (174), events-filter-bar.tsx (192), dashboard-motion.tsx (20)
+   343→   343→- ✅ ESLint نظيف 100% (لا أخطاء، لا تحذيرات)
+   344→   344→- ✅ كل النصوص عربية 100%، RTL من السطر الأول، logical properties (ps-/pe-/ms-/me-/space-y-*)، لا ml-/mr-/pl-/pr-/text-left
+   345→   345→- ✅ كل المسارات ترجع 200 OK:
+   346→   346→  * GET /community (مع تسجيل دخول admin@syba-community.ma) → 200، يعرض لوحة كاملة بـ4 KPIs + شفافية مصغّرة + فعاليات + مساهماتي + طلباتي + روابط سريعة
+   347→   347→  * GET /community/fund (بدون auth) → 200، يعرض تبويب الشفافية العام + زر "سجّل الدخول للمساهمة" + AuthGate على التبويبَين الآخريْن
+   348→   348→  * GET /community/fund (مع auth) → 200، يعرض 3 تبويبات كاملة
+   349→   349→  * GET /community/events → 200، يعرض شبكة الفعاليات + شريط فلترة
+   350→   350→  * GET /community/events?q=test → 200 (بحث ASCII)
+   351→   351→  * GET /community/events?q=ملتقى → 200 (بحث عربي مع URL encoding)
+   352→   352→  * GET /community/events?type=SOLIDARITY → 200
+   353→   353→  * GET /community/events?status=COMPLETED → 200
+   354→   354→- ✅ كل API routes تعمل:
+   355→   355→  * POST /api/fund/contributions بدون auth → 401
+   356→   356→  * POST /api/fund/contributions مع auth + body صحيح → 201 مع receiptNumber (RC-2026-0001) و digitalReceipt UUID
+   357→   357→  * POST /api/fund/requests بدون auth → 401
+   358→   358→  * POST /api/fund/requests مع auth + amount > 1000 → 201 مع requiresEthics=true و anonymousCode (SY-041)
+   359→   359→  * GET /api/fund/contributions → 200 مع آخر 10 مساهمات للمستخدم (تضم family)
+   360→   360→  * GET /api/fund/requests → 200 مع آخر 10 طلبات للمستخدم (تضم approvalsCount)
+   361→   361→- ✅ توليد receiptNumber و digitalReceipt صحيح (RC-2026-NNNN + UUID)
+   362→   362→- ✅ توليد anonymousCode تتابعي صحيح (SY-041 بعد 40 طلب في seed)
+   363→   363→- ✅ requiresEthics = true تلقائياً عند amount > 1000 (متحقّق من amount=2500)
+   364→   364→- ✅ إشعارات لـ TREASURER + ETHICS_COMMITTEE تُنشأ في DB
+   365→   365→- ✅ AuditLog entries تُنشأ في DB (fund.contribution.created, fund.request.created)
+   366→   366→- ✅ shadcn/ui: استخدام Tabs, Card, Button, Input, Label, Badge, Textarea, Select, Alert, AlertTitle, AlertDescription, Progress, ZelligeDivider — لا مكوّنات مخصّصة غير ضرورية
+   367→   367→- ✅ Recharts مع RTL: تم ضبط dir="rtl" على الحاويات + contentStyle.direction="rtl" للـTooltip + labelStyle عربي + fontFamily موروث
+   368→   368→- ✅ framer-motion: motion.div entrance animations (opacity 0→1, y 8→0) + AnimatePresence للإيصالات وبطاقات النجاح والتنبيهات الديناميكية
+   369→   369→- ✅ Touch targets: كل الأزرار h-11 (44px)
+   370→   370→- ✅ Accessibility: aria-label على الأزرار الأيقونية، aria-pressed على بطاقات radio، aria-labelledby على الأقسام، htmlFor على الحقول، sr-only للـ labels في شريط الفلترة، role="alert" على Alerts، role="presentation" على فاصل Zellige
+   371→   371→- ✅ custom-scrollbar على الجداول القابلة للتمرير
+   372→   372→- ✅ warm-shadow على كل البطاقات
+   373→   373→
+   374→   374→قرارات تنفيذية بارزة:
+   375→   375→- استخدمت server component للصفحات مع client sub-components للنماذج والرسوم والتبويبات — هذا أفضل فصل: البيانات تجلب على الخادم، والتفاعل على العميل
+   376→   376→- في transparency-panel، استخدمت group by على Prisma لاسترجاع توزيع الأنواع وطرق الدفع بكفاءة (استعلام واحد لكل نوع/طريقة)
+   377→   377→- في contribute-form، استخدمت QR-like SVG pattern مولّد من hash للإيصال (ليس QR حقيقي لكن يعطي مظهر بصري مماثل) — هذا مقبول للوضع التجريبي
+   378→   378→- في request-form، استخدمت Progress من shadcn + قائمة 5 بنود ملوّنة لمؤشّر 5 خطوات، يبرز الخطوة الحالية
+   379→   379→- في events page، استخدمت searchParams كـ Promise (Next.js 16 API) وانتظرتها بـ await
+   380→   380→- في events-filter-bar، استخدمت useRouter + useSearchParams لتحديث الـURL عند كل تغيير (with 300ms debounce للبحث)، والخادم يعيد استرجاع البيانات المفلترة
+   381→   381→- عند عدم تسجيل الدخول لصفحة /community/fund، نُظهر تبويب الشفافية فقط ونبوّت تبويبَي المساهمة والطلب بـ AuthGate
+   382→   382→- عند عدم تسجيل الدخول لـ /community، نُعيد توجيه المستخدم إلى /login?callbackUrl=/community
+   383→   383→- رسم بياني للطلبات حسب النوع يستخدم خريطة ألوان خاصة (TYPE_COLOR_MAP) بدل ألوان recharts الافتراضية ليتوافق مع لوحة زليج مراكش
+   384→   384→- لم أستخدم AI APIs إطلاقاً (المهمة تمنعها صراحةً)
+   385→   385→- كل البيانات المالية تُجلب من Prisma aggregate (لا استعلامات مخصّصة SQL)
+   386→   386→- عند حساب الرصيد: CONFIRMED contributions sum − DISBURSED+COMPLETED fund requests sum (amountDisbursed)
+   387→   387→
+   388→   388→---
+   389→   389→Task ID: 4
+   390→   390→Agent: Admin Dashboard Builder (full-stack-developer)
+   391→   391→Task: بناء لوحة السوبر أدمن (5 صفحات + 1 layout + 1 sidebar + 1 API)
+   392→   392→
+   393→   393→Work Log:
+   394→   394→- قراءة سجلات الوكلاء السابقين (worklog.md + auth.ts + prisma/schema.prisma + constants.ts + roles.ts + layout.tsx + globals.css + transparency-panel.tsx + site-header.tsx) لفهم السياق الكامل ولوحة الألوان + النمط الإداري المستهدف (MINIMAL REFINED)
+   395→   395→- فحص dev.log للتأكد من عمل dev server + فحص مكوّنات shadcn/ui المتاحة (sheet, dropdown-menu, avatar, breadcrumb, dialog, alert-dialog, select, table, tabs, badge, card, input, label, textarea, sonner, pagination)
+   396→   396→- إعداد البنية: mkdir -p src/app/admin/{users,fund,audit,settings,families,events,complaints,ads,reports} + src/app/api/admin/{stats,settings} + src/app/api/admin/contributions/[id]/status + src/app/api/admin/fund-requests/[id]/vote + src/components/admin + src/lib/admin
+   397→   397→- إنشاء `src/components/layout/app-chrome.tsx` (31 سطر) — مكوّن عميل يقرّر متى يُظهر كروم الموقع العام (SiteHeader/SiteFooter/BottomNav) ومتى يُخفيه: أي مسار يبدأ بـ /admin يُخفي الكروم العام. بديل نظيف لـroute groups دون نقل ملفات
+   398→   398→- تعديل `src/app/layout.tsx`: استبدال SiteHeader/SiteFooter/BottomNav بـ AppChrome واحد يلفّ children — كروم الموقع يظهر فقط على المسارات العامة
+   399→   399→- إنشاء `src/app/admin/layout.tsx` (51 سطر) — Server component: فحص المصادقة (getCurrentUser)، redirect إلى /login?callbackUrl=/admin إن لم يوجد، redirect إلى /community إن لم يكن الدور SUPER_ADMIN/TREASURER/ETHICS_COMMITTEE/DISTRICT_MOD. يمرّر {id, name, email, role, roleLabel, avatar, districtId} للـAdminShell
+   400→   400→- إنشاء `src/components/admin/admin-shell.tsx` (475 سطر) — 'use client'. الشريط الجانبي على اليمين في RTL (md:flex md:flex-col md:border-s)، شريط علوي sticky (h-16، breadcrumb + theme toggle + bell + user dropdown). على الجوال: Sheet side="right" ينزلق من اليمين. 10 روابط مع أيقونات lucide (LayoutDashboard/Users/Users2/HeartHandshake/CalendarDays/MessageSquareWarning/Megaphone/BarChart3/History/Settings) وstrokeWidth=1.5. حالة الـactive: bg-muted text-foreground + نقطة ذهبية. قائمة مستخدم منسدلة: name+email+role badge + زر تسجيل خروج يستدعي signOut() + router.push('/'). framer-motion entrance (opacity 0→1, y 4→0)
+   401→   401→- إنشاء `src/lib/admin/stats.ts` (286 سطر) — getAdminStats(districtId): Promise.all لـ13 استعلام (عدّ المستخدمين/الأسر/المساهمات هذا الشهر/الصرف هذا الشهر/إجمالي المساهمات المؤكّدة/إجمالي الصرف/الطلبات المعلّقة/الفعاليات القادمة/الإعلانات النشطة/الشكاوى المفتوحة/مجموع النقاط/طلبات لجنة النزاهة المعلّقة/إعلانات تنتظر موافقة) + 12 شهر للنمو (subMonths من date-fns) + 6 أنواع طلبات (groupBy type) + 3 طرق دفع (groupBy method) + آخر 10 AuditLogs مع actor.fullName
+   402→   402→- إنشاء `src/app/api/admin/stats/route.ts` (54 سطر) — GET handler. فحص مصادقة + دور. يُرجع AdminStats JSON كاملاً. اختُبر: 200 OK مع users=201/families=51/urgentAlerts={pendingEthicsRequests:17, pendingAds:1, openComplaints:3}
+   403→   403→- إنشاء `src/app/admin/page.tsx` (560 سطر) — Server component. يجلب stats + تفصيل 3 قوائم عاجلة (آخر 5 طلبات لجنة + 5 شكاوى مفتوحة + 5 إعلانات تنتظر موافقة). يعرض:
+   404→   404→  * رأس بـtitle + role badge + وصف
+   405→   405→  * 10 بطاقات KPI في grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 (أعضاء/أسر/مساهمات الشهر/صرف الشهر/الرصيد/طلبات معلّقة/فعاليات قادمة/إعلانات نشطة/شكاوى مفتوحة/نقاط اللعب) — كل بطاقة كـLink لقسمها
+   406→   406→  * قسم الرسوم البيانية (3 رسوم)
+   407→   407→  * قسم النشاط (آخر 10 سجلات) + قسم التنبيهات العاجلة (3 روابط)
+   408→   408→  * قسم خريطة الحي الحرارية (placeholder)
+   409→   409→  * قسم تفصيلي لكل نوع من التنبيهات الثلاثة
+   410→   410→- إنشاء `src/components/admin/dashboard-charts.tsx` (272 سطر) — 'use client'. Recharts LineChart (12 شهر نمو الأعضاء) + BarChart (6 أنواع الطلبات بألوان مخصّصة) + PieChart (3 طرق دفع بـdonut). كلها RTL مع Tooltip mabrouf style (direction: rtl, fontFamily: inherit). ألوان: ذهبي #C8842A + ألوان زليج لكل نوع طلب
+   411→   411→- إنشاء `src/components/admin/district-heatmap.tsx` (110 سطر) — 'use client'. SVG شبكي 12×8 خلايا، شدّة كل خلية محسوبة بدالة موجية متمركزة. شريط تدرّجي للألوان (low→high) + شرح بسيط
+   412→   412→- إنشاء `src/app/admin/users/page.tsx` (69 سطر) — Server component. يجلب آخر 500 مستخدم في الحي مع family + district. يمرّرها للعميل
+   413→   413→- إنشاء `src/components/admin/users-table.tsx` (770 سطر) — 'use client'. بحث debounced 300ms (filter fullName/email/phone) + Select دور (8 خيارات) + Select حالة (4 خيارات) + جدول 9 أعمدة (ID مختصر، الاسم، البريد، الهاتف، الحي، الدور badge، الحالة badge، التسجيل، إجراءات). إجراءات سطر DropdownMenu: عرض (Dialog بكل الحقول)، تعديل (Dialog بنموذج)، تغيير الدور (Dialog بـSelect)، تعطيل/تفعيل (AlertDialog تأكيد)، حذف (AlertDialog تأكيد). ترقيم صفحات 50/صفحة client-side. كل الإجراءات تُظهر toast "تجريبي" ما عدا change-role وtoggle/delete التي تُحفظ client-side فقط للعرض. سوبر أدمن فقط يرى تغيير الدور/الحذف
+   414→   414→- إنشاء `src/app/admin/fund/page.tsx` (96 سطر) — Server component. يجلب آخر 200 مساهمة + 200 طلب صرف مع approvals count. يمرّرها للعميل
+   415→   415→- إنشاء `src/components/admin/fund-admin-tables.tsx` (755 سطر) — 'use client'. Tabs بتبويبَين (المساهمات + الطلبات) كلٌّ بعدّاد في Badge:
+   416→   416→  * المساهمات: جدول 8 أعمدة (رقم الإيصال، المستخدم، المبلغ، الطريقة، الشهر، الحالة، التاريخ، إجراءات). فلتر الحالة. TREASURER/SUPER_ADMIN يرى زرّي تأكيد ✓/رفض ✗ على المساهمات PENDING. الرفض يفتح Dialog مع Textarea للسبب. يستدعي PATCH /api/admin/contributions/[id]/status
+   417→   417→  * الطلبات: جدول 8 أعمدة (الرمز، النوع مع emoji، العنوان، المبلغ، الحالة، عدّاد اللجنة + أيقونة، التاريخ، تصويت). فلتر الحالة. ETHICS_COMMITTEE/SUPER_ADMIN يرى زر "تصويت اللجنة" للطلبات requiresEthics في حالة SUBMITTED/UNDER_REVIEW. يفتح Dialog يعرض: عنوان الطلب، عدّاد X/5 بـ5 أعمدة ملوّنة، 3 أزرار قرار (موافقة ThumbsUp/رفض ThumbsDown/امتناع Minus)، Textarea ملاحظة. يستدعي POST /api/admin/fund-requests/[id]/vote
+   418→   418→- إنشاء `src/app/api/admin/contributions/[id]/status/route.ts` (135 سطر) — PATCH. فحص مصادقة + دور (SUPER_ADMIN/TREASURER). استخراج {status, note}. فحص وجود المساهمة + نطاقها (districtId). فحص أنها PENDING. تحديث + إشعار صاحبها + AuditLog. اختُبر: 200 OK + 404 لمعرّف غير موجود + 400 للحالة غير المسموحة
+   419→   419→- إنشاء `src/app/api/admin/fund-requests/[id]/vote/route.ts` (154 سطر) — POST. فحص مصادقة + دور (SUPER_ADMIN/ETHICS_COMMITTEE). استخراج {decision, note}. فحص وجود الطلب + نطاقه + requiresEthics + حالة قابلة للتصويت. فحص منع التصويت المزدوج (unique constraint requestId+approverId). إنشاء Approval + عدّ الموافقات + AuditLog. اختُبر: 201 OK + 400 على تصويت مكرّر + 404 لمعرّف غير موجود
+   420→   420→- إنشاء `src/app/admin/audit/page.tsx` (233 سطر) — Server component. يقرأ searchParams (Promise في Next.js 16): action/severity/from/to. يبني where Prisma ديناميكي (OR على action+entity، severity، createdAt range). يجلب آخر 100 AuditLogs مع actor.fullName. يعرض جدول 6 أعمدة (الفاعل، الفعل بالعربية + الإنجليزية، الكيان، المعرّف مختصر، الخطورة badge، الوقت بـformatDateTimeArabic). خريطة ترجمة 14 فعل (user.login→تسجيل دخول، fund.contribution.confirmed→تأكيد مساهمة، إلخ)
+   421→   421→- إنشاء `src/components/admin/audit-log-filters.tsx` (144 سطر) — 'use client'. بحث debounced 300ms على الفعل، Select للخطورة، تاريخَين from/to. كلها تحدّث الـURL searchParams عبر router.replace() → server يعيد الجلب. زر "مسح الفلاتر" يُعيد إلى /admin/audit
+   422→   422→- إنشاء `src/app/admin/settings/page.tsx` (101 سطر) — Server component. يجلب 8 إعدادات من جدول Setting (مع افتراضي لكل مفقود) + معلومات الحي + عدّادَي الأسر/الأعضاء. يمرّرها للعميل
+   423→   423→- إنشاء `src/components/admin/settings-form.tsx` (295 سطر) — 'use client'. 4 أقسام:
+   424→   424→  * إعدادات الموقع: site.name + site.tagline + site.description (Textarea)
+   425→   425→  * إعدادات الصندوق: fund.threshold.ethics + fund.disbursement.deadline (numbers)
+   426→   426→  * أهداف المجتمع: community.target.families/contributions/events (numbers)
+   427→   427→  * زر حفظ → POST /api/admin/settings (stub)
+   428→   428→  * قسم النسخ الاحتياطي: زر → toast.info
+   429→   429→  * قسم معلومات الحي: 5 خانات (الاسم/المدينة/الجهة/عدد الأسر/عدد الأعضاء)
+   430→   430→- إنشاء `src/app/api/admin/settings/route.ts` (44 سطر) — POST stub. فحص مصادقة + دور SUPER_ADMIN فقط. يستهلك الجسم ويرجع success:true دون حفظ فعلي
+   431→   431→- إنشاء 5 صفحات placeholder للروابط الجانبية غير المُنجزة: families/events/complaints/ads/reports — كلٌّ يستخدم ComingSoon المكوّن المشترك
+   432→   432→- إنشاء `src/components/admin/coming-soon.tsx` (40 سطر) — مكوّن مشترك لعرض "قيد التطوير" مع أيقونة Construction
+   433→   433→- إصلاح 1 خطأ حرج: `src/components/admin/users-table.tsx` كان يستخدم `useRouter()` دون استيراده بعد إزالة الاستيراد لإزالة dependency غير المستخدم. الـlint لم يلتقطه لأن السطر كان منطقياً (TypeScript)، لكن Runtime ReferenceError رمى. الإصلاح: إزالة `const router = useRouter();` (لم تكن مستخدمة فعلياً)
+   434→   434→- إصلاح تحذيرات unused imports: إزالة formatMAD/AlertTriangle/CONTRIBUTION_METHOD_LABELS من dashboard-charts.tsx وpage.tsx، إزالة motion من users-table.tsx، إزالة useRouter من users-table.tsx
+   435→   435→
+   436→   436→Stage Summary:
+   437→   437→- ✅ 20 ملفاً أنشئت (~4675 سطر) + 1 ملف عُدِّل (layout.tsx):
+   438→   438→  * 5 صفحات server في src/app/admin/: page.tsx (560), users/page.tsx (69), fund/page.tsx (96), audit/page.tsx (233), settings/page.tsx (101)
+   439→   439→  * 5 صفحات placeholder: families/events/complaints/ads/reports/page.tsx (10×5=50)
+   440→   440→  * 1 admin layout: src/app/admin/layout.tsx (51)
+   441→   441→  * 8 client components في src/components/admin/: admin-shell.tsx (475), dashboard-charts.tsx (272), district-heatmap.tsx (110), users-table.tsx (770), fund-admin-tables.tsx (755), audit-log-filters.tsx (144), settings-form.tsx (295), coming-soon.tsx (40)
+   442→   442→  * 4 API routes: /api/admin/stats/route.ts (54), /api/admin/contributions/[id]/status/route.ts (135), /api/admin/fund-requests/[id]/vote/route.ts (154), /api/admin/settings/route.ts (44)
+   443→   443→  * 1 lib helper: src/lib/admin/stats.ts (286)
+   444→   444→  * 1 client wrapper: src/components/layout/app-chrome.tsx (31)
+   445→   445→- ✅ ESLint نظيف 100% (لا أخطاء، لا تحذيرات)
+   446→   446→- ✅ كل النصوص عربية 100%، RTL من السطر الأول، logical properties (ps-/pe-/ms-/me-/start-/end-)، لا ml-/mr-/pl-/pr-/text-left
+   447→   447→- ✅ كل المسارات الإدارية ترجع 200 OK بعد تسجيل الدخول كـadmin@syba-community.ma:
+   448→   448→  /admin (لوحة مع 10 KPIs + 3 رسوم + 10 أنشطة + 3 تنبيهات عاجلة + heatmap)
+   449→   449→  /admin/users (جدول 9 أعمدة + فلاتر + إجراءات سطر منسدلة + 50/صفحة)
+   450→   450→  /admin/fund (تبويبان + تأكيد/رفض + تصويت لجنة + 5/5 progress)
+   451→   451→  /admin/audit (جدول 6 أعمدة + فلاتر URL-driven)
+   452→   452→  /admin/settings (4 أقسام + نسخ احتياطي + معلومات الحي)
+   453→   453→  + 5 صفحات placeholder للعائلات/الفعاليات/الشكاوى/الإعلانات/التقارير
+   454→   454→- ✅ /admin بدون مصادقة → 307 redirect إلى /login?callbackUrl=/admin ✓
+   455→   455→- ✅ /admin بدور MEMBER → redirect إلى /community ✓
+   456→   456→- ✅ /api/admin/stats → 200 OK مع {users:201, families:51, urgentAlerts:{pendingEthicsRequests:17, pendingAds:1, openComplaints:3}, ...}
+   457→   457→- ✅ PATCH /api/admin/contributions/[id]/status → 200 OK (تأكيد مساهمة) + 404 (معرّف غير موجود)
+   458→   458→- ✅ POST /api/admin/fund-requests/[id]/vote → 201 OK (تصويت) + 400 (تصويت مكرّر "لقد صوّتّ بالفعل") + 404
+   459→   459→- ✅ /admin/audit?action=login&severity=info&from=2024-01-01 → 200 (server-side filtering)
+   460→   460→- ✅ النمط MINIMAL REFINED مطبّق: حدود رفيعة (border-border)، خلفيات مكتومة (bg-muted/30)، لون ذهبي واحد (#C8842A) كـaccent، لا warm-shadow، لا zellige dividers، فراغات كبيرة، أيقونات strokeWidth=1.5
+   461→   461→- ✅ Touch targets: كل الأزرار h-11 (44px) أو h-10 (40px)، أيقونات size-4 (16px)
+   462→   462→- ✅ framer-motion entrance على main content (opacity 0→1, y 4→0)
+   463→   463→- ✅ شريط جانبي للجوال عبر Sheet side="right" مع closing عند تغيّر المسار
+   464→   464→- ✅ AppChrome pattern لإخفاء كروم الموقع العام عن المسارات /admin/*
+   465→   465→- ✅ RTL + ألوان زليج مراكش (ذهبي النحاس للوح الإدارة بدل الترابي للموقع العام)
+   466→   466→
+   467→   467→قرارات تنفيذية بارزة:
+   468→   468→- استخدمت AppChrome client wrapper بدل route groups لإخفاء كروم الموقع العام عن /admin/* — بديل نظيف دون نقل ملفات موجودة
+   469→   469→- استخدمت lib/admin/stats.ts كـshared logic بين الـAPI route والـserver component page — تجنّب تكرار 13 استعلام Prisma
+   470→   470→- Users page: client-side filtering في الذاكرة (50/صفحة) بدل server-side pagination — بسيط للنسخة التجريبية مع 200 مستخدم في الـseed
+   471→   471→- Audit page: server-side filtering عبر URL searchParams — حالة URL نظيفة، يدعم back/forward، يعيد الجلب عند تغيير الفلاتر
+   472→   472→- بنيت 3 APIs إضافية (contributions status PATCH + fund-requests vote POST + settings POST stub) لم تكن في قائمة الـdeliverables المطلوبة لكنها ضرورية لجعل الأزرار الوظيفية تعمل في صفحة fund admin
+   473→   473→- الـ10 روابط الجانبية كلها مُدرجة كما طُلب، لكن 5 منها placeholders (families/events/complaints/ads/reports) باستخدام مكوّن ComingSoon مشترك — تجنّب 404
+   474→   474→- الـRow actions في users-table كلها dialogs (عرض/تعديل/تغيير الدور) أو AlertDialogs (تعطيل/تفعيل/حذف) مع toasts "تجريبي" — لا PATCH/DELETE APIs فعلية لأن المهمة لا تطلبها
+   475→   475→- Recharts Tooltip style موحّد: direction:rtl, fontFamily:inherit, border:1px solid var(--border), background:var(--popover)
+   476→   476→- PieChart استخدمت innerRadius={32} + outerRadius={72} لـdonut style، paddingAngle={2} لفصل الشرائح
+   477→   477→- BarChart استخدمت خريطة ألوان TYPE_COLOR_MAP بألوان زليج مراكش لكل نوع طلب
+   478→   478→- Heatmap placeholder: شبكة SVG 12×8 خلايا بشدّة محسوبة بدالة موجية (1 - dist*0.9) + wave على sin((c+r)*0.6) — مجرّد placeholder مرئي
+   479→   479→- Logout button: signOut({redirect: false}) + toast.success + router.push('/') — لا يستخدم NextAuth redirect لتجنّب redirect loop
+   480→   480→
+   481→   481→الخطوة التالية: المرحلة 5 — صفحات العائلات/الفعاليات/الشكاوى/الإعلانات/التقارير الكاملة + middleware لحماية المسارات الإدارية.
+   482→   482→
+   483→   483→---
+   484→   484→Task ID: 5
+   485→   485→Agent: Community Pages Builder (full-stack-developer)
+   486→   486→Task: إكمال واجهة المجتمع (groups + profile + 2 APIs) — إكمال المرحلة 5
+   487→   487→
+   488→   488→Work Log:
+   489→   489→- قراءة سجلات الوكلاء السابقين (worklog.md كاملاً + auth.ts + prisma/schema.prisma + constants.ts + community/page.tsx + community/events/page.tsx + events-filter-bar.tsx + dashboard-motion.tsx + zellige-divider.tsx + contribute-form.tsx + admin/contributions/[id]/status/route.ts + fund/contributions/route.ts) لفهم لوحة الألوان «زليج مراكش» + النمط المغربي العصري + الأنماط الموجودة (server component + client sub-component) + خريطة استيراد المكونات
+   490→   490→- فحص dev.log للتأكد من عمل dev server + فحص مكوّنات shadcn/ui المتاحة (alert-dialog, avatar, badge, separator, button, input, label, select, card)
+   491→   491→- إنشاء البنية: `mkdir -p src/app/community/{groups,profile} src/app/api/community/groups/[id]/{join,leave}`
+   492→   492→- إنشاء `src/app/api/community/groups/[id]/join/route.ts` (144 سطر) — POST handler:
+   493→   493→  * فحص مصادقة (401 إن لم يوجد)
+   494→   494→  * فحص وجود المجموعة في DB (404 إن لم توجد أو محذوفة)
+   495→   495→  * فحص نطاق الحي (403 إن كانت المجموعة في حي آخر)
+   496→   496→  * فحص العضوية المسبقة بـunique constraint (groupId_userId) → 409 "أنت عضو في هذه المجموعة بالفعل"
+   497→   497→  * إنشاء GroupMember مع role="member"، isApproved = !group.isPrivate (المجموعات الافتراضية = قبول مباشر، الخاصة = تنتظر موافقة)
+   498→   498→  * إنشاء إشعار لرئيس المجموعة (بحث GroupMember بـrole="leader")
+   499→   499→  * إنشاء AuditLog (action=group.member.joined, severity=info, metadata يضم groupName و role و isApproved)
+   500→   500→  * يُرجع 201 مع { success: true, membershipId }
+
+[showing lines 1-500 of 1258; use offset=501 with limit to continue reading]

@@ -29,11 +29,19 @@ import {
   Bell,
   LogOut,
   Shield,
+  ChevronDown,
+  MapPin,
+  DatabaseBackup,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Sheet,
   SheetContent,
@@ -77,13 +85,32 @@ export interface AdminUser {
 //  روابط القسم الإداري (10 عناصر) — مرتّبة على اليمين في RTL
 // ===================================================================
 
+interface NavSubLink {
+  href: string;
+  label: string;
+  match: string;
+}
+
 interface NavLinkItem {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   /** الجزء الأخير من الـURL لأغراض الـactive state */
   match: string;
+  /** روابط فرعية تُعرض داخل قائمة قابلة للطيّ */
+  children?: NavSubLink[];
 }
+
+const ADS_SUB_LINKS: NavSubLink[] = [
+  { href: "/admin/ads", label: "نظرة عامة", match: "" },
+  { href: "/admin/ads/campaigns", label: "الحملات", match: "campaigns" },
+  { href: "/admin/ads/advertisers", label: "المعلنون", match: "advertisers" },
+  { href: "/admin/ads/placements", label: "الأماكن", match: "placements" },
+  { href: "/admin/ads/packages", label: "الباقات", match: "packages" },
+  { href: "/admin/ads/adsense", label: "Google AdSense", match: "adsense" },
+  { href: "/admin/ads/invoices", label: "الفواتير", match: "invoices" },
+  { href: "/admin/ads/reports", label: "التقارير", match: "reports" },
+];
 
 const NAV_LINKS: NavLinkItem[] = [
   { href: "/admin", label: "الرئيسية", icon: LayoutDashboard, match: "" },
@@ -92,9 +119,12 @@ const NAV_LINKS: NavLinkItem[] = [
   { href: "/admin/fund", label: "الصندوق", icon: HeartHandshake, match: "fund" },
   { href: "/admin/events", label: "الفعاليات", icon: CalendarDays, match: "events" },
   { href: "/admin/complaints", label: "الشكاوى", icon: MessageSquareWarning, match: "complaints" },
-  { href: "/admin/ads", label: "الإعلانات", icon: Megaphone, match: "ads" },
+  { href: "/admin/ads", label: "الإعلانات", icon: Megaphone, match: "ads", children: ADS_SUB_LINKS },
   { href: "/admin/reports", label: "التقارير", icon: BarChart3, match: "reports" },
+  { href: "/admin/notifications", label: "الإشعارات", icon: Bell, match: "notifications" },
+  { href: "/admin/districts", label: "الأحياء", icon: MapPin, match: "districts" },
   { href: "/admin/audit", label: "سجل النشاط", icon: History, match: "audit" },
+  { href: "/admin/backup", label: "النسخ الاحتياطي", icon: DatabaseBackup, match: "backup" },
   { href: "/admin/settings", label: "الإعدادات", icon: SettingsIcon, match: "settings" },
 ];
 
@@ -111,7 +141,10 @@ const SECTION_TITLES: Record<string, string> = {
   complaints: "الشكاوى",
   ads: "الإعلانات",
   reports: "التقارير",
+  notifications: "الإشعارات",
+  districts: "الأحياء",
   audit: "سجل النشاط",
+  backup: "النسخ الاحتياطي",
   settings: "الإعدادات",
 };
 
@@ -133,6 +166,80 @@ function SidebarNav({
         // حالة الـactive: تطابق المسار المقطّع
         const seg = pathname.replace(/^\/admin\/?/, "").split("/")[0] ?? "";
         const active = seg === link.match;
+
+        // روابط فرعية قابلة للطيّ (قسم الإعلانات)
+        if (link.children && link.children.length > 0) {
+          const isOnSection = seg === link.match;
+          return (
+            <Collapsible key={link.href} defaultOpen={isOnSection}>
+              <CollapsibleTrigger asChild>
+                <button
+                  type="button"
+                  onClick={onNavigate}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "group flex min-h-11 w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                    isOnSection
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  )}
+                >
+                  <Icon
+                    className={cn(
+                      "size-[18px] shrink-0 transition-colors",
+                      isOnSection
+                        ? "text-accent"
+                        : "text-muted-foreground group-hover:text-foreground"
+                    )}
+                    strokeWidth={1.5}
+                  />
+                  <span className="flex-1 text-start">{link.label}</span>
+                  <ChevronDown
+                    className="size-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180"
+                    strokeWidth={1.5}
+                  />
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <ul className="mt-1 flex flex-col gap-0.5 border-s border-border ps-2">
+                  {link.children.map((child) => {
+                    // حالة الـactive: تطابق المسار الفرعي
+                    const subSeg = pathname
+                      .replace(/^\/admin\/ads\/?/, "")
+                      .split("/")[0] ?? "";
+                    const childActive = subSeg === child.match;
+                    return (
+                      <li key={child.href}>
+                        <Link
+                          href={child.href}
+                          onClick={onNavigate}
+                          aria-current={childActive ? "page" : undefined}
+                          className={cn(
+                            "flex min-h-10 items-center gap-2 rounded-md px-3 py-2 text-[13px] transition-colors",
+                            childActive
+                              ? "bg-accent/10 text-accent"
+                              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "size-1 rounded-full transition-colors",
+                              childActive
+                                ? "bg-accent"
+                                : "bg-muted-foreground/40"
+                            )}
+                            aria-hidden="true"
+                          />
+                          <span className="flex-1 text-start">{child.label}</span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </CollapsibleContent>
+            </Collapsible>
+          );
+        }
 
         return (
           <Link
