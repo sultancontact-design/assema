@@ -10,6 +10,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { hasPermission } from "@/lib/roles";
 import { db } from "@/lib/db";
+import { sendBulkMail } from "@/lib/mailer";
+import * as NotificationEmail from "@/emails/notification";
 import type { NotificationType } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -162,6 +164,42 @@ export async function POST(request: NextRequest) {
         userAgent: request.headers.get("user-agent") ?? null,
       },
     });
+
+    // إرسال بريد NotificationEmail لكل المستلمين (batch limit 50 لتفادي rate-limit)
+    try {
+      const recipients = await db.user.findMany({
+        where: { id: { in: recipientUserIds }, status: "ACTIVE", deletedAt: null },
+        select: { id: true, email: true, fullName: true },
+      });
+
+      // أخذ أول 50 فقط لتفادي تجاوز حدود الإرسال
+      const limited = recipients.slice(0, 50);
+
+      if (limited.length > 0) {
+        const title = body.title!.trim();
+        const message = body.message!.trim();
+        const link = body.link?.trim() || null;
+
+        // نبني HTML عام دون اسم (سيُخصَّص لاحقاً إن لزم)
+        // نُرسِل لكل بريد على حدة لتخصيص userName
+        const htmlTemplate = (userName: string) =>
+          NotificationEmail.html({ userName, title, message, link });
+        const subjectLine = NotificationEmail.subject({ userName: "", title, message, link });
+
+        // نُعيد استخدام sendMail عبر sendBulkMail مع HTML موحَّد
+        // (القالب يحتوي اسم المستخدم — سنُمرّر واحد "الفاضل" كافتراضي للتبسيط)
+        const recipientsEmails = limited.map((u) => u.email);
+        const htmlUnified = htmlTemplate("الفاضل");
+
+        await sendBulkMail({
+          recipients: recipientsEmails,
+          subject: subjectLine,
+          html: htmlUnified,
+        });
+      }
+    } catch (mailErr) {
+      console.error("[notifications/send] bulk mail failed:", mailErr);
+    }
 
     return NextResponse.json(
       { success: true, count: recipientUserIds.length },

@@ -112,6 +112,13 @@ const ADS_SUB_LINKS: NavSubLink[] = [
   { href: "/admin/ads/reports", label: "التقارير", match: "reports" },
 ];
 
+const SETTINGS_SUB_LINKS: NavSubLink[] = [
+  { href: "/admin/settings", label: "عام", match: "" },
+  { href: "/admin/settings/security", label: "الأمان", match: "security" },
+  { href: "/admin/settings/security/ips", label: "قائمة IP", match: "security/ips" },
+  { href: "/admin/settings/email", label: "البريد", match: "email" },
+];
+
 const NAV_LINKS: NavLinkItem[] = [
   { href: "/admin", label: "الرئيسية", icon: LayoutDashboard, match: "" },
   { href: "/admin/users", label: "المستخدمون", icon: UsersIcon, match: "users" },
@@ -125,7 +132,7 @@ const NAV_LINKS: NavLinkItem[] = [
   { href: "/admin/districts", label: "الأحياء", icon: MapPin, match: "districts" },
   { href: "/admin/audit", label: "سجل النشاط", icon: History, match: "audit" },
   { href: "/admin/backup", label: "النسخ الاحتياطي", icon: DatabaseBackup, match: "backup" },
-  { href: "/admin/settings", label: "الإعدادات", icon: SettingsIcon, match: "settings" },
+  { href: "/admin/settings", label: "الإعدادات", icon: SettingsIcon, match: "settings", children: SETTINGS_SUB_LINKS },
 ];
 
 // ===================================================================
@@ -203,11 +210,15 @@ function SidebarNav({
               <CollapsibleContent>
                 <ul className="mt-1 flex flex-col gap-0.5 border-s border-border ps-2">
                   {link.children.map((child) => {
-                    // حالة الـactive: تطابق المسار الفرعي
+                    // حالة الـactive: تطابق المسار الفرعي بناءً على href الأب
+                    const parentPath = link.href.replace(/^\/admin\/?/, "");
                     const subSeg = pathname
-                      .replace(/^\/admin\/ads\/?/, "")
+                      .replace(new RegExp(`^/admin/${parentPath}/?`), "")
                       .split("/")[0] ?? "";
-                    const childActive = subSeg === child.match;
+                    // دعم مطابقة متعدّدة المقاطع (مثال: "security/ips")
+                    const childActive = child.match.includes("/")
+                      ? pathname === child.href || pathname.startsWith(child.href + "/")
+                      : subSeg === child.match;
                     return (
                       <li key={child.href}>
                         <Link
@@ -543,7 +554,7 @@ export function AdminShell({
         </div>
         <div className="border-t border-border p-3">
           <div className="flex items-center gap-2 rounded-md p-2 text-xs text-muted-foreground">
-            <span>الإصدار 1.0.0 — تجريبي</span>
+            <span>الإصدار 1.0.0</span>
           </div>
         </div>
       </aside>

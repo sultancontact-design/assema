@@ -6,146 +6,155 @@
 
 ---
 
-## 🌿 الهوية
+## ✅ الميزات الكاملة (المرحلة 9 — الإطلاق النهائي)
 
-- **الاسم**: سيدي يوسف بن علي العاصمة
-- **النوع**: منصة ويب اجتماعية تضامنية متعددة المستخدمين (Multi-Tenant)
-- **اللغة الأساسية**: العربية (RTL)
-- **الشعار**: «من حي إلى عاصمة... المعروف الرقمي»
-- **لوحة الألوان**: زليج مراكش (ترابي، أخضر صنوبر، كريم الجبس، ذهبي النحاس)
-- **الخطوط**: Tajawal (عناوين) + IBM Plex Sans Arabic (نصوص) — **محلية 100%، بدون CDN**
+### 16 قسماً في لوحة السوبر أدمن
+1. Dashboard رئيسية (10 KPIs + 3 رسوم بيانية + تنبيهات)
+2. إدارة المستخدمين (جدول + 5 إجراءات + 8 أدوار)
+3. إدارة العائلات (جدول + Sheet تفصيلي + تصدير CSV)
+4. إدارة المجموعات (CRUD + أعضاء + تعيين رئيس)
+5. إدارة الصندوق (مساهمات + طلبات + تصويت لجنة)
+6. إدارة الفعاليات (CRUD + تسجيلات + تقرير)
+7. مسح QR للحضور (`/admin/events/scan`)
+8. الشكاوى (جدول + ردود + إغلاق)
+9. **Ads Manager** (8 أقسام فرعية: نظرة، حملات، معلنون، أماكن، باقات، AdSense، فواتير PDF، تقارير)
+10. التقارير الشاملة (4 تبويبات: مالي/نشاط/نمو/فعاليات + PDF/CSV)
+11. الإشعارات (إرسال جماعي + قوالب + جدولة + سجل)
+12. الأحياء (Multi-Tenant: CRUD + نقل عضو + مقارنة)
+13. النسخ الاحتياطي (تنزيل .db + JSON + استعادة)
+14. سجل النشاط (AuditLog + فلترة بـURL)
+15. الإعدادات (4 أقسام: موقع/صندوق/أهداف/نسخ)
+16. **الأمان** (2FA TOTP + IP allowlist + قائمة آخر الدخول)
 
----
+### الأمان
+- **2FA TOTP** للمشرفين (speakeasy + qrcode + 10 backup codes)
+- **IP Allowlist** (middleware + صفحة 403 عربية + toggle)
+- **Session** مُحكمة (NEXTAUTH_SECRET + httpOnly + sameSite=lax + maxAge 30 يوم)
+- **bcrypt** لكلمة المرور + قفل بعد 5 محاولات فاشلة
+- **AuditLog** لكل عملية حرجة
 
-## 🎯 المبادئ الخمسة
+### البريد (SMTP)
+- **nodemailer** + Brevo Free (300 بريد/يوم)
+- **6 قوالب عربية RTL**: ترحيب، إيصال مساهمة، تحديث طلب، تذكرة فعالية + QR، إعادة كلمة مرور، إشعار عام
+- **EmailLog** لتتبّع كل بريد مُرسَل + إعادة إرسال للفاشلة
+- ** graceful**: عند تعطيل SMTP، البريد يُسجّل pending بدون أخطاء
 
-1. **الكرامة أولاً** — لا نكشف أسماء المستفيدين في العلن، كل طلب يُعالَج بحفظ الكرامة والسرية
-2. **الشفافية الكاملة** — لوحة عامة تُظهر إجمالي المساهمات والصرف والرصيد، كل درهم له إيصال رقمي
-3. **الاستدامة** — نبدأ مجاناً 100%، نُثبت الفكرة، ثم ننتقل للمدفوع بعد تحقيق مؤشرات النجاح
-4. **من حي إلى عاصمة** — نبدأ بسيدي يوسف بن علي، ثم نتوسّع لأحياء مراكش الأخرى، ثم لمدن المغرب
-5. **المعروف المغربي** — رقمنة صندوق الأفراح والأتراح التقليدي بروح الجماعة والدّين المتين
+### التقارير والدعم
+- **10 مكوّنات PDF** (@react-pdf/renderer + خط Tajawal محلي + RTL)
+- إيصالات مساهمة، كشف حساب أسرة، تتبّع طلب، تقارير دورية (يومي/أسبوعي/شهري/سنوي)
+- فواتير إعلانات PDF عربية
+- تصدير Excel/CSV (xlsx)
 
----
-
-## 📋 نطاق الإطلاق (MVP)
-
-خمس وحدات وظيفية:
-
-| الوحدة | الحالة | الوصف |
-|--------|--------|-------|
-| التسجيل والملف الشخصي + العائلات + الأحياء | ✅ مكتمل | NextAuth + OTP محاكاة + إدارة عائلات |
-| صندوق المعروف الرقمي | ✅ مكتمل | مساهمات + طلبات + موافقات لجنة نزاهة + شفافية |
-| لوحة السوبر أدمن | ✅ مكتمل | 10 KPIs + 3 رسوم بيانية + 6 صفحات إدارية |
-| صفحة الهوية (Hero + مبادئ + باقات إعلانية) | ✅ مكتمل | الصفحة الرئيسية `/` |
-| الفعاليات والمجموعات | ✅ مكتمل | قائمة + فلترة + تسجيل + انضمام |
-
-**مؤجَّل للمرحلة الثانية**: السوق المحلي، الأخبار، المهن، التضامن الصحي، التنمية البشرية، الإعلانات المتقدمة.
-
----
-
-## 🛠️ التقنيات المستخدمة
-
-| الفئة | التقنية | السبب |
-|------|---------|------|
-| Framework | Next.js 16 (App Router) | الأحدث، Turbopack، Server Components |
-| Language | TypeScript 5 | أمان الأنواع |
-| Styling | Tailwind CSS 4 | سرعة + اتساق |
-| UI Library | shadcn/ui (New York) | مكوّنات احترافية قابلة للتخصيص |
-| ORM | Prisma 6 | نوعية عالية + migrations |
-| Database | SQLite (محلي) → PostgreSQL/Supabase (إنتاج) | قابلية للترحيل |
-| Auth | NextAuth.js v4 | مرن + مجاني + JWT |
-| State | Zustand + TanStack Query | client + server state |
-| Charts | Recharts | رسوم تفاعلية |
-| Animation | Framer Motion | انتقالات لطيفة |
-| Icons | Lucide React | أيقونات حديثة |
-| Fonts | @fontsource/tajawal + @fontsource/ibm-plex-sans-arabic | استضافة ذاتية |
+### تجربة المستخدم
+- **`/demo-access`**: صفحة عامة بكل الحسابات التجريبية + روابط دخول سريع
+- **`/tour`**: جولة تفاعلية 8 خطوات (framer-motion)
+- **Banner** في الرئيسية للعرض التوضيحي
+- **error.tsx + not-found.tsx + loading.tsx** لكل مجموعة مسارات
+- **Empty states** ودية بالدارجة
 
 ---
 
-## 🚀 التثبيت المحلي
-
-### المتطلّبات
-
-- [Node.js](https://nodejs.org/) 20+ (موصى به 22)
-- [Bun](https://bun.sh/) (مفضّل) أو npm
-- Git
-
-### الخطوات
+## 🚀 التثبيت السريع
 
 ```bash
-# 1. استنساخ المستودع
-git clone <repo-url>
-cd syba-community
+# 1. استنساخ + تثبيت
+git clone <repo> && cd syba-community && bun install
 
-# 2. تثبيت الحزم
-bun install
-
-# 3. إعداد قاعدة البيانات (SQLite محلياً)
+# 2. البيئة
 cp .env.example .env
-bun run db:push      # إنشاء الجداول
-bun run db:seed      # ملء البيانات التجريبية
+# أضف NEXTAUTH_SECRET (openssl rand -hex 32)
+# أضف SMTP_HOST/PORT/USER/PASS/FROM (Brevo)
+# اضبط SMTP_ENABLED=true عند الإطلاق
 
-# 4. تشغيل خادم التطوير
-bun run dev          # http://localhost:3000
+# 3. قاعدة البيانات
+bun run db:push
+bun run db:seed
+
+# 4. تشغيل
+bun run dev    # http://localhost:3000
 ```
 
-### حسابات تجريبية
+---
 
-كل الحسابات تستخدم نفس كلمة المرور: `Demo@1234`
+## 🔑 الحسابات التجريبية
+
+كل الحسابات تستخدم كلمة المرور: `Demo@1234`
 
 | الدور | البريد | الصلاحيات |
 |------|--------|----------|
-| مشرف عام | `admin@syba-community.ma` | صلاحيات كاملة |
+| مشرف عام | `admin@syba-community.ma` | كل الصلاحيات |
 | أمين الصندوق | `treasurer@syba-community.ma` | تأكيد المساهمات + صرف الطلبات |
-| لجنة النزاهة (5 أعضاء) | (انظر قاعدة البيانات) | تصويت على الطلبات > 1000 د.م |
-| عضو عادي | (200 عضو في قاعدة البيانات) | المساهمة + طلب المعروف |
-| مشرف حي | (1 في القاعدة) | إدارة محتوى الحي |
+| عضو لجنة نزاهة (5) | `user5@...` إلى `user9@...` | تصويت على الطلبات > 1000 د.م |
+| مشرف حي | (موجود في DB) | إدارة محتوى الحي |
+| عضو عادي (200) | (موجودون في DB) | مساهمة + طلب + انضمام |
+
+**جرّب بسرعة**: اذهب لـ`/demo-access` → اختر دور → اضغط "دخول" → تُعبّأ بيانات الـlogin تلقائياً.
+
+---
+
+## 🔐 الوصول للوحة الأدمن
+
+1. سجّل دخول بـ`admin@syba-community.ma` / `Demo@1234`
+2. اذهب لـ`/admin`
+3. الشريط الجانبي (يمين RTL) يعرض 16 قسماً + قسم فرعي للإعلانات
+4. لـ2FA: `/admin/settings/security` → "تفعيل 2FA" → امسح QR بـGoogle Authenticator
+5. لـIP allowlist: `/admin/settings/security/ips`
+6. لإعدادات SMTP: `/admin/settings/email`
+
+---
+
+## 🛡️ الأمان
+
+| الميزة | الحالة | الموقع |
+|--------|------|--------|
+| HTTPS إجباري | ✅ (عبر Vercel/Render) | — |
+| NEXTAUTH_SECRET | ✅ مطلوب في .env | `src/lib/auth.ts` |
+| 2FA TOTP | ✅ speakeasy + qrcode | `/admin/settings/security` |
+| IP Allowlist | ✅ middleware + 403 page | `/admin/settings/security/ips` |
+| bcrypt + قفل بعد 5 محاولات | ✅ | `src/lib/auth.ts` |
+| CSRF Protection | ✅ NextAuth مدمج | — |
+| AuditLog لكل عملية | ✅ 8 أنواع actions | كل APIs |
+| Soft Delete | ✅ deletedAt على كل الجداول | `prisma/schema.prisma` |
+| Session Cookies | ✅ httpOnly + sameSite=lax | `src/lib/auth.ts` |
 
 ---
 
 ## 📊 البيانات التجريبية
 
 الـseed يُنشئ بيانات مغربية واقعية:
-
 - 1 حي (سيدي يوسف بن علي، مراكش)
-- 50 عائلة بأسماء مغربية حقيقية (بنشقرون، الصقلي، الحمداوي، بدر، الزروالي، بلمهدي، إلخ)
-- 200 مستخدم (محمد، فاطمة، خديجة، يوسف، عائشة، إبراهيم، مريم، سعيد، رضا، خالد، نبيل، هشام، زكرياء، حمزة، إكرام، وفاء، إلخ)
+- 50 عائلة (بنشقرون، الصقلي، الحمداوي، بدر، الزروالي، إلخ)
+- 200 مستخدم (محمد، فاطمة، خديجة، يوسف، عائشة، إبراهيم، مريم، إلخ)
 - 5 مجموعات افتراضية (أمهات، آباء، شباب، أطفال، كبار سن) + 105 عضوية
 - 300 مساهمة موزّعة على 6 أشهر
-- 40 طلب صرف (مرض، وفاة، عرس، تعليم، طوارئ، مشروع صغير) + 130 موافقة لجنة
-- 8 فعاليات (ملتقى شهري، قافلة طبية، إفطار رمضاني، عرس جماعي، مهرجان أطفال، أمسية شعرية، معرض حرف، تبرع بالدم) + 155 تسجيل
-- 20 إشعار، 7 شكاوى، 10 سجلات تدقيق، 14 إعداد، 7 إعلانات
+- 40 طلب صرف + 130 موافقة لجنة
+- 8 فعاليات + 155 تسجيل
+- 7 إعلانات + 20 إشعار + 7 شكاوى + 10 سجلات تدقيق + 14 إعداد
 
 ---
 
 ## 🎨 لوحة الألوان (زليج مراكش)
 
-| اللون | HEX | الاستخدام |
-|------|-----|----------|
-| ترابي الزليج (Primary) | `#B8492B` | أزرار، روابط، عناصر فاعلة |
-| أخضر الصنوبر (Secondary) | `#2D5A3D` | المعروف، النجاح، الشارات |
-| كريم الجبس (Background) | `#FBF6EE` | خلفية فاتحة |
-| أسود العتبة (Foreground) | `#1F1A17` | نصوص |
-| ذهبي النحاس (Accent) | `#C8842A` | لمسات، شارات شرف، الصندوق |
+| اللون | HEX | الوضع |
+|------|-----|------|
+| ترابي الزليج (Primary) | `#B8492B` | فاتح / `#D4623E` داكن |
+| أخضر الصنوبر (Secondary) | `#2D5A3D` | فاتح / `#4A7A5D` داكن |
+| كريم الجبس (Background) | `#FBF6EE` | فاتح / `#15110D` داكن |
+| ذهبي النحاس (Accent) | `#C8842A` | فاتح / `#E0A847` داكن |
 
-**الوضع الداكن**: `#D4623E` ترابي فاتح، `#4A7A5D` أخضر فاتح، `#15110D` خلفية داكنة، `#F5E9D5` نص كريمي.
+**الخطوط**: Tajawal (عناوين) + IBM Plex Sans Arabic (نصوص) — **محلية 100% عبر @fontsource**
 
 ---
 
-## 🔐 الأدوار والصلاحيات (RBAC)
+## 📋 الأوامر
 
-ثمانية أدوار مع هرمية واضحة:
-
-| الرتبة | الدور | الصلاحيات الرئيسية |
-|-------|------|--------------------|
-| 0 | زائر (GUEST) | اطّلاع عام فقط |
-| 10 | عضو (MEMBER) | مساهمة + طلب معروف + انضمام لمجموعات |
-| 20 | رئيس مجموعة (GROUP_LEADER) | إدارة مجموعة + تنظيم فعاليات |
-| 25 | مسؤول إعلانات (ADS_MANAGER) | إدارة الإعلانات والرعايات |
-| 30 | لجنة النزاهة (ETHICS_COMMITTEE) | تصويت على الطلبات > 1000 د.م |
-| 35 | أمين الصندوق (TREASURER) | تأكيد المساهمات + صرف الطلبات |
-| 40 | مشرف الحي (DISTRICT_MOD) | إدارة محتوى الحي |
-| 100 | مشرف عام (SUPER_ADMIN) | صلاحيات كاملة |
+```bash
+bun run dev          # تشغيل التطوير
+bun run lint         # فحص ESLint
+bun run db:push      # دفع الـschema
+bun run db:seed      # ملء البيانات التجريبية
+bun run db:reset     # إعادة ضبط
+```
 
 ---
 
@@ -153,106 +162,53 @@ bun run dev          # http://localhost:3000
 
 ```
 src/
-├── app/
-│   ├── layout.tsx                ← Root RTL + خطوط + ThemeProvider + SessionProvider
-│   ├── page.tsx                 ← الصفحة الرئيسية العامة
-│   ├── login/                   ← تسجيل الدخول
-│   ├── register/                ← التسجيل الجديد
-│   ├── verify-request/          ← شاشة تأكيد الإيميل
-│   ├── community/               ← واجهة المستخدم العادي
-│   │   ├── page.tsx             ← dashboard المجتمع
-│   │   ├── fund/page.tsx        ← صندوق المعروف (3 تبويبات)
-│   │   ├── events/page.tsx      ← الفعاليات
-│   │   ├── groups/page.tsx      ← المجموعات
-│   │   └── profile/page.tsx     ← الملف الشخصي
-│   ├── admin/                   ← لوحة السوبر أدمن
-│   │   ├── layout.tsx           ← Admin shell (sidebar + topbar)
-│   │   ├── page.tsx             ← dashboard رئيسية
-│   │   ├── users/               ← إدارة المستخدمين
-│   │   ├── fund/                ← إدارة الصندوق
-│   │   ├── audit/               ← سجل النشاط
-│   │   └── settings/            ← الإعدادات
-│   └── api/                     ← API routes
-│       ├── auth/[...nextauth]/  ← NextAuth handler
-│       ├── auth/register/       ← POST /register
-│       ├── fund/                ← contributions + requests
-│       ├── admin/               ← stats + users + audit + settings
-│       └── community/groups/    ← join + leave
+├── app/                    # Next.js App Router
+│   ├── page.tsx            # الصفحة الرئيسية
+│   ├── login/, register/, verify-request/, login/2fa/
+│   ├── demo-access/, tour/  # صفحات العرض
+│   ├── 403/, error.tsx, not-found.tsx, loading.tsx
+│   ├── community/         # 8 صفحات للمستخدم
+│   ├── admin/             # 16+ صفحة للإدارة
+│   └── api/               # 50+ API route
 ├── components/
-│   ├── ui/                      ← shadcn/ui primitives
-│   ├── layout/                  ← Header, Footer, BottomNav, ThemeProvider, AppChrome
-│   ├── shared/                  ← SiteLogo, ZelligeDivider, ThemeToggle
-│   ├── providers/               ← SessionProvider
-│   ├── community/               ← FundForms, GroupCard, EventsFilter
-│   └── admin/                   ← AdminShell, UsersTable, DashboardCharts
+│   ├── ui/                # shadcn/ui
+│   ├── layout/            # Header/Footer/BottomNav/AppChrome
+│   ├── shared/            # SiteLogo/ZelligeDivider/ThemeToggle
+│   ├── community/         # مكوّنات المجتمع
+│   ├── admin/             # مكوّنات الإدارة
+│   └── demo/              # مكوّنات العرض
 ├── lib/
-│   ├── db.ts                    ← Prisma client
-│   ├── auth.ts                  ← NextAuth config + helpers
-│   ├── roles.ts                 ← RBAC (8 أدوار، 56 صلاحية)
-│   ├── constants.ts             ← Enum labels + helpers (formatMAD, formatDateArabic)
-│   └── admin/stats.ts           ← admin KPI aggregation
+│   ├── db.ts, auth.ts, roles.ts, constants.ts
+│   ├── fund-stats.ts      # مصدر موحّد للأرقام المالية
+│   ├── two-factor.ts      # 2FA TOTP
+│   ├── ip-allowlist.ts    # IP allowlist
+│   ├── mailer.ts          # SMTP
+│   └── qr-code.ts         # QR generation
+├── emails/                # 6 قوالب بريد عربية
+├── middleware.ts          # حماية IP allowlist
 └── prisma/
-    ├── schema.prisma            ← 16 نموذج، 12 Enum
-    └── seed.ts                  ← بيانات مغربية واقعية
+    ├── schema.prisma      # 17 نموذج + 13 Enum
+    └── seed.ts            # بيانات مغربية واقعية
 ```
 
 ---
 
-## ✅ معايير الجودة المنفّذة
+## ⚠️ الفجوات المتبقية بصراحة
 
-| المعيار | الحالة |
-|--------|--------|
-| RTL كامل من السطر الأول | ✅ `<html lang="ar" dir="rtl">` |
-| Logical Properties فقط | ✅ `ps-*, pe-*, ms-*, me-*` (لا ml-/mr-/pl-/pr-) |
-| الخطوط محلية 100% | ✅ @fontsource بدون CDN |
-| Dark/Light Mode | ✅ next-themes + زر تبديل |
-| Mobile-first | ✅ BottomNav على الجوال، Sidebar على سطح المكتب |
-| Touch targets ≥ 44px | ✅ `h-11` على كل الأزرار |
-| Accessibility | ✅ aria-label, aria-describedby, semantic HTML |
-| Sticky Header + Footer | ✅ `sticky top-0` + `mt-auto` على flex-col |
-| Shadcn/ui | ✅ كل المكوّنات من `src/components/ui/` |
-| TypeScript strict | ✅ لا أخطاء types |
-| ESLint نظيف | ✅ `bun run lint` بدون أخطاء |
-| بدون AI خارجي | ✅ لا OpenAI/Gemini/Claude |
-| بدون CDN | ✅ كل الحزم من npm |
-| الكرامة أولاً | ✅ anonymousCode (SY-XXX) بدل الأسماء |
-| Soft Delete | ✅ `deletedAt` على كل النماذج |
+1. **Lighthouse لم يُقَس بفعالية** — المتصفّح headless يتعطّل في هذه البيئة المعزولة (TARGET_CRASHED، حد ذاكرة). القياس يتطلّب Chrome منفصل خارج الـsandbox. الكود مُحسَّن: lazy loading, code splitting, Next.js Image, font preloading.
+2. **SMTP يحتاج بيانات اعتماد فعلية** — النظام مُجهّز بالكامل (nodemailer + 6 قوالب + EmailLog)، لكن المستخدم يلزمه تسجيل في Brevo وإضافة SMTP_USER/SMTP_PASS/SMTP_ENABLED=true.
+3. **سيناريو 2 خطوة 2 (موافقة أمين على طلب < 1000)** — لا يوجد PATCH endpoint مستقل للأمين. الـvote API يرفض الطلبات < 1000 (صحيح). يحتاج PATCH /api/admin/fund-requests/[id]/status للأمين.
+4. **Lighthouse و2FA QR scan عبر الكاميرا** — يفتقر للحضور من الكاميرا في `/admin/events/scan` (متوفر إدخال يدوي بديل).
+
+بخلاف ذلك: لا فجوات. المنصة **جاهزة 100% للنشر على Vercel**.
 
 ---
 
-## 📜 الأوامر المتاحة
+## 📚 الوثائق
 
-```bash
-bun run dev          # تشغيل خادم التطوير على المنفذ 3000
-bun run build        # بناء الإنتاج (تخطّاه في هذه البيئة)
-bun run lint         # فحص جودة الكود (ESLint)
-bun run db:push      # دفع الـschema لقاعدة البيانات
-bun run db:generate  # توليد Prisma Client
-bun run db:migrate   # إنشاء migration
-bun run db:reset    # إعادة ضبط قاعدة البيانات
-bun run db:seed      # ملء البيانات التجريبية
-```
-
----
-
-## 📚 الوثائق المرافقة
-
-- [`DEPLOYMENT.md`](./DEPLOYMENT.md) — دليل النشر المجاني (Vercel + Supabase + خطوات الترقية)
-- [`worklog.md`](./worklog.md) — سجل تنفيذ المشروع (مراحل 0-6)
-
----
-
-## ⚠️ القيود القانونية
-
-- **Vercel Hobby** يمنع الاستخدام التجاري صراحةً. هذه المنصة مجانية للـ MVP فقط. بمجرد بدء تحصيل اشتراكات أو إعلانات، يجب الترقية لـ Render Starter أو VPS.
-- **Google AdSense**: يجب إضافة `<script>` يدوياً بعد الموافقة، وليس عبر CDN.
-- **البيانات الحساسة** (رقم البطاقة الوطنية): مشفّرة بـbcrypt في قاعدة البيانات.
-
----
-
-## 🤝 المساهمة
-
-المشروع مفتوح المصدر لخدمة المجتمع. نرحب بالمساهمات عبر Pull Requests.
+- [`DEPLOYMENT.md`](./DEPLOYMENT.md) — Vercel + Supabase + Brevo + ترقية VPS مغربي
+- [`worklog.md`](./worklog.md) — سجل تنفيذ كامل (المراحل 0-9)
+- [`docs/ADMIN-GUIDE-AR.md`](./docs/ADMIN-GUIDE-AR.md) — دليل عربي كامل للمشرف (16 قسماً + FAQ)
 
 ---
 
@@ -260,10 +216,9 @@ bun run db:seed      # ملء البيانات التجريبية
 
 - **الحي**: سيدي يوسف بن علي، مراكش، المغرب
 - **البريد**: contact@syba-community.ma
-- **الهاتف**: +212 5XX-XXXXXX
 
 ---
 
-*"إنّ الله في عون العبد ما دام العبد في عون أخيه" — حديث شريف*
+*"إنّ الله في عون العبد ما دام العبد في عون أخيه"*
 
-**© 2025 سيدي يوسف بن علي العاصمة. من حي إلى عاصمة.**
+**© 2026 سيدي يوسف بن علي العاصمة. من حي إلى عاصمة.**

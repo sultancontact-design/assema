@@ -120,7 +120,7 @@ export function AdsenseForm({
                 وضع التجربة
               </Label>
               <p className="text-[11px] text-muted-foreground">
-                يعرض إعلانات تجريبية لاختبار التكامل دون عرض إعلانات حقيقية.
+                يعرض إعلانات اختبار دون إعلانات حقيقية.
               </p>
             </div>
             <Switch

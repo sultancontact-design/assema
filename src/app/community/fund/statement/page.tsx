@@ -205,7 +205,7 @@ export default async function FundStatementPage() {
       },
       _sum: { amountDisbursed: true },
     });
-    const cumBalance = (cAgg._sum.amount ?? 0) - (dAgg._sum.amount ?? 0);
+    const cumBalance = (cAgg._sum?.amount ?? 0) - (dAgg._sum?.amountDisbursed ?? 0);
     const monthLabel = new Intl.DateTimeFormat("ar-MA", {
       month: "short",
       year: "2-digit",

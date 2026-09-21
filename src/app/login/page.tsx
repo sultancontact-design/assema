@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { Eye, EyeOff, LogIn, AlertCircle, ArrowRight, Sparkles } from "lucide-react";
+import { Eye, EyeOff, LogIn, AlertCircle, ArrowRight, Sparkles, Info, X } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
@@ -47,8 +47,11 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/community";
   const urlError = searchParams.get("error");
+  const prefillEmail = searchParams.get("email");
+  const isDemoMode = prefillEmail !== null;
+  const [showDemoBanner, setShowDemoBanner] = React.useState(true);
 
-  const [email, setEmail] = React.useState("");
+  const [email, setEmail] = React.useState(prefillEmail ?? "");
   const [password, setPassword] = React.useState("");
   const [remember, setRemember] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
@@ -56,6 +59,11 @@ function LoginForm() {
   const [errorMsg, setErrorMsg] = React.useState<string | null>(
     urlError ? translateAuthError(urlError) : null
   );
+
+  // عند تغيّر `prefillEmail` (انتقال من /demo-access?email=...) حدّث الحقل
+  React.useEffect(() => {
+    if (prefillEmail) setEmail(prefillEmail);
+  }, [prefillEmail]);
 
   function validate(): string | null {
     if (!email.trim()) return "البريد الإلكتروني مطلوب";
@@ -88,6 +96,18 @@ function LoginForm() {
 
       if (!res || res.error) {
         const errKey = res?.error ?? "Default";
+        // التحقّق من رمز "2FA مطلوب" — نُعيد التوجيه لصفحة /login/2fa
+        if (errKey.startsWith("TwoFactorRequired:")) {
+          const userId = errKey.slice("TwoFactorRequired:".length);
+          if (userId) {
+            toast.info("حسابك محميّ بالمصادقة الثنائية. أدخل رمز التحقّق.");
+            const target = `/login/2fa?userId=${encodeURIComponent(
+              userId
+            )}&callbackUrl=${encodeURIComponent(callbackUrl)}`;
+            router.push(target);
+            return;
+          }
+        }
         const msg = translateAuthError(errKey);
         setState("error");
         setErrorMsg(msg);
@@ -101,6 +121,18 @@ function LoginForm() {
       router.refresh();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "حدث خطأ ما";
+      // فحص إضافي لو رمى credentials provider الخطأ قبل صياغته كـ res.error
+      if (msg.startsWith("TwoFactorRequired:")) {
+        const userId = msg.slice("TwoFactorRequired:".length);
+        if (userId) {
+          toast.info("حسابك محميّ بالمصادقة الثنائية. أدخل رمز التحقّق.");
+          const target = `/login/2fa?userId=${encodeURIComponent(
+            userId
+          )}&callbackUrl=${encodeURIComponent(callbackUrl)}`;
+          router.push(target);
+          return;
+        }
+      }
       setState("error");
       setErrorMsg(msg);
       toast.error(msg);
@@ -109,6 +141,43 @@ function LoginForm() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-background to-muted/40 py-10 px-4">
+      {/* شريط وضع العرض التوضيحي */}
+      {showDemoBanner && (
+        <div className="w-full max-w-md mb-4">
+          <div className="relative rounded-lg border border-amber-300/60 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800/40 p-3 ps-9 pe-9">
+            <button
+              type="button"
+              onClick={() => setShowDemoBanner(false)}
+              aria-label="إغلاق التنبيه"
+              className="absolute top-2 end-2 grid size-7 place-items-center rounded-md text-amber-700 dark:text-amber-300 hover:bg-amber-200/50 dark:hover:bg-amber-900/40 transition-colors"
+            >
+              <X className="size-4" />
+            </button>
+            <div className="flex items-start gap-2.5">
+              <span className="grid place-items-center size-7 rounded-md bg-amber-200/70 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 shrink-0 mt-0.5">
+                <Info className="size-4" />
+              </span>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
+                  🎬 وضع العرض — جرّب المنصة ببيانات جاهزة
+                </p>
+                <p className="text-xs text-amber-800/80 dark:text-amber-300/80 mt-1 leading-relaxed">
+                  استعرض كل الأدوار والصلاحيات من{" "}
+                  <Link
+                    href="/demo-access"
+                    className="font-medium underline underline-offset-2 hover:text-amber-950 dark:hover:text-amber-100"
+                  >
+                    صفحة وصول العرض
+                  </Link>
+                  . كلمة المرور لكل الحسابات:{" "}
+                  <code dir="ltr" className="font-mono">Demo@1234</code>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -153,6 +222,12 @@ function LoginForm() {
                   aria-invalid={state === "error"}
                   disabled={state === "loading"}
                 />
+                {isDemoMode && prefillEmail && (
+                  <p className="text-[11px] text-amber-700 dark:text-amber-300 flex items-center gap-1 mt-1">
+                    <Sparkles className="size-3" />
+                    تم تعبئة البريد تلقائياً من صفحة العرض التوضيحي
+                  </p>
+                )}
                 <p id="email-help" className="sr-only">
                   أدخل بريدك الإلكتروني المسجّل في المنصة
                 </p>

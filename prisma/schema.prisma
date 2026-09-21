@@ -225,6 +225,7 @@ model User {
   // الأمان
   twoFactorEnabled  Boolean      @default(false)
   twoFactorSecret   String?
+  twoFactorBackupCodes String?  // JSON array of bcrypt-hashed 8-char backup codes
   failedLoginCount  Int          @default(0)
   lockedUntil       DateTime?
   lastLoginAt       DateTime?
@@ -612,4 +613,42 @@ model Setting {
   description String?
 
   updatedAt   DateTime @updatedAt
+}
+
+// ===================================================================
+//  سجل البريد الإلكتروني (Email Log) — تتبّع كل بريد مُرسَل
+// ===================================================================
+
+model EmailLog {
+  id         String    @id @default(cuid())
+  to         String
+  subject    String
+  body       String    // HTML body
+  status     String    @default("sent") // sent | failed | pending
+  error      String?
+  messageId  String?
+  sentAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([status])
+  @@index([to])
+  @@index([createdAt])
+}
+
+// ===================================================================
+//  قائمة IP المسموح بها (IP Allowlist)
+//  - تُفعَّل عبر Setting: security.ip_allowlist.enabled
+//  - عند التفعيل، يُسمح فقط بـIP المُدرجة في هذا الجدول
+// ===================================================================
+
+model AllowedIP {
+  id        String   @id @default(cuid())
+  ip        String   @unique
+  note      String?
+  isActive  Boolean  @default(true)
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
 }

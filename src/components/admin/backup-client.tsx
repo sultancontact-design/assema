@@ -506,7 +506,7 @@ export function BackupClient({
               تحذير: استعادة نسخة احتياطية تستبدل كل البيانات الحالية بالنسخة المرفوعة.
             </DialogDescription>
           </DialogHeader>
-          <AlertDialog className="hidden">
+          <AlertDialog>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>

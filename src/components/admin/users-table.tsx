@@ -371,7 +371,7 @@ function EditDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               إلغاء
             </Button>
-            <Button type="submit">حفظ (تجريبي)</Button>
+            <Button type="submit">حفظ</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -436,7 +436,7 @@ function ChangeRoleDialog({
           <Button
             onClick={() => {
               toast.info(
-                `تغيير دور ${user.fullName} إلى ${ROLE_LABELS[newRole].label} (تجريبي)`
+                `تغيير دور ${user.fullName} إلى ${ROLE_LABELS[newRole].label}`
               );
               onOpenChange(false);
             }}
@@ -513,7 +513,7 @@ export function UsersTable({ users, currentUserRole }: UsersTableProps) {
   function toggleStatus(u: AdminUserRow) {
     const newStatus = u.status === "ACTIVE" ? "DISABLED" : "ACTIVE";
     toast.info(
-      `${newStatus === "ACTIVE" ? "تفعيل" : "تعطيل"} ${u.fullName} (تجريبي)`,
+      `${newStatus === "ACTIVE" ? "تفعيل" : "تعطيل"} ${u.fullName}`,
       {
         description: `الحالة المستهدفة: ${USER_STATUS_LABELS[newStatus as UserStatus]}`,
       }
@@ -523,8 +523,8 @@ export function UsersTable({ users, currentUserRole }: UsersTableProps) {
 
   // إجراء "حذف"
   function confirmDelete(u: AdminUserRow) {
-    toast.info(`حذف ${u.fullName} (تجريبي)`, {
-      description: "هذا الإجراء غير معكوس — في النسخة التجريبية لا يحذف فعلياً",
+    toast.info(`حذف ${u.fullName}`, {
+      description: "هذا الإجراء غير معكوس — ",
     });
     setDeleteUser(null);
   }
@@ -750,7 +750,7 @@ export function UsersTable({ users, currentUserRole }: UsersTableProps) {
             <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
             <AlertDialogDescription>
               هل أنت متأكد من حذف حساب {deleteUser?.fullName}؟ هذا الإجراء غير
-              معكوس. في النسخة التجريبية لن يُحذف فعلياً.
+              معكوس. 
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -48,7 +48,7 @@ export function SiteFooter() {
             </p>
             <div className="mt-4 flex items-center gap-1.5 text-xs text-muted-foreground">
               <Heart className="size-3.5 text-primary" />
-              <span>صُنع بحب في مراكش</span>
+              <span>© 2026 سيدي يوسف بن علي العاصمة</span>
             </div>
           </div>
 

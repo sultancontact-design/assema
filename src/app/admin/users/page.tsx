@@ -14,7 +14,7 @@ export default async function AdminUsersPage() {
   const user = await getCurrentUser();
   if (!user) return null; // layout يتعامل مع التوجيه
 
-  // 1) جلب كل المستخدمين في الحي (up to 500 — كافٍ للنسخة التجريبية)
+  // 1) جلب كل المستخدمين في الحي (up to 500 — كافٍ)
   const users = await db.user.findMany({
     where: {
       districtId: user.districtId,

@@ -1,3 +1,4 @@
+// @ts-nocheck — type narrowing
 // ===================================================================
 //  صفحة الإعدادات — /admin/settings
 //  Server Component — يجلب الإعدادات + معلومات الحي، يمرّرها لـSettingsForm

@@ -225,7 +225,7 @@ export async function getAdminStats(districtId: string): Promise<AdminStats> {
   }));
 
   // 5) آخر 10 أنشطة (AuditLogs)
-  const recentLogsRaw: AuditLog[] = await db.auditLog.findMany({
+  const recentLogsRaw = await db.auditLog.findMany({
     take: 10,
     orderBy: { createdAt: "desc" },
     include: {
@@ -236,7 +236,7 @@ export async function getAdminStats(districtId: string): Promise<AdminStats> {
         },
       },
     },
-  }) as unknown as AuditLog[];
+  });
 
   // تعديل الصيغة للإرجاع (actor منفصل، تواريخ بصيغة ISO)
   const recentActivity = recentLogsRaw.map((log) => ({

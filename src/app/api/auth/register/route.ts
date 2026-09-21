@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
+import { sendMail } from "@/lib/mailer";
+import * as WelcomeEmail from "@/emails/welcome";
 
 // ===================================================================
 //  POST /api/auth/register
@@ -220,6 +222,20 @@ export async function POST(req: NextRequest) {
 
       return { userId: user.id, familyId: family.id };
     });
+
+    // =================================================================
+    //  7) إرسال بريد الترحيب (غير حرج — أي فشل لا يفشل التسجيل)
+    // =================================================================
+    try {
+      const params = { userName: fullName };
+      await sendMail({
+        to: email,
+        subject: WelcomeEmail.subject(params),
+        html: WelcomeEmail.html(params),
+      });
+    } catch (mailErr) {
+      console.error("[register] welcome email failed:", mailErr);
+    }
 
     return NextResponse.json(
       {

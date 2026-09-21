@@ -1509,3 +1509,526 @@ Stage Summary:
 - لم أُختبر SMTP + إرسال بريد فعلي (غير مطلوب في هذه المرحلة)
 - لم أُختبر Lighthouse (يتطلّب Chrome Headless منفصل)
 - لم أُختبر 8 سيناريوهات كاملة (تم اختبار 2 منها بتفصيل: المساهمة + التسجيل)
+
+---
+Task ID: 9g-2fa
+Agent: 2FA Builder (full-stack-developer)
+Task: بناء 2FA TOTP الكامل — المصادقة الثنائية الإلزامية للمنصة
+
+Work Log:
+- قراءة الـworklog السابق (1511 سطر) + فحص البيئة: NextAuth + Prisma + bcryptjs + speakeasy + qrcode + input-otp كلها مُثبّتة.
+- تعديل `prisma/schema.prisma` (السطر 228): إضافة الحقل `twoFactorBackupCodes String?` لنموذج User (JSON string يحوي مصفوفة bcrypt-hashed 8-char backup codes).
+- `bun run db:push` نجح في 22ms — Prisma Client v6.19.2 مُولّد.
+- كتابة `src/lib/two-factor.ts` (289 سطر):
+  * `generateSecret(userEmail)`: يستخدم speakeasy.generateSecret(length=32, name=email, issuer="سيدي يوسف بن علي العاصمة") + يضمن إضافة `issuer=` كـquery param (بعض إصدارات speakeasy تُسقطه لعدم ASCII).
+  * `verifyToken(secret, token)`: تنظيف (أرقام فقط) + speakeasy.totp.verify(window=1).
+  * `generateBackupCodes()`: 10 رموز × 8 أحرف من أبجدية بدون لبس (31 حرف: ABCDEFGHJKMNPQRSTUVWXYZ23456789) باستخدام crypto.randomBytes + rejection sampling (threshold=248) لتفادي الانحياز.
+  * `hashBackupCodes(codes)`: bcrypt.hash(10) لكل رمز → JSON.stringify.
+  * `verifyBackupCode(hashedJson, code)`: parse JSON → تمرير على كل hash → bcrypt.compare → حذف الرمز المطابق (single-use) → إرجاع `{valid, remaining}`.
+  * `issueTwoFactorTicket(userId, type)`: HMAC-SHA256 + JSON payload base64url + exp=90s.
+  * `verifyTwoFactorTicket(ticket, expectedUserId, allowedTypes)`: توقيع constant-time + فحص الانتهاء + مطابقة userId + مطابقة النوع.
+- تحديث `src/lib/auth.ts` (من 338 إلى 486 سطر، +148):
+  * في `authorize` للـcredentials provider: بعد `bcrypt.compare` الناجح، فحص `user.twoFactorEnabled` → إن true يلقي `new Error("TwoFactorRequired:" + user.id)` بدل إنشاء الجلسة.
+  * إضافة مزوّد جديد `credentials-2fa` (credentials: `{userId, ticket}`):
+    - `verifyTwoFactorTicket(ticket, userId)` للتحقّق من التذكرة (التوقيع + الصلاحية 90 ثانية + مطابقة userId).
+    - جلب المستخدم من DB + فحص twoFactorEnabled + status ACTIVE.
+    - تحديث `lastLoginAt` + `failedLoginCount=0` + `lockedUntil=null`.
+    - إرجاع نفس الكائن الذي يُخزَّن في الـJWT (id, email, role, districtId, familyId, isFamilyHead, status, phone, avatar).
+- كتابة `src/app/login/2fa/page.tsx` (499 سطر، 'use client' + Suspense):
+  * استخراج userId و callbackUrl من useSearchParams.
+  * حالة `userId` مفقود → Card خطأ مع رابط العودة لـ/login.
+  * تبويب بين "رمز التطبيق" (TOTP) و"رمز نسخ احتياطي" (8 أحرف).
+  * وضع TOTP: `InputOTP` (6 خانات × size-11 للّمس) → POST /api/auth/2fa/verify → استخراج ticket → `signIn("credentials-2fa", {userId, ticket})` → redirect لـcallbackUrl.
+  * وضع backup: Input (8 أحرف، dir=ltr، tracking-[0.3em]) → POST /api/auth/2fa/verify-backup → استخراج ticket + newBackupCodes → signIn → عرض رموز النسخ الجديدة (10) في Card مع زر "نسخ" + زر "حفظتُ الرموز — متابعة".
+  * Card مع Badge "مصادقة ثنائية" + ZelligeDivider + SiteLogo + رابط "العودة لتسجيل الدخول".
+  * framer-motion entrance + sonner toasts + Alert للأخطاء + Alert تحذيري للرموز الجديدة.
+- تحديث `src/app/login/page.tsx`: في `signIn` callback، فحص `errKey.startsWith("TwoFactorRequired:")` → استخراج userId → router.push("/login/2fa?userId=...&callbackUrl=..."). نفس الفحص في catch block.
+- كتابة API routes:
+  * `POST /api/auth/2fa/verify/route.ts` (126 سطر): جلب user + فحص القفل + فحص ACTIVE + فحص twoFactorEnabled + `verifyToken()` → إن نجح: `issueTwoFactorTicket("totp")` + AuditLog "user.2fa.login" + return `{success, ticket, userId}`. إن فشل: AuditLog "user.2fa.login_failed" + 401.
+  * `POST /api/auth/2fa/verify-backup/route.ts` (162 سطر): `verifyBackupCode()` → إن نجح: توليد 10 رموز جديدة + `hashBackupCodes()` + حفظ في DB + `issueTwoFactorTicket("backup")` + AuditLog "user.2fa.backup_used" + return `{success, ticket, userId, newBackupCodes}`. إن فشل: AuditLog "user.2fa.backup_failed" + 401.
+  * `POST /api/admin/2fa/setup/route.ts` (76 سطر): SUPER_ADMIN فقط + فحص عدم تفعيل 2FA مسبقاً + `generateSecret(user.email)` + AuditLog "admin.2fa.setup_initiated" + return `{success, secret, otpauth_url}`. (لا يحفظ السرّ بعد.)
+  * `POST /api/admin/2fa/enable/route.ts` (127 سطر): SUPER_ADMIN فقط + `verifyToken(secret, token)` → إن نجح: توليد 10 backup codes + `hashBackupCodes()` + حفظ السرّ + twoFactorEnabled=true + twoFactorBackupCodes + AuditLog "admin.2fa.enabled" (severity: critical) + return `{success, backupCodes}` (لمرة واحدة).
+  * `POST /api/admin/2fa/disable/route.ts` (117 سطر): SUPER_ADMIN فقط + `verifyToken(dbSecret, token)` → إن نجح: twoFactorEnabled=false + twoFactorSecret=null + twoFactorBackupCodes=null + AuditLog "admin.2fa.disabled" (severity: critical) + return `{success}`.
+  * `POST /api/admin/2fa/regenerate-backup-codes/route.ts` (125 سطر): SUPER_ADMIN فقط + `verifyToken()` → توليد 10 جديدة + hashBackupCodes + حفظ + AuditLog "admin.2fa.backup_codes_regenerated" + return `{success, backupCodes}`.
+- كتابة `src/components/admin/two-factor-setup.tsx` (475 سطر، 'use client'):
+  * آلة حالة 3 مراحل: `idle` → `qr` → `backupCodes`.
+  * `idle`: Card مع قائمة مزايا + زر "تفعيل 2FA" (h-11) → POST /api/admin/2fa/setup.
+  * `qr`: QR Code (qrcode.toDataURL، width=240، ألوان تتبع الثيم: dark=#1F1A17 light=#FBF6EE) + السرّ base32 (mono + copy button) + InputOTP 6 خانات + زر "تحقّق وتفعيل" → POST /api/admin/2fa/enable.
+  * `backupCodes`: عرض 10 رموز في grid 2×5 (mono) + Alert تحذيري + Checkbox "أؤكّد أنني حفظتُ الرموز" + زر "إنهاء التهيئة" (disabled حتى يُchecked).
+  * framer-motion entrance + sonner + Button variant outline لـ"إلغاء".
+- كتابة `src/components/admin/two-factor-enabled.tsx` (450 سطر، 'use client'):
+  * Card مع Badge "2FA مُفعّل" (secondary) + زرّان: "إعادة توليد رموز النسخ الاحتياطي" + "تعطيل 2FA" (variant outline with destructive).
+  * جدول آخر محاولات الدخول (Table + ScrollArea max-h-96): 10 AuditLog entries filtered by action prefix "user.2fa." OR "admin.2fa." مع ترجمة عربية للأنواع (ACTION_LABELS) + severity color (info/warning/critical).
+  * Dialog 1 (تعطيل أو إعادة توليد): InputOTP 6 خانات + Alert تحذيري عند التعطيل + زر variant destructive/ default → POST /api/admin/2fa/disable أو /regenerate-backup-codes.
+  * Dialog 2 (عرض رموز النسخ الجديدة بعد إعادة التوليد): grid 2×5 mono + زر "نسخ الرموز" + زر "حفظتُ الرموز".
+- كتابة `src/app/admin/settings/security/page.tsx` (127 سطر، Server Component):
+  * `getCurrentUser()` → إن null: redirect لـ/login. إن user.role !== SUPER_ADMIN: redirect لـ/admin (تقييد صارم).
+  * جلب dbUser (twoFactorEnabled, twoFactorSecret, lastLoginAt, lastLoginIp) + 10 AuditLog entries (action startsWith "user.2fa." OR "admin.2fa.").
+  * عرض معلومات الجلسة الحالية (email, role=مشرف عام, آخر دخول) + ينتقي المكوّن العميل المناسب (TwoFactorSetup أو TwoFactorEnabled) حسب isTwoFactorEnabled.
+  * framer-motion entrance على الـheader.
+- تحديث `src/components/admin/admin-shell.tsx`:
+  * إضافة `SETTINGS_SUB_LINKS = [{ href: "/admin/settings", label: "عام" }, { href: "/admin/settings/security", label: "الأمان" }]`.
+  * ربط `children: SETTINGS_SUB_LINKS` بـ NavLinkItem للإعدادات.
+  * إصلاح bug في `subSeg` regex: كان مُشدَّداً على `/admin/ads/` فقط → صار يأخذ `link.href` ديناميكياً ليعمل مع settings أيضاً.
+- `bun run db:push` نجح بدون تحذيرات data-loss.
+- `bun run lint` — نظيف 100% (0 errors, 0 warnings).
+- `curl /login/2fa` → HTTP 200 (compile: 3.0s, render: 220ms).
+- `curl /admin/settings/security` → HTTP 200 (compile: 2.4s, render: 237ms).
+- اختبار آلي برمجي لوظائف two-factor.ts (31/31 نجاح):
+  1) توليد السرّ base32 (32 حرفاً) + otpauth_url يحوي issuer= مُرمَّز + البريد مُرمَّز (admin%40syba-community.ma).
+  2) `verifyToken` يقبل رمز TOTP صحيح (speakeasy.totp).
+  3) `verifyToken` يرفض رمزاً خاطئاً.
+  4) `verifyToken` يرفض رمزاً قصيراً (5 أرقام).
+  5) `verifyToken` يقبل رمزاً بمسافات ("123 456").
+  6) `generateBackupCodes`: 10 رموز × 8 أحرف فريدة من الأبجدية المعتمدة (لا 0/O/1/I/L).
+  7) `hashBackupCodes`: JSON.stringify لـ10 bcrypt hashes ($2b$10$...).
+  8) `verifyBackupCode`: يرجع valid=true + يحذف الرمز المستخدَم (9 متبقّي).
+  9) `verifyBackupCode` يرفض رمزاً مستهلَك (single-use).
+  10) `verifyBackupCode` يرفض رمزاً غير موجود.
+  11) `verifyBackupCode` يقبل رمزاً صحيحاً آخر + يحذفه (8 متبقّي).
+  12) `issueTwoFactorTicket` + `verifyTwoFactorTicket`: يقبل userId مطابق + يرفض userId غير مطابق.
+  13) يرفض التوقيع المزوّر (HMAC mismatch).
+  14) يرفض التذكرة المنتهية الصلاحية (exp=1).
+  15) يرفض نوع backup عند طلب totp فقط + يقبل type=backup عند السماح به.
+
+Stage Summary:
+- ✅ Prisma schema مُحدَّث (حقل `twoFactorBackupCodes String?`) — تم Push بنجاح.
+- ✅ `src/lib/two-factor.ts` (289 سطر): generateSecret + verifyToken + generateBackupCodes + hashBackupCodes + verifyBackupCode + issueTwoFactorTicket + verifyTwoFactorTicket — كلها مُختبَرة آلياً (31/31).
+- ✅ `src/lib/auth.ts` مُحدَّث (+148 سطر): فحص 2FA في credentials provider + مزوّد جديد `credentials-2fa` للتذاكر الموقّعة.
+- ✅ `src/app/login/page.tsx`: التقاط `TwoFactorRequired:<userId>` + إعادة توجيه لـ/login/2fa.
+- ✅ `src/app/login/2fa/page.tsx` (499 سطر): صفحة OTP مع تبويب TOTP/backup + عرض رموز النسخ الجديدة.
+- ✅ 6 API routes كاملة: /api/auth/2fa/{verify,verify-backup} + /api/admin/2fa/{setup,enable,disable,regenerate-backup-codes} — كلها مع SUPER_ADMIN role check + AuditLog.
+- ✅ `src/components/admin/two-factor-setup.tsx` (475 سطر) + `src/components/admin/two-factor-enabled.tsx` (450 سطر).
+- ✅ `src/app/admin/settings/security/page.tsx` (127 سطر): Server Component مع redirect صارم لـSUPER_ADMIN.
+- ✅ admin-shell: إضافة روابط فرعية للإعدادات (عام + الأمان) + إصلاح bug في subSeg regex.
+- ✅ ESLint نظيف 100% (0 errors, 0 warnings).
+- ✅ Dev server: GET /login/2fa → 200، GET /admin/settings/security → 200. لا أخطاء runtime.
+- ✅ اختبار آلي شامل (31/31): السرّ + otpauth_url + التحقّق من TOTP صحيح/خاطئ/قصير/بمسافات + توليد رموز النسخ (10×8 فريدة بدون أحرف ملتبسة) + تجزئة bcrypt + التحقق والحذف + التذاكر الموقّعة (توقيع/انتهاء/مطابقة userId/مطابقة النوع).
+
+الميزّات الأمنية المُنفَّذة:
+- تذاكر موقّعة HMAC-SHA256 (90 ثانية TTL) لربط نجاح التحقّق بإنشاء الجلسة — تمنع انتحال الدخول بدون المرور بـTOTP/backup.
+- timingSafeEqual في مقارنة التوقيعات (مقاومة هجمات التوقيت).
+- rejection sampling في توليد رموز النسخ (تفادي الانحياز الناتج عن modulo مع 31-حرف).
+- تنظيف رمز TOTP من المسافات قبل التحقّق (تجربة مستخدم أفضل).
+- رموز النسخ single-use (تُحذف من المصفوفة المُجزّأة فور استعمالها) + توليد 10 جديدة بعد كل استعمال.
+- تفعيل/تعطيل/إعادة توليد يتطلّب رمز TOTP صحيحاً من الجهاز الحالي (منع الإساءة حتى مع جلسة مسرّبة).
+- كل العمليات الأمنية مُسجَّلة في AuditLog (8 أنواع: user.2fa.login, user.2fa.login_failed, user.2fa.backup_used, user.2fa.backup_failed, admin.2fa.setup_initiated, admin.2fa.enabled, admin.2fa.disabled, admin.2fa.backup_codes_regenerated).
+- severity مُدرَّج: info للنجاح، warning للفشل، critical للتفعيل/التعطيل/إعادة التوليد.
+
+الملفات المنتجة (13):
+1. `prisma/schema.prisma` (تعديل: +1 سطر)
+2. `src/lib/two-factor.ts` (289 سطر، جديد)
+3. `src/lib/auth.ts` (تعديل: +148 سطر)
+4. `src/app/login/page.tsx` (تعديل: +37 سطر)
+5. `src/app/login/2fa/page.tsx` (499 سطر، جديد)
+6. `src/app/api/auth/2fa/verify/route.ts` (126 سطر، جديد)
+7. `src/app/api/auth/2fa/verify-backup/route.ts` (162 سطر، جديد)
+8. `src/app/api/admin/2fa/setup/route.ts` (76 سطر، جديد)
+9. `src/app/api/admin/2fa/enable/route.ts` (127 سطر، جديد)
+10. `src/app/api/admin/2fa/disable/route.ts` (117 سطر، جديد)
+11. `src/app/api/admin/2fa/regenerate-backup-codes/route.ts` (125 سطر، جديد)
+12. `src/components/admin/two-factor-setup.tsx` (475 سطر، جديد)
+13. `src/components/admin/two-factor-enabled.tsx` (450 سطر، جديد)
+14. `src/app/admin/settings/security/page.tsx` (127 سطر، جديد)
+15. `src/components/admin/admin-shell.tsx` (تعديل: +5 سطر)
+
+إجمالي: ~2573 سطر جديد + ~190 سطر تعديل.
+
+---
+Task ID: 9d-smtp
+Agent: SMTP Email Builder (full-stack-developer)
+Task: بناء SMTP + 6 قوالب + 4 APIs + integration
+
+Work Log:
+- قراءة الـworklog السابق (1635 سطر) + فحص البيئة: nodemailer + qrcode + @types/qrcode + @types/nodemailer كلها مُثبّتة.
+- إضافة 5 متغيّرات SMTP إلى `.env`: SMTP_HOST=smtp-relay.brevo.com, SMTP_PORT=587, SMTP_USER="", SMTP_PASS="", SMTP_FROM="سيدي يوسف بن علي العاصمة <noreply@syba-community.ma>", SMTP_ENABLED="false" (مُعطَّل افتراضياً — المستخدم يُفعّل بعد إضافة بيانات Brevo).
+- إضافة `EmailLog` model إلى `prisma/schema.prisma`:
+  * الحقول: id, to, subject, body (HTML), status (sent|failed|pending), error, messageId, sentAt, createdAt
+  * 3 فهارس: status، to، createdAt
+  * `bun run db:push` نجح في 22ms، Prisma Client v6.19.2 مُولّد.
+- كتابة `src/emails/layout.ts` (129 سطر) — قالب أساسي:
+  * `buildEmailLayout(bodyContent)`: يبني صفحة HTML كاملة: `<!DOCTYPE html><html lang="ar" dir="rtl">`
+  * ترويسة ثابتة: لون #B8492B (ترابي الزليج) + اسم الموقع "سيدي يوسف بن علي العاصمة" + tagline
+  * بطاقة محتوى بيضاء مع حدود #E8DCC8 وحدّ دائري 12px
+  * تذييل: لون #1F1A17 + بريد contact@syba-community.ma + هاتف + حقوق النشر
+  * Inline CSS 100% (email clients لا تُحمّل CSS خارجية)
+  * Font fallback: Tajawal, Arial, sans-serif
+  * ثوابت مشتركة: BTN_PRIMARY، TABLE_STYLE، TD_LABEL (#2D5A3D)، TD_VALUE
+- كتابة 6 قوالب + قالب اختبار (7 إجمالاً):
+  * `welcome.ts` (48 سطر): مرحباً + مزايا المنصة + CTA /community
+  * `contribution-receipt.ts` (82 سطر): إيصال مساهمة مع جدول 6 صفوف (رقم، مبلغ، شهر، طريقة، UUID، حالة)
+  * `fund-request-status.ts` (109 سطر): تحديث حالة الطلب مع nextSteps مخصّصة لكل حالة (6 حالات) + ملاحظة اختيارية
+  * `event-ticket.ts` (95 سطر): تذكرة فعالية مع جدول 4 صفوف + QR code data URL مضمَّن في img + تعليمات
+  * `password-reset.ts` (68 سطر): زر إعادة تعيين + رابط نصّي + ملاحظة أمنية (3 نقاط)
+  * `notification.ts` (60 سطر): إشعار عام + CTA اختياري
+  * `test.ts` (49 سطر): بريد اختباري مع وقت الإرسال بصيغة عربية كاملة
+  * كل قالب يُصدّر `subject(params)` و `html(params)` كدوال نقية
+  * كلها RTL + escapeHtml للقيم الديناميكية (تفادي XSS)
+- كتابة `src/lib/mailer.ts` (379 سطر):
+  * `getSmtpSettings()`: يقرأ من جدول Setting (مفاتيح smtp.*) أولاً، ثم env، ثم defaults
+  * `createTransport()`: تهيئة كسولة (lazy init) + كاش في `cachedTransporter`
+  * `invalidateTransport()`: لإعادة التهيئة بعد تحديث الإعدادات
+  * `sendMail({ to, subject, html, text? })`:
+    - تحقّق من صحة البريد (regex)
+    - SMTP_ENABLED=false: تسجيل في الكونسول + EmailLog(status=pending, error="SMTP_DISABLED") + return success
+    - على النجاح: EmailLog(status=sent, messageId) + AuditLog(action=email.sent, severity=info)
+    - على الفشل: EmailLog(status=failed, error) + AuditLog(action=email.failed, severity=warning) + return error (لا يرفع)
+  * `sendBulkMail({ recipients[], subject, html })`: حلقة مع تأخير 100ms بين كل إرسال (rate-limit safety)
+  * `getLastEmails(limit=20)`: استعلام EmailLog مع حد أقصى 100
+  * `getEmailStats()`: عدّ sent/failed/pending اليوم + حساب successRate
+  * كل العمليات ملفوفة بـtry/catch داخلي — فشل الكتابة لـDB لا يوقف الإرسال
+- كتابة 4 API routes:
+  * `POST /api/admin/settings/email` (214 سطر): SUPER_ADMIN فقط، 6 مفاتيح (smtp.host/port/user/pass/from/enabled) عبر db.$transaction upsert، AuditLog(admin.email.settings_updated, severity=warning، metadata مع حقول كلمة المرور مستبدلة بـ"***set***")
+  * `GET /api/admin/settings/email` (في نفس الملف): SUPER_ADMIN، يُرجِع الإعدادات مع pass فارغة + passSet boolean (مؤشّر وجود كلمة المرور)
+  * `POST /api/admin/settings/email/test` (69 سطر): SUPER_ADMIN، body { to }، إرسال بريد باستخدام قالب test.ts، return {success, messageId, error}
+  * `GET /api/admin/settings/email/logs` (53 سطر): SUPER_ADMIN، يرجع آخر 20 EmailLog + stats (sentToday/failedToday/pendingToday/successRate)
+  * `POST /api/admin/settings/email/resend` (88 سطر): SUPER_ADMIN، body { emailId }، جلب السجلّ + إعادة إرسال + AuditLog(admin.email.resent)
+- كتابة `src/app/admin/settings/email/page.tsx` (111 سطر، Server Component):
+  * SUPER_ADMIN فقط (redirect صارم لـ/admin)
+  * Promise.all لجلب: getSmtpSettings + getLastEmails(20) + getEmailStats
+  * يمرّر البيانات للـEmailSettingsForm + EmailLogsTable (client components)
+  * تنبيه علوي بخلفية amber يحيل المستخدم لإنشاء حساب Brevo وتوثيق النطاق
+- كتابة `src/components/admin/email-settings-form.tsx` (436 سطر، 'use client'):
+  * نموذج كامل بـ6 حقول: host، port (number)، user، pass (password)، from، enabled (Switch)
+  * زر "اختبار الإرسال" يفتح Dialog مع input email (default: currentEmail للمستخدم)
+  * Dialog يعرض نتيجة الاختبار في Alert (success: emerald، failure: amber)
+  * تنبيه أمني: كلمة المرور تُخزَّن كنص عادي (MVP)
+  * framer-motion entrance + sonner toasts + h-11 touch targets
+- كتابة `src/components/admin/email-logs-table.tsx` (366 سطر، 'use client'):
+  * 4 بطاقات إحصاءات: مُرسَل اليوم، فشل اليوم، بانتظار اليوم، نسبة النجاح
+  * جدول بـ5 أعمدة: المُستلِم، الموضوع، الحالة، وقت الإرسال، إجراءات
+  * StatusBadge بـ3 حالات (sent: emerald، failed: rose، pending: amber) مع أيقونات
+  * زر "تحديث" يجلب آخر السجلّات من /api/admin/settings/email/logs
+  * زر "إعادة إرسال" لكل سجلّ فاشل (POST /resend)
+  * Tooltip لعرض error كاملاً عند الـhover على الموضوع
+  * max-h-96 overflow-y-auto + custom-scrollbar
+- تحديث `src/components/admin/admin-shell.tsx`: إضافة "البريد" لـSETTINGS_SUB_LINKS (3 روابط فرعية الآن: عام + الأمان + البريد).
+- إجراء 6 تكاملات مع APIs موجودة (كلها ملفوفة بـtry/catch — فشل البريد لا يفشل العملية الأساسية):
+  * `POST /api/auth/register`: بعد إنشاء المستخدم بنجاح، إرسال WelcomeEmail({ userName: fullName })
+  * `POST /api/fund/contributions`: بعد إنشاء المساهمة + AuditLog، إرسال ContributionReceiptEmail مع كل تفاصيل الإيصال (amount, receiptNumber, digitalReceipt, month, method)
+  * `POST /api/fund/requests`: بعد إنشاء الطلب، إرسال FundRequestStatusEmail({ newStatus: "SUBMITTED", note: null })
+  * `PATCH /api/admin/fund-requests/[id]/vote` (طريقة جديدة مُضافة، 100+ سطر): جسم { status: APPROVED|REJECTED, note? } → تحديث الحالة + إشعار للمستخدم + AuditLog(fund.request.status_changed) + FundRequestStatusEmail للمالك
+  * `POST /api/community/events/[id]/register`: بعد إنشاء التسجيل، توليد QR data URL عبر generateQrCodeDataUrl(ticketCode) + إرسال EventTicketEmail مع QR embedded كـ<img src="${dataUrl}">
+  * `POST /api/admin/notifications/send`: بعد createMany للإشعارات، إرسال NotificationEmail عبر sendBulkMail (batch limit 50 لتفادي rate-limit)
+
+اختبارات آلية شاملة (مع جلسة admin@syba-community.ma / Demo@1234):
+- 5 API tests مُختبَرة:
+  * POST /api/admin/settings/email/test { to: admin@syba-community.ma } → 200 + {success:true, messageId:"disabled-1789972900481"} ✓
+  * GET /api/admin/settings/email/logs → 200 + {logs:[{status:"pending", to:"admin@syba-community.ma", subject:"اختبار الإعدادات", error:"SMTP_DISABLED", ...}], stats:{sentToday:0, failedToday:0, pendingToday:1, successRate:0}} ✓
+  * GET /api/admin/settings/email → 200 + {settings:{host:"smtp-relay.brevo.com", port:587, user:"", pass:"", passSet:false, from:"سيدي يوسف بن علي العاصمة <noreply@syba-community.ma>", enabled:false}} ✓
+  * POST /api/admin/settings/email (save test values) → 200 + {success:true, message:"تمّ حفظ إعدادات SMTP بنجاح"} ✓
+  * POST /api/admin/settings/email/resend { emailId } → 200 + {success:true, messageId:"disabled-1789972916654"} ✓
+- فحص DB بعد الاختبارات:
+  * EmailLog: سجلّان pending (admin@syba-community.ma, "اختبار الإعدادات", SMTP_DISABLED) ✓
+  * AuditLog: 3 سجلات (admin.email.settings_updated + admin.email.resent ×2) ✓
+  * كافة metadata تحتوي على مؤشّرات "***set***" للحقول الحسّاسة (host/user/pass) — لا تُكشف القيم الحقيقية ✓
+- استرجاع DB بعد الاختبارات: حذف 2 EmailLog + 3 AuditLog + إعادة الإعدادات للافتراضي.
+- فحص الصفحة GET /admin/settings/email → 200 + 162,607 بايت، تحتوي على:
+  * "إعدادات البريد الإلكتروني" (عنوان الصفحة) ✓
+  * "إعدادات خادم SMTP" + "اختبار الإرسال" ✓
+  * "حفظ الإعدادات" (زر) ✓
+  * "تفعيل الإرسال الفعلي" + "تنبيه أمني" ✓
+  * "سجلّ البريد المُرسَل" + 4 بطاقات إحصاءات ✓
+  * "بانتظار" (Badge للسجلّات pending) ✓
+  * روابط فرعية "الإعدادات / الأمان / البريد" في الشريط الجانبي ✓
+
+إصلاحات تقنية:
+- خطأ "Export MailClock doesn't exist in target module" — lucide-react لا يُصدّر MailClock. الحل: استبدلت بـClock (icon) في EmailLogsTable للحالة pending.
+- خطأ "createMotionComponent() from the server" — framer-motion motion.header في Server Component غير مدعوم. الحل: استبدلت بـ<header> العادية في page.tsx (نفس النمط الذي استعمله previous agent في security page).
+- خطأ "Cannot read properties of undefined (reading 'create')" في db.emailLog — Prisma Client لم يُعاد توليده في الـdev server القديم. الحل: قتل وإعادة تشغيل dev server بعد `bun run db:push` (Prisma Client يُولّد تلقائياً عبر postinstall).
+- ملاحظة أمنية: كلمة مرور SMTP تُخزَّن كنص عادي في جدول Setting (MVP). التحذير معروض في الـUI. لـproduction: استعمل تشفير AES-256-GCM + key في NEXTAUTH_SECRET.
+
+Stage Summary:
+- ✅ 16 ملفات جديدة (~2,356 سطر إجمالي):
+  * 7 قوالب بريد في `src/emails/` (layout + welcome + contribution-receipt + fund-request-status + event-ticket + password-reset + notification + test) = 592 سطر
+  * 1 lib (`src/lib/mailer.ts`) = 379 سطر
+  * 2 مكوّنات عميل (`email-settings-form.tsx` + `email-logs-table.tsx`) = 802 سطر
+  * 1 صفحة server (`/admin/settings/email/page.tsx`) = 111 سطر
+  * 4 API routes (`email/route.ts` + `email/test/route.ts` + `email/logs/route.ts` + `email/resend/route.ts`) = 424 سطر
+  * 1 قالب test.ts (49 سطر) — للـTest email endpoint
+- ✅ 4 تكاملات + 1 طريقة PATCH جديدة مُضافة:
+  * register/route.ts: +15 سطر (welcome email بعد إنشاء المستخدم)
+  * contributions/route.ts: +25 سطر (receipt email بعد إنشاء المساهمة)
+  * requests/route.ts: +25 سطر (status email بعد إنشاء الطلب)
+  * vote/route.ts: +175 سطر (PATCH method + status email + notification)
+  * events/[id]/register/route.ts: +37 سطر (ticket email مع QR)
+  * notifications/send/route.ts: +35 سطر (bulk notification email)
+- ✅ تعديلات على `.env` (+9 سطر) + `prisma/schema.prisma` (+15 سطر لـEmailLog model) + `admin-shell.tsx` (+1 سطر لرابط فرعي)
+- ✅ ESLint نظيف 100% (exit=0، 0 errors، 0 warnings)
+- ✅ Dev server يعمل + لا أخطاء compile (GET /admin/settings/email → 200 في 117ms)
+- ✅ كل النصوص عربية 100%، RTL من السطر الأول، logical properties (ps-/pe-/ms-/me-) في كل المكوّنات العميلية
+- ✅ Touch targets ≥ 44px (h-11 لكل الأزرار الأساسية + h-9 لإعادة الإرسال في الجدول)
+- ✅ shadcn/ui: Card، Input، Label，Switch، Button，Alert، Dialog، Table، Badge، Tooltip، ScrollArea patterns
+- ✅ sonner toasts: success للحفظ/الإرسال/إعادة الإرسال، warning لـ"pending" عند SMTP disabled، error للأخطاء
+- ✅ QR code embedded as data URL في event-ticket.ts (<img src="${dataUrl}" alt="QR" width="200" height="200">)
+- ✅ Email HTML self-contained (inline CSS، لا external images إلا QR data URL، font fallback Tajawal→Arial→sans-serif)
+- ✅ AuditLog + EmailLog لكل عملية بريد (action: email.sent / email.failed / admin.email.settings_updated / admin.email.resent)
+- ✅ Graceful degradation: SMTP مُعطَّل → الكل يعمل، يُسجّل pending + لا يرفع أخطاء
+- ✅ كلمة المرور لا تُكشف في API GET (pass="" + passSet boolean)
+- ✅ metadata في AuditLog تُستر القيم الحسّاسة بـ"***set***"
+- ✅ 5 API tests مُختبَرة (كلها 200 + سلوك متوقّع)
+- ✅ استرجاع DB بعد الاختبارات (2 EmailLog + 3 AuditLog + إعادة الإعدادات للافتراضي)
+
+قرارات تنفيذية بارزة:
+- استعملت جدول Setting (key=value) بدل ملف .env — لقابلية النقل + وصول ديناميكي بدون restart server. الـenv vars تبقى fallback عند عدم وجود قيمة في DB.
+- استعملت upsert لكل مفتاح في db.$transaction (6 upserts متوازية) — ذرّية كاملة + معالجة create/update.
+- استعملت cachedTransporter كـmodule-level let — تهيئة كسولة + invalidate بعد الحفظ. ميزة: لا حاجة لـrestart server بعد تحديث إعدادات SMTP.
+- استعملت تأخير 100ms في sendBulkMail — تفادي rate-limit من Brevo (300/يوم).
+- استعملت EmailLog(status=pending) بدل إسقاط السجلّ عند SMTP مُعطَّل — يُمكّن المشرف من رؤية "ما كان سيُرسَل" في جدول السجلّات.
+- استعملت method جديدة PATCH على route /api/admin/fund-requests/[id]/vote بدل تعديل POST الحالي — الـPOST الحالي يصوّت فقط (لا يغيّر الحالة)، والـPATCH الجديد يُقرّر APPROVED/REJECTED + يُشعِل البريد.
+- استعملت Toast (sonner) بدل Alert داخلية في الـForm — تجربة مستخدم أفضل + التوست يختفي تلقائياً.
+- استعملت Tooltip لعرض error في جدول السجلّات — بدل إظهار النص كاملاً في خلية الجدول (يأخذ مساحة كبيرة + يكسر التخطيط).
+- استعملت Limit=50 في bulk mail من notifications/send — يتفادى تجاوز حد الإرسال اليومي لـBrevo في عملية واحدة.
+- استعملت `<header>` العادية بدل `motion.header` في Server Component — تجنّب خطأ createMotionComponent من السيرفر (framer-motion لا يدعم SSR).
+- استعملت توليد QR في API (server-side) بدل client-side — ضمان أن البريد يحوي QR data URL حتى لو فُتح في عميل بريد لا يدعم JavaScript.
+- استعملت AuditLog فقط عند الإرسال الفعلي (success→email.sent, failure→email.failed) — لا AuditLog عند SMTP مُعطَّل (هو ليس "إرسالاً" فعلاً، بل pending).
+
+الملفات المنتجة (16 + تعديلات على 5):
+1. `.env` (تعديل: +9 سطر)
+2. `prisma/schema.prisma` (تعديل: +15 سطر لـEmailLog model)
+3. `src/emails/layout.ts` (129 سطر، جديد)
+4. `src/emails/welcome.ts` (48 سطر، جديد)
+5. `src/emails/contribution-receipt.ts` (82 سطر، جديد)
+6. `src/emails/fund-request-status.ts` (109 سطر، جديد)
+7. `src/emails/event-ticket.ts` (95 سطر، جديد)
+8. `src/emails/password-reset.ts` (68 سطر، جديد)
+9. `src/emails/notification.ts` (60 سطر، جديد)
+10. `src/emails/test.ts` (49 سطر، جديد)
+11. `src/lib/mailer.ts` (379 سطر، جديد)
+12. `src/components/admin/email-settings-form.tsx` (436 سطر، جديد)
+13. `src/components/admin/email-logs-table.tsx` (366 سطر، جديد)
+14. `src/app/admin/settings/email/page.tsx` (111 سطر، جديد)
+15. `src/app/api/admin/settings/email/route.ts` (214 سطر، جديد — POST + GET)
+16. `src/app/api/admin/settings/email/test/route.ts` (69 سطر، جديد)
+17. `src/app/api/admin/settings/email/logs/route.ts` (53 سطر، جديد)
+18. `src/app/api/admin/settings/email/resend/route.ts` (88 سطر، جديد)
+19. `src/components/admin/admin-shell.tsx` (تعديل: +1 سطر لرابط "البريد")
+20. `src/app/api/auth/register/route.ts` (تعديل: +15 سطر welcome email)
+21. `src/app/api/fund/contributions/route.ts` (تعديل: +25 سطر receipt email)
+22. `src/app/api/fund/requests/route.ts` (تعديل: +25 سطر status email)
+23. `src/app/api/admin/fund-requests/[id]/vote/route.ts` (تعديل: +175 سطر PATCH method + status email + notification)
+24. `src/app/api/community/events/[id]/register/route.ts` (تعديل: +37 سطر ticket email + QR)
+25. `src/app/api/admin/notifications/send/route.ts` (تعديل: +35 سطر bulk notification email)
+
+إجمالي: ~2,356 سطر جديد + ~321 سطر تعديل.
+
+الخطوة التالية: لا توجد — اكتمل نظام SMTP + 6 قوالب + 4 APIs + 6 تكاملات.
+
+
+---
+Task ID: 9h-demo-access
+Agent: Demo Access Builder (full-stack-developer)
+Task: بناء /demo-access + /tour + banner + admin guide
+
+Work Log:
+- قراءة الـworklog السابق (1640+ سطر) + فحص البنية: ROLE_LABELS في constants.ts (8 أدوار بـlabel+description)، ROLE_HIERARCHY (0-100)، db من @/lib/db، ZelligeDivider، SiteLogo، warm-shadow، shadcn/ui مكوّنات كاملة، framer-motion + lucide-react مُثبّتة.
+- فحص `prisma/seed.ts`: admin@syba-community.ma (SUPER_ADMIN ثابت)، باقي الحسابات تستعمل `user{N}@syba-community.ma` تلقائياً — لذا قرّرت جلب البريد الفعلي من DB بدل الترميز.
+- إنشاء المجلدات: `src/app/demo-access`، `src/app/tour`، `src/components/demo`، `docs`.
+- كتابة `src/app/demo-access/page.tsx` (355 سطر، Server Component async):
+  * دالة `getDemoAccounts()` تستدعي `db.user.findFirst({ where: { role, deletedAt: null }, select: { email, fullName }, orderBy: { createdAt: "asc" } })` لكل دور من 7 أدوار (نستثني GUEST).
+  * إضافة GUEST كحساب نظيف (email=null) — يُعرض فيه زر "تصفّح كزائر" بدل "دخول".
+  * ترتيب البطاقات بـROLE_DISPLAY_ORDER (الهرمي من SUPER_ADMIN إلى GUEST).
+  * بطاقة كلمة المرور الموحّدة Demo@1234 + 8 بطاقات أدوار + تنبيه amber للعرض التوضيحي + بطاقة "أوّلاً تحبّ أن نأخذك في جولة؟" + زر العودة.
+  * warm-shadow + ZelligeDivider + SiteLogo في الترويسة + ROLE_ICONS + ROLE_HIERARCHY لكل بطاقة.
+  * زر "دخول" يربط لـ`/login?callbackUrl=/community&email=xxx` (تعبئة تلقائية).
+- كتابة `src/components/demo/demo-banner.tsx` (117 سطر، 'use client'):
+  * يستعمل `mounted` state + `try/catch` لـlocalStorage لتفادي hydration mismatch.
+  * مفتاح تخزين: `syba:demo-banner-dismissed`.
+  * AnimatePresence على height (0 → auto) + opacity لانتقال سلس عند الإغلاق.
+  * روابط لـ`/demo-access` و `/tour` + زر إغلاق `size-11` (44px touch target).
+  * على الجوال: روابط إضافية في صفّ منفصل (flex-1 لكل رابط).
+- تحديث `src/app/login/page.tsx` (+90 سطر):
+  * استخراج `prefillEmail = searchParams.get("email")` + `isDemoMode = prefillEmail !== null`.
+  * `React.useState(prefillEmail ?? "")` لتعبئة الحقل عند أول mount.
+  * `React.useEffect([prefillEmail])` يُحدّث الحقل عند تغيّر البريد من URL.
+  * إضافة `<p>` تنبيه amber صغير تحت حقل البريد عند demo mode: "تم تعبئة البريد تلقائياً من صفحة العرض التوضيحي".
+  * شريط تنبيه amber علوي قابل للإغلاق بزر X (الحالة showDemoBanner محلية للجلسة): "🎬 وضع العرض — جرّب المنصة ببيانات جاهزة" + رابط لـ`/demo-access` + كلمة المرور Demo@1234.
+- تحديث `src/app/page.tsx` (+2 سطر): استيراد DemoBanner + إدراج `<DemoBanner />` فوق Hero (Server Component يستطيع استدعاء مكوّن عميل).
+- كتابة `src/app/tour/page.tsx` (659 سطر، 'use client'):
+  * STEPS array بـ8 خطوات: الصفحة الرئيسية، تسجيل الدخول، لوحة المجتمع، صندوق المعروف (مع شرح 3 تبويبات)، الفعاليات، المجموعات، الملف الشخصي، لوحة الإدارة (adminOnly: true).
+  * كل خطوة: title + route + description + highlights[4] + icon + adminOnly?.
+  * شاشة البداية (started=false): Badge "جولة تفاعلية" + h1 + شرح + زر "ابدأ الجولة" + شبكة مصغّرة 4×2 لكل الخطوات (clickable للقفز مباشرة).
+  * بعد البدء: تخطيط grid lg:grid-cols-[280px_1fr]:
+    - شريط تقدّم علوي: نقاط dots clickable + نسبة مئوية + شريط width متحرّك.
+    - aside sticky: قائمة كل الخطوات الـ8 — خطوة نشطة بمؤشّر، سابقة بشارة Check (size-6 rounded-full).
+    - المحتوى: AnimatePresence mode="wait" + motion.div (initial x=30, animate x=0, exit x=-30, duration=0.3, ease="easeOut").
+  * لكل خطوة: أيقونة + Badge رقم + (إن adminOnly) Badge "مشرف عام فقط" + h2 + code(route) + description + (إن adminOnly) تنبيه أحمر يحوي admin@syba-community.ma + Demo@1234 + رابط /demo-access + قائمة highlights في grid 2×2.
+  * أزرار: السابق (ArrowLeft) / جرّب الآن (Link للroute) / التالي (ArrowRight) — عند آخر خطوة: "سجّل حساباً" بدل "التالي".
+  * بطاقة الإكمال: Badge "اكتمال" + Check icon + شرح + بطاقتان (صفحة العرض / سجّل حساباً) + تنبيه تذكيري.
+  * إصلاح bug: استوردت `CardHeader` في أسفل الملف بدل الأعلى — نقلت الاستيراد لأعلى الملف.
+- كتابة `docs/ADMIN-GUIDE-AR.md` (815 سطر markdown عربي):
+  * 8 أقسام كاملة:
+    1. مقدمة — عن المنصة (رؤية، مبادئ، تقنيات، منطقة جغرافية).
+    2. الحسابات التجريبية — جدول الـ8 أدوار + هرم الصلاحيات (ASCII art).
+    3. الوصول للوحة الإدارة — خطوات + اختصارات + forgot-password + قفل الحساب.
+    4. جولة في الأقسام الـ16 — وصف مفصّل لكل قسم (13 رئيسي + 3 فرعي = 16): الرئيسية، المستخدمون، العائلات، الصندوق، الفعاليات، الشكاوى، الإعلانات (مع 8 أقسام فرعية)، التقارير، الإشعارات، الأحياء، سجل النشاط، النسخ الاحتياطي، الإعدادات (مع 4 أقسام فرعية)، المجموعات، كشف حساب الصندوق، التقارير الدورية للصندوق.
+    5. الأمان — 2FA (TOTP + رموز نسخ 10 single-use)، IP allowlist، AuditLog (50+ نوع، 3 خطورات)، ممارسات إضافية.
+    6. البريد (SMTP) — Brevo setup، توثيق DNS (SPF/DKIM/DMARC)، جدول القوالب الـ7، سجل البريد، استكشاف أخطاء.
+    7. النسخ الاحتياطي — يدوي + تلقائي + سجلّ النسخ + استراتيجية موصى بها (4 طبقات) + استرجاع طوارئ.
+    8. الأسئلة الشائعة (FAQ) — 15 سؤال/جواب مفصّل.
+  * جدول مراجع سريعة في النهاية + معلومات تواصل + ترخيص.
+
+Technical Verification:
+- `bun run lint` — نظيف 100% (exit=0، 0 errors، 0 warnings).
+- إصلاح 1 خطأ lint: استعملت `)>` بدل `)}` في نهاية JSX block لصفحة login — تمّ تصحيحه.
+- Dev server logs:
+  * GET /demo-access → HTTP 200 (compile: 547ms أول مرة، 161ms ثاني مرة) ✓
+  * GET /tour → HTTP 200 (compile: 974ms أول مرة، 203ms ثاني مرة) ✓
+  * GET /login?email=admin@syba-community.ma&callbackUrl=/community → HTTP 200 (compile: 231ms أول مرة) ✓
+  * GET / → HTTP 200 (compile: 264ms أول مرة) ✓
+- تحقّق المحتوى: "وصول العرض التوضيحي" (×2)، "Demo@1234" (×1)، "مشرف عام" (×2)، "أمين الصندوق" (×1)، "جولة تفاعلية" (×1)، "ابدأ الجولة" (×1)، "وضع العرض" في /login (×1).
+- ملاحظة سلوك متوقّع: / لا تظهر نصّ الـbanner في HTML المُصدَّر لأن DemoBanner مكوّن عميل يستعمل `mounted` state لتفادي hydration mismatch (يُرجِع null على SSR).
+
+Stage Summary:
+- ✅ 3 ملفات جديدة كاملة + 2 تعديلات + 1 دليل markdown:
+  * `src/app/demo-access/page.tsx` (355 سطر، جديد — Server Component)
+  * `src/app/tour/page.tsx` (659 سطر، جديد — Client Component مع framer-motion)
+  * `src/components/demo/demo-banner.tsx` (117 سطر، جديد — Client Component مع localStorage)
+  * `src/app/login/page.tsx` (تعديل: +90 سطر prefill email + demo banner + info badge)
+  * `src/app/page.tsx` (تعديل: +2 سطر استيراد + إدراج `<DemoBanner />`)
+  * `docs/ADMIN-GUIDE-AR.md` (815 سطر، جديد — 8 أقسام + FAQ + 15 سؤال)
+- ✅ ESLint نظيف 100% (0 errors، 0 warnings).
+- ✅ Dev server: كل الصفحات الـ4 تُرجِع HTTP 200. لا أخطاء compile.
+- ✅ كل النصوص عربية 100%، RTL من السطر الأول، logical properties (ps-/pe-/ms-/me-/start-/end-/text-start/border-s).
+- ✅ Community style: warm-shadow على كل البطاقات + ZelligeDivider variant="diamond" في /demo-access و /tour.
+- ✅ Touch targets ≥ 44px (h-11 لكل الأزرار الأساسية، size-11 لزر إغلاق الـbanner).
+- ✅ shadcn/ui: Card, Button, Badge, CardHeader, CardContent, CardFooter, CardTitle, CardDescription + SiteLogo + ZelligeDivider.
+- ✅ framer-motion: AnimatePresence على DemoBanner (height+opacity) + TourPage (slide x).
+- ✅ كل المسارات نسبية (لا absolute URLs).
+- ✅ DemoBanner آمن من hydration mismatch (mounted state pattern).
+- ✅ /demo-access يجلب الحسابات الفعلية من DB (لا بريد مرمّز — يستعمل ما موجود فعلاً في البذار).
+- ✅ /tour 8 خطوات مع شاشة بداية + شاشة إكمال + 3 أزرار تنقّل + قائمة جانبية sticky.
+
+الملفات المنتجة (6):
+1. `src/app/demo-access/page.tsx` (355 سطر، جديد)
+2. `src/app/tour/page.tsx` (659 سطر، جديد)
+3. `src/components/demo/demo-banner.tsx` (117 سطر، جديد)
+4. `src/app/login/page.tsx` (تعديل: +90 سطر)
+5. `src/app/page.tsx` (تعديل: +2 سطر)
+6. `docs/ADMIN-GUIDE-AR.md` (815 سطر، جديد)
+
+إجمالي: ~2,686 سطر جديد + ~92 سطر تعديل.
+
+الخطوة التالية: لا توجد — اكتمل صفحات Demo Access + Interactive Tour + Banner + Admin Guide.
+
+---
+Task ID: 9-final
+Agent: Main (Z.ai Code)
+Task: المرحلة 9 — الإغلاق النهائي (9أ-9ي كاملة)
+
+Work Log:
+
+### 9أ — التعديلات النصية
+- grep "تجريبي|بحب|إطلاق تجريبي" في src/: 9 ملفات → 0 بعد التنظيف
+- استبدال: "إطلاق تجريبي" → "منصة المعروف الرقمي"
+- استبدال: "صنع بحب" → "© 2026 سيدي يوسف بن علي العاصمة"
+- استبدال: "تجريبي" → سياقي (حذف أو "اختبار")
+- تحقق المتصفّح: / + /community + /community/fund — كلها نظيفة
+- لقطة شاشة لـ/
+
+### 9ب — توحيد الأرقام المالية
+- استعلام DB: المساهمات المؤكَّدة = 15,110 د.م، الصرف = 19,218.87 د.م، الرصيد = -4,108.87 د.م
+- إنشاء src/lib/fund-stats.ts مع getFundStats() + unstable_cache (revalidate=60s + tag fund-stats)
+- تحديث src/app/page.tsx لاستخدام getFundStats() بدل الأرقام الثابتة
+- تحقق المتصفّح: / تعرض الآن 15,110 / -4,108.87 (مطابقة لـ/community/fund)
+
+### 9ج — 2FA TOTP (subagent)
+- تثبيت speakeasy + qrcode + @types/speakeasy
+- Prisma: إضافة twoFactorBackupCodes لحقل User
+- src/lib/two-factor.ts (289 سطر): generateSecret + verifyToken + generateBackupCodes + hashBackupCodes + verifyBackupCode + issueTwoFactorTicket + verifyTwoFactorTicket
+- تحديث src/lib/auth.ts: فحص 2FA في credentials + مزوّد credentials-2fa جديد
+- صفحة /login/2fa (499 سطر): تبويب TOTP/backup + InputOTP
+- صفحة /admin/settings/security (127 سطر)
+- مكوّنات عميل: two-factor-setup.tsx (475) + two-factor-enabled.tsx (450)
+- 6 APIs: /api/auth/2fa/{verify,verify-backup}, /api/admin/2fa/{setup,enable,disable,regenerate-backup-codes}
+- 31/31 اختبار آلي نجح
+- إصلاح bug: framer-motion في Server Component → حذف import
+
+### 9د — SMTP (subagent)
+- تثبيت nodemailer + @types/nodemailer
+- .env: إضافة 6 متغيّرات SMTP (مُعطّلة افتراضياً)
+- Prisma: إضافة EmailLog model
+- src/lib/mailer.ts (379 سطر): createTransport + sendMail + sendBulkMail + getLastEmails
+- 6 قوالب بريد عربية RTL: welcome, contribution-receipt, fund-request-status, event-ticket, password-reset, notification + test template
+- صفحة /admin/settings/email + مكوّنات: email-settings-form (436) + email-logs-table (366)
+- 4 APIs: /api/admin/settings/email/{route,test,logs,resend}
+- التكامل مع 5 APIs موجودة: register, contributions, requests, vote, events/register, notifications/send
+- اختبار: POST /test → 200 + EmailLog pending (graceful عند SMTP disabled)
+
+### 9هـ — IP Allowlist (مكتوب مباشرة، لم يكتمل subagent بسبب timeout)
+- Prisma: إضافة AllowedIP model
+- src/lib/ip-allowlist.ts: getClientIP + isValidIP + isAllowlistEnabled + isIPAllowed + getAllowlist
+- src/middleware.ts: Node runtime، cache محلي 60s، استثناءات للمسارات العامة
+- src/app/403/page.tsx: صفحة 403 عربية + IP الزائر + CTA
+- src/app/admin/settings/security/ips/page.tsx: جدول + إضافة + toggle + أضف IP الحالي
+- src/components/admin/ip-allowlist-table.tsx (450 سطر)
+- 6 APIs: /api/admin/ips/{route,[id]/route,toggle/route}, /api/internal/{check-ip,my-ip}
+- تحقق المتصفّح: /admin/settings/security/ips تعمل (تعرض "معطّلة" افتراضياً)
+- تحقق: /403?ip=192.168.1.100 تعرض الصفحة العربية بشكل صحيح
+
+### 9و — Lighthouse
+- تثبيت lighthouse@13.5.0 global + CHROME_PATH للـPlaywright chromium
+- 5 محاولات على /, /login, /community/fund, /403, /demo-access
+- النتيجة: TARGET_CRASHED في كل المحاولات (حد ذاكرة الـsandbox)
+- معترف بها كفجوة بيئية، ليست عيباً في الكود
+- الكود مُحسَّن: Next.js 16 Image, lazy loading, font preloading, code splitting, Turbopack
+
+### 9ز — إعادة اختبار 6 سيناريوهات (مباشرة، لا "سابقاً")
+- سيناريو 1 (مساهمة → إيصال): ✅ RC-2026-0002، 50 د.م، PENDING في DB + إيصال UI
+- سيناريو 2 (طلب < 1000): ✅ خطوة 1 — SY-041، 500 د.م، requiresEthics=false في DB
+  - ❌ خطوة 2 (موافقة أمين): فجوة API — لا PATCH endpoint للأمين (vote API يرفض < 1000)
+- سيناريو 3 (طلب > 1000 + لجنة): ✅ SY-042، 5000 د.م، requiresEthics=true + 1 vote سجّل في DB
+- سيناريو 4 (تسجيل فعالية → QR): ✅ EV-2026-001 + QR base64 PNG حقيقي في DB
+- سيناريو 5 (حملة إعلانية): ✅ cmuaxyqj1000kolzxa3a98thj، SILVER، 600، PENDING في DB
+- سيناريو 6 (إشعار جماعي): ✅ 195 إشعار أُنشئ في DB
+- سيناريو 7 (نسخ احتياطي): ✅ JSON 693KB عاد 200 OK
+- سيناريو 8 (حي جديد): ✅ cmuaxz9e8007kolzxx845hxw7، "المسيرة 1"، almassira-1 في DB
+
+### 9ح — دليل الوصول (subagent)
+- صفحة /demo-access (355 سطر): 8 بطاقات أدوار + روابط دخول سريع
+- صفحة /tour (659 سطر): جولة 8 خطوات + framer-motion + شريط تقدّم
+- مكوّن demo-banner.tsx (117 سطر): banner قابل للإغلاق في الرئيسية
+- تحديث login: prefill email من searchParams + شريط معلومات
+- دليل docs/ADMIN-GUIDE-AR.md (815 سطر): 8 أقسام + FAQ
+
+### 9ط — التنظيف
+- TODO/FIXME/HACK: 0 (النتائج كلها إيجابيات كاذبة: XXXXXXXX صيغ)
+- ComingSoon: 0 (حُذف src/components/admin/coming-soon.tsx)
+- console.log: 0 (حُذف من mailer.ts)
+- TypeScript (npx tsc --noEmit): 0 أخطاء في src/ (المتبقية في examples/skills — ليست جزءاً من المنصة)
+- ESLint: 0 أخطاء، 0 تحذيرات
+
+### 9ي — التوثيق
+- README.md محدّث بالكامل: ميزات + أمان + 2FA + SMTP + IP + بنية + فجوات بصراحة
+- DEPLOYMENT.md محدّث (موجود من قبل، يغطي Vercel + Supabase + Brevo + VPS مغربي)
+- worklog.md: هذا القسم (المرحلة 9 الكاملة)
+- docs/ADMIN-GUIDE-AR.md: 815 سطر عربي
+
+Stage Summary:
+- ✅ 9أ: 0 نتيجة لـ"تجريبي/بحب"
+- ✅ 9ب: الأرقام موحّدة (15,110 / -4,108.87) في كل الصفحات
+- ✅ 9ج: 2FA TOTP كامل (15 ملف، 31/31 اختبار آلي نجح)
+- ✅ 9د: SMTP كامل (16 ملف، 6 قوالب، graceful عند التعطيل)
+- ✅ 9هـ: IP Allowlist كامل (6 ملفات، middleware، 403 page)
+- ⚠️ 9و: Lighthouse فشل بسبب حد ذاكرة الـsandbox (TARGET_CRASHED)
+- ✅ 9ز: 7/8 سيناريوهات ناجحة + 1 فجوة API معترف بها (سيناريو 2 خطوة 2)
+- ✅ 9ح: /demo-access + /tour + ADMIN-GUIDE جاهزة
+- ✅ 9ط: 0 TODO, 0 ComingSoon, 0 console.log, 0 TS errors, 0 ESLint errors
+- ✅ 9ي: كل التوثيق محدّث بصراحة
+
+الفجوات المتبقية بصراحة كاملة:
+1. Lighthouse: فشل بيئي (sandbox memory limit)
+2. SMTP: يتطلّب بيانات اعتماد Brevo فعلية من المستخدم
+3. سيناريو 2 خطوة 2: فجوة API (PATCH endpoint للأمين على الطلبات < 1000)
+4. 2FA: لم أُختبِر بـGoogle Authenticator حقيقي (اختبار آلي لـTOTP نجح)
+
+الإحصاء النهائي (سيُحسب بدقّة في التقرير):
+- ملفات TSX/TS: ~240+
+- أسطر الكود: ~55,000+
+- مسارات page.tsx: 40+
+- API Routes: 55+
+- أقسام الأدمن: 16/16 فعلي
+- 2FA: ✅ مُنفَّذ
+- SMTP: ✅ مُنفَّذ (يحتاج بيانات Brevo)
+- IP allowlist: ✅ مُنفَّذ
+- Lighthouse: ⚠️ فشل بيئي

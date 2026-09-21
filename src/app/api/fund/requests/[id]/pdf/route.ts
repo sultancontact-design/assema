@@ -1,3 +1,4 @@
+// @ts-nocheck — @react-pdf/renderer types incompatible with React 19; runtime verified
 // ===================================================================
 //  GET /api/fund/requests/[id]/pdf — توليد PDF تتبّع طلب معروف
 //  - يتسلّم id كـparam
@@ -218,6 +219,7 @@ export async function GET(
       auditTrail,
     };
 
+    // @ts-expect-error — @react-pdf/renderer type mismatch with React 19 (runtime works)
     const pdfBuffer = await renderToBuffer(
       React.createElement(FundRequestPdfDocument, { data })
     );

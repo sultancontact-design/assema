@@ -71,8 +71,8 @@ export function SettingsForm({
   }
 
   function handleBackup() {
-    toast.info("سيتم توفير النسخ الاحتياطي قريباً", {
-      description: "الميزة في طور التطوير — اشكر صبرك.",
+    toast.error("النسخ الاحتياطي متاح في /admin/backup", {
+      description: "انتقل إلى قسم النسخ الاحتياطي في لوحة الإدارة.",
     });
   }
 

@@ -15,13 +15,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ZelligeDivider } from "@/components/shared/zellige-divider";
+import { DemoBanner } from "@/components/demo/demo-banner";
+import { getFundStats } from "@/lib/fund-stats";
+import { formatNumber } from "@/lib/constants";
+import { db } from "@/lib/db";
 
-// بيانات تجريبية مؤقتة — ستُستبدل بقاعدة البيانات في المرحلة 1
-const LIVE_STATS = [
-  { label: "أسرة مسجّلة", value: "50", icon: Users, color: "text-secondary" },
-  { label: "درهم مساهم", value: "12,400", icon: HandCoins, color: "text-primary" },
-  { label: "درهم الرصيد", value: "8,250", icon: Scale, color: "text-accent" },
-];
+// صفحة عامة — تجلب الإحصاءات الحقيقية من قاعدة البيانات
+async function getHomePageStats() {
+  const [fundStats, familyCount, userCount] = await Promise.all([
+    getFundStats(),
+    db.family.count({ where: { isActive: true, deletedAt: null } }),
+    db.user.count({ where: { deletedAt: null, status: "ACTIVE" } }),
+  ]);
+  return { fundStats, familyCount, userCount };
+}
 
 const PRINCIPLES = [
   {
@@ -87,9 +94,16 @@ const AD_PACKAGES = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const { fundStats, familyCount } = await getHomePageStats();
+  const LIVE_STATS = [
+    { label: "أسرة مسجّلة", value: formatNumber(familyCount), icon: Users, color: "text-secondary" },
+    { label: "درهم مساهم", value: formatNumber(fundStats.totalContributions), icon: HandCoins, color: "text-primary" },
+    { label: "درهم الرصيد", value: formatNumber(fundStats.balance), icon: Scale, color: "text-accent" },
+  ];
   return (
     <div className="flex flex-col">
+      <DemoBanner />
       {/* ─────────── قسم البطل (Hero) ─────────── */}
       <section className="relative overflow-hidden border-b border-border">
         {/* خلفية زخرفية خفيفة */}
@@ -110,7 +124,7 @@ export default function HomePage() {
               className="mb-6 bg-primary/10 text-primary border-primary/20 hover:bg-primary/15"
             >
               <Sparkles className="size-3 ms-1.5" />
-              <span>منصة المعروف الرقمي — إطلاق تجريبي</span>
+              <span>منصة المعروف الرقمي</span>
             </Badge>
 
             <h1 className="font-heading text-4xl sm:text-5xl md:text-6xl font-extrabold text-foreground leading-tight mb-4">

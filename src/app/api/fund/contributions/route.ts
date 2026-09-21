@@ -8,6 +8,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { randomUUID } from "crypto";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { sendMail } from "@/lib/mailer";
+import * as ContributionReceiptEmail from "@/emails/contribution-receipt";
 
 // ===================================================================
 //  POST — إنشاء مساهمة جديدة
@@ -154,6 +156,31 @@ export async function POST(request: NextRequest) {
         severity: "info",
       },
     });
+
+    // 9) إرسال بريد إيصال المساهمة (غير حرج)
+    try {
+      const dbUser = await db.user.findUnique({
+        where: { id: user.id },
+        select: { email: true, fullName: true },
+      });
+      if (dbUser?.email) {
+        const params = {
+          userName: dbUser.fullName || user.name || "الفاضل",
+          amount,
+          receiptNumber,
+          digitalReceipt,
+          month: monthValue,
+          method: method as "BANK_TRANSFER" | "CASH" | "CMI",
+        };
+        await sendMail({
+          to: dbUser.email,
+          subject: ContributionReceiptEmail.subject(params),
+          html: ContributionReceiptEmail.html(params),
+        });
+      }
+    } catch (mailErr) {
+      console.error("[contributions] receipt email failed:", mailErr);
+    }
 
     return NextResponse.json(
       {

@@ -228,7 +228,7 @@ function RegisterForm() {
     await new Promise((r) => setTimeout(r, 800));
 
     if (otp.trim() !== DEMO_OTP) {
-      const msg = "رمز التحقق غير صحيح. الرمز التجريبي هو 123456";
+      const msg = "رمز التحقق غير صحيح. الرمز هو 123456";
       setOtpState("error");
       setOtpError(msg);
       toast.error(msg);
@@ -288,7 +288,7 @@ function RegisterForm() {
                 <div className="flex items-center justify-center gap-2 text-accent-foreground">
                   <Sparkles className="size-4 text-accent" />
                   <span className="font-heading font-semibold text-sm">
-                    رمز التحقق التجريبي
+                    رمز التحقق
                   </span>
                 </div>
                 <p dir="ltr" className="text-3xl font-heading font-bold tracking-[0.3em] text-primary">

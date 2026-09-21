@@ -13,6 +13,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { sendMail } from "@/lib/mailer";
+import { generateQrCodeDataUrl } from "@/lib/qr-code";
+import * as EventTicketEmail from "@/emails/event-ticket";
 
 export const dynamic = "force-dynamic";
 
@@ -204,6 +207,44 @@ export async function POST(
         severity: "info",
       },
     });
+
+    // 11) إرسال بريد التذكرة (غير حرج)
+    try {
+      const [dbUser, eventDetail] = await Promise.all([
+        db.user.findUnique({
+          where: { id: user.id },
+          select: { email: true, fullName: true },
+        }),
+        db.event.findUnique({
+          where: { id },
+          select: { startDate: true, location: true },
+        }),
+      ]);
+      if (dbUser?.email && eventDetail) {
+        const qrDataUrl = await generateQrCodeDataUrl(ticketCode, {
+          width: 200,
+          margin: 1,
+        });
+        const params = {
+          userName: dbUser.fullName || user.name || "الفاضل",
+          eventTitle: event.title,
+          eventDate: new Intl.DateTimeFormat("ar-MA", {
+            dateStyle: "full",
+            timeStyle: "short",
+          }).format(eventDetail.startDate),
+          eventLocation: eventDetail.location ?? "—",
+          ticketCode,
+          qrDataUrl,
+        };
+        await sendMail({
+          to: dbUser.email,
+          subject: EventTicketEmail.subject(params),
+          html: EventTicketEmail.html(params),
+        });
+      }
+    } catch (mailErr) {
+      console.error("[event register] ticket email failed:", mailErr);
+    }
 
     return NextResponse.json(
       {

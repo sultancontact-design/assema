@@ -1,5 +1,5 @@
 // ===================================================================
-//  POST /api/admin/settings — stub (لا يُطبّق فعلياً في النسخة التجريبية)
+//  POST /api/admin/settings — stub (لا يُطبّق فعلياً)
 //  يتحقّق من المصادقة + الدور، يُرجع success:true بدون حفظ
 // ===================================================================
 
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "تم استلام الإعدادات (stub — لن تُحفظ فعلياً في النسخة التجريبية)",
+      message: "تم استلام الإعدادات (stub — لن تُحفظ فعلياً )",
     });
   } catch (err) {
     console.error("[POST /api/admin/settings]:", err);

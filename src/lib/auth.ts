@@ -1,6 +1,7 @@
 // ===================================================================
 //  NextAuth.js — التكوين الكامل
-//  - Credentials Provider (بريد + كلمة مرور)
+//  - Credentials Provider (بريد + كلمة مرور) مع فحص 2FA
+//  - credentials-2fa Provider (يدخل بعد نجاح TOTP/backup code)
 //  - محاكاة OTP (رمز ثابت: 123456 في وضع Demo)
 //  - JWT strategy (بدون قاعدة بيانات للجلسات)
 //  - Callbacks: jwt, session (إضافة role, districtId, familyId)
@@ -13,6 +14,7 @@ import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { ROLE_LABELS } from "@/lib/constants";
 import { hasPermission } from "@/lib/roles";
+import { verifyTwoFactorTicket } from "@/lib/two-factor";
 import type { Role } from "@prisma/client";
 
 // ===================================================================
@@ -114,6 +116,7 @@ export const authOptions: NextAuthOptions = {
             emailVerified: true,
             failedLoginCount: true,
             lockedUntil: true,
+            twoFactorEnabled: true,
           },
         });
 
@@ -159,6 +162,13 @@ export const authOptions: NextAuthOptions = {
           throw new Error("كلمة المرور غير صحيحة");
         }
 
+        // ✅ كلمة المرور صحيحة — فحص 2FA
+        // لو 2FA مُفعّل، نُلقي خطأً مميّزاً يحمل userId ليُعيد التوجيه لصفحة /login/2fa
+        if (user.twoFactorEnabled) {
+          // نُلقي خطأً مُرمَّزاً — صفحة الدخول تلتقطه وتُعيد التوجيه
+          throw new Error("TwoFactorRequired:" + user.id);
+        }
+
         // تصفير عدّاد المحاولات الفاشلة + تحديث آخر دخول
         await db.user.update({
           where: { id: user.id },
@@ -170,6 +180,96 @@ export const authOptions: NextAuthOptions = {
         });
 
         // إرجاع الكائن الذي يُخزَّن في الـJWT
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.fullName,
+          role: user.role,
+          districtId: user.districtId,
+          familyId: user.familyId,
+          isFamilyHead: user.isFamilyHead,
+          status: user.status,
+          phone: user.phone,
+          avatar: user.avatar,
+        } as const;
+      },
+    }),
+
+    // ===================================================================
+    //  Provider للمصادقة الثنائية (credentials-2fa)
+    //  يُستدعى بعد نجاح التحقّق بـ TOTP أو رمز نسخ احتياطي.
+    //  يقبل: { userId, ticket } — حيث ticket هو تذكرة موقّعة HMAC قصيرة العمر
+    //  يصدرها /api/auth/2fa/verify أو /api/auth/2fa/verify-backup.
+    // ===================================================================
+    CredentialsProvider({
+      id: "credentials-2fa",
+      name: "المصادقة الثنائية",
+      credentials: {
+        userId: { label: "معرّف المستخدم", type: "text" },
+        ticket: { label: "تذكرة التحقّق", type: "text" },
+      },
+      async authorize(credentials) {
+        const userId = credentials?.userId as string | undefined;
+        const ticket = credentials?.ticket as string | undefined;
+
+        if (!userId || !ticket) {
+          throw new Error("بيانات التحقّق الثنائي ناقصة");
+        }
+
+        // التحقّق من التذكرة (التوقيع + الصلاحية + مطابقة userId)
+        const ticketData = verifyTwoFactorTicket(ticket, userId);
+        if (!ticketData) {
+          throw new Error("تذكرة التحقّق غير صالحة أو منتهية الصلاحية");
+        }
+
+        // جلب المستخدم
+        const user = await db.user.findUnique({
+          where: { id: userId },
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            fullName: true,
+            role: true,
+            status: true,
+            phone: true,
+            districtId: true,
+            familyId: true,
+            isFamilyHead: true,
+            avatar: true,
+            twoFactorEnabled: true,
+            lockedUntil: true,
+          },
+        });
+
+        if (!user) {
+          throw new Error("لا يوجد حساب بهذا المعرّف");
+        }
+
+        // فحص القفل
+        if (user.lockedUntil && user.lockedUntil > new Date()) {
+          throw new Error("تم قفل حسابك مؤقتاً. حاول لاحقاً");
+        }
+
+        if (user.status !== "ACTIVE") {
+          throw new Error("حسابك غير نشط. تواصل مع الإدارة");
+        }
+
+        if (!user.twoFactorEnabled) {
+          throw new Error("المصادقة الثنائية غير مُفعّلة على هذا الحساب");
+        }
+
+        // تحديث آخر دخول
+        await db.user.update({
+          where: { id: user.id },
+          data: {
+            failedLoginCount: 0,
+            lockedUntil: null,
+            lastLoginAt: new Date(),
+          },
+        });
+
         return {
           id: user.id,
           email: user.email,

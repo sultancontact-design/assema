@@ -8,7 +8,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { ETHICS_COMMITTEE_THRESHOLD } from "@/lib/constants";
-import type { FundRequestType } from "@prisma/client";
+import { sendMail } from "@/lib/mailer";
+import * as FundRequestStatusEmail from "@/emails/fund-request-status";
+import type { FundRequestType, FundRequestStatus } from "@prisma/client";
 
 const VALID_TYPES: FundRequestType[] = [
   "MEDICAL",
@@ -178,6 +180,31 @@ export async function POST(request: NextRequest) {
         severity: "info",
       },
     });
+
+    // 14) إرسال بريد تحديث حالة الطلب (غير حرج)
+    try {
+      const dbUser = await db.user.findUnique({
+        where: { id: user.id },
+        select: { email: true, fullName: true },
+      });
+      if (dbUser?.email) {
+        const params = {
+          userName: dbUser.fullName || user.name || "الفاضل",
+          requestTitle: newRequest.title,
+          anonymousCode,
+          newStatus: "SUBMITTED" as FundRequestStatus,
+          amount: amountRequested,
+          note: null,
+        };
+        await sendMail({
+          to: dbUser.email,
+          subject: FundRequestStatusEmail.subject(params),
+          html: FundRequestStatusEmail.html(params),
+        });
+      }
+    } catch (mailErr) {
+      console.error("[fund/requests] status email failed:", mailErr);
+    }
 
     return NextResponse.json(
       {

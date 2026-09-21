@@ -76,7 +76,7 @@ export default function RootLayout({
           <SessionProvider>
             <AppChrome>{children}</AppChrome>
             <Toaster />
-            <SonnerToaster position="top-center" rtl />
+            <SonnerToaster position="top-center" />
           </SessionProvider>
         </ThemeProvider>
       </body>

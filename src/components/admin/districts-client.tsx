@@ -591,7 +591,7 @@ export function DistrictsClient({ districts, allUsers }: DistrictsClientProps) {
 
       {/* Sheet لعرض التفاصيل */}
       <Sheet open={viewing !== null} onOpenChange={(o) => { if (!o) setViewing(null); }}>
-        <SheetContent side="end" className="w-full overflow-y-auto sm:max-w-md">
+        <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-md">
           <SheetHeader className="border-b border-border">
             <SheetTitle className="text-start">
               {viewing?.name ?? ""}

@@ -414,7 +414,7 @@ export function TransparencyPanel({ data }: { data: TransparencyData }) {
             variant="outline"
             size="sm"
             className="h-11"
-            onClick={() => toast.info("سيتم توليد التقرير قريباً")}
+            onClick={() => toast.info("استخدم زر التصدير في الأعلى")}
           >
             <Download className="size-4" />
             <span>تحميل التقرير الشهري</span>
@@ -508,7 +508,7 @@ export function TransparencyPanel({ data }: { data: TransparencyData }) {
             variant="default"
             size="lg"
             className="h-11 w-full sm:w-auto"
-            onClick={() => toast.info("سيتم توليد التقرير قريباً")}
+            onClick={() => toast.info("استخدم زر التصدير في الأعلى")}
           >
             <Download className="size-4" />
             <span>تحميل PDF</span>

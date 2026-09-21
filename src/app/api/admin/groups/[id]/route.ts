@@ -81,10 +81,10 @@ export async function PATCH(
     if (body.isPrivate !== undefined) {
       data.isPrivate = !!body.isPrivate;
     }
-    if (body.maxAttendees !== undefined) {
+    if (body.maxMembers !== undefined) {
       data.maxMembers =
-        typeof body.maxAttendees === "number" && body.maxAttendees > 0
-          ? Math.floor(body.maxAttendees)
+        typeof body.maxMembers === "number" && body.maxMembers > 0
+          ? Math.floor(body.maxMembers)
           : null;
     }
     if (body.maxMembers !== undefined) {

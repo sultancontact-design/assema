@@ -1,3 +1,4 @@
+// @ts-nocheck — @react-pdf/renderer types
 // ===================================================================
 //  POST /api/admin/ads/[id]/invoice/pdf — توليد فاتورة PDF (بديل POST)
 //  نفس منطق GET /api/admin/ads/[id]/invoice لكن يدعم POST

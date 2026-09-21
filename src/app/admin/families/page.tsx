@@ -42,7 +42,7 @@ export default async function AdminFamiliesPage() {
       // إجمالي المساهمات المُؤكَّدة
       contributions: {
         where: { status: "CONFIRMED" },
-        select: { amount: true },
+        select: { id: true, amount: true, receiptNumber: true, month: true, status: true, createdAt: true },
         orderBy: { createdAt: "desc" },
         take: 10,
       },
@@ -111,11 +111,11 @@ export default async function AdminFamiliesPage() {
       recentContributions: f.contributions.map(
         (c): AdminFamilyContribution => ({
           id: c.id,
-          receiptNumber: null, // لم نُضمّنه في الـselect
+          receiptNumber: c.receiptNumber,
           amount: c.amount,
-          month: "", // لم نُضمّنه
-          status: "CONFIRMED",
-          createdAt: "",
+          month: c.month,
+          status: c.status,
+          createdAt: c.createdAt instanceof Date ? c.createdAt.toISOString() : String(c.createdAt),
         })
       ),
       recentRequests: f.fundRequests.map(
