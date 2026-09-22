@@ -2251,3 +2251,63 @@ Stage Summary:
 - 10 مكوّنات PDF + 7 قوالب بريد
 - 0 أخطاء ESLint, 0 أخطاء TypeScript, 0 TODO, 0 ComingSoon, 0 console.log
 - 234 إشعار + 200 مستخدم + 50 عائلة + 300 مساهمة + 40 طلب + 8 فعاليات في DB
+
+---
+Task ID: 12-launch
+Agent: Main (Z.ai Code)
+Task: الإطلاق الرسمي — الرفع لـGitHub + إعداد Supabase + إرشادات Vercel
+
+Work Log:
+- إنشاء repo على GitHub:
+  * الحساب الفعلي للـtoken: sultancontact-design (الاسم المطلوب: assema استُخدم كاسم repo)
+  * Repo: github.com/sultancontact-design/assema (public)
+  * الأمر: curl -X POST https://api.github.com/user/repos (auto-init=false)
+- Push الكود إلى GitHub:
+  * git remote add origin (مع token في URL ثم تنظيف)
+  * git push -u origin main
+  * 7 commits مرفوعة بنجاح
+  * آخر commit: "v1.0.0 — Production setup"
+- إعداد Supabase:
+  * تحويل prisma/schema.prisma من sqlite إلى postgresql
+  * إضافة directUrl
+  * إنشاء .env بإعدادات Supabase (Pooler)
+  * محاولة db:push عبر Pooler
+- تشخيص المشكلة:
+  * فحص DNS: db.uigwfpddaawiwvsxmggj.supabase.co يحوي IPv6 فقط (لا IPv4) → sandbox لا يصل
+  * فحص Pooler: aws-0-eu-central-1.pooler.supabase.com:6543 — reachable ✅
+  * اختبار Prisma + مكتبة pg: نفس الخطأ "FATAL: (ENOTFOUND) tenant/user postgres.uigwfpddaawiwvsxmggj not found"
+  * اختبار 6 مناطق pooler مختلفة (eu-central-1, eu-west-1, us-east-1, us-west-1, ap-southeast-1, ap-northeast-1) — كلها تُرجع نفس الخطأ
+  * فحص REST API: المشروع يستجيب (code:"PGRST205" — schema cache empty — لا توجد جداول)
+  * الخلاصة: المشروع نشط على REST API لكن Supavisor لا يتعرّف على project ref
+  * التفسير الأرجح: المشروع موقوف (paused) على مستوى DB رغم استجابة REST API
+- استعداد للاستئناف اليدوي:
+  * استعادة .env للـSQLite المحلي (يبقى dev يعمل)
+  * استعادة prisma/schema.prisma لـsqlite (يبقى dev يعمل)
+  * إنشاء .env.production بكل إعدادات Supabase + Vercel
+  * إنشاء scripts/setup-supabase.sh (سكريبت one-command setup)
+  * commit + push للسكريبتات والتجهيزات
+
+Stage Summary:
+- ✅ Repo GitHub أُنشئ: github.com/sultancontact-design/assema (public، branch: main)
+- ✅ 7 commits مرفوعة (آخرها: v1.0.0 — Production setup)
+- ✅ .env.production جاهز بكل بيانات Supabase (DATABASE_URL + DIRECT_URL + anon key)
+- ✅ scripts/setup-supabase.sh جاهز (one-command setup بعد استئناف المشروع)
+- ✅ scripts/deploy-to-vercel.sh جاهز (إرشادات Vercel)
+- ✅ dev server محلي يعمل (SQLite) — 200 OK
+- ⚠️ migration إلى Supabase: يتطلّب استئناف المشروع من Supabase Dashboard (sandbox لا يستطيع — Supavisor يرفض tenant)
+- ⚠️ Vercel deployment: يتطلّب حساب Vercel + استيراد من GitHub من لوحة Vercel
+
+خطوات للمستخدم:
+1. اذهب لـhttps://supabase.com/dashboard/project/uigwfpddaawiwvsxmggj
+2. إن كان موقوفاً → اضغط "Restore project"
+3. انتظر 2-3 دقائق
+4. من terminal محلي (مع وصول IPv4): bash scripts/setup-supabase.sh
+5. على Vercel: https://vercel.com/new → Import "sultancontact-design/assema"
+6. أضف Environment Variables (من .env.production)
+7. Deploy
+
+الإحصاء النهائي:
+- Repo: github.com/sultancontact-design/assema
+- Supabase project ref: uigwfpddaawiwvsxmggj (Frankfurt — eu-central-1)
+- commits: 7
+- ملفات الإعداد: 6 (.env.example, .env.production, vercel.json, .gitignore, scripts/setup-supabase.sh, scripts/deploy-to-vercel.sh)
