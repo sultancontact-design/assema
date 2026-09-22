@@ -2378,3 +2378,93 @@ Stage Summary:
 - 9 env vars مضبوطة على Vercel
 - Build: 49s (نجح)
 - Deploy: 1m (نجح)
+
+---
+Task ID: 12-security-hardening
+Agent: Main (Z.ai Code)
+Task: المرحلة 12 — إصلاح شامل قبل الإطلاق الرسمي
+
+Work Log:
+
+### 12أ — إصلاح الثغرة الأمنية
+- توليد NEXTAUTH_SECRET جديد (64 حرف hex) — مُخزّن في .env.secrets (محذور من Git)
+- توليد SETUP_KEY مستقل (32 حرف hex) — مُخزّن في .env.secrets (محذور من Git)
+- تحديث Vercel Environment Variables:
+  * حذف NEXTAUTH_SECRET القديم + إضافة الجديد (Secret type)
+  * إضافة SETUP_KEY جديد (Secret type)
+- إصلاح /api/setup/seed:
+  * يقرأ SETUP_KEY من process.env (لا من NEXTAUTH_SECRET)
+  * يتحقق من setup_completed في Settings table
+  * بعد أول تشغيل ناجح: يسجّل setup_completed=true
+  * إذا setup_completed=true: يعيد 403 Forbidden
+- إنشاء /api/health endpoint:
+  * GET آمن — لا يكشف credentials
+  * يعرض: status, host (بدون credentials), counts, setup state, env flags
+  * يُشخّص نوع الخطأ (supabase_paused, connection_refused, unreachable)
+- تحديث DEPLOYMENT.md:
+  * قسم "الأمان" جديد بـ6 تحذيرات صارمة
+  * تحذير: "لا تُكشف NEXTAUTH_SECRET في أي تقرير أو commit"
+  * تحذير: "بعد الإطلاق، احذف /api/setup/seed من الكود"
+  * إضافة SETUP_KEY لجدول Environment Variables
+
+### 12ج — إزالة DemoBanner
+- حذف import DemoBanner من src/app/page.tsx
+- حذف <DemoBanner /> من JSX
+- التحقق: grep "DemoBanner" src/app/page.tsx → لا نتائج ✅
+
+### 12د — إزالة بيانات اعتماد الدخول
+- من src/app/login/page.tsx:
+  * حذف كتلة showDemoBanner (banner أصفر مع رابط /demo-access + Demo@1234)
+  * حذف كتلة "وضع التجربة — حسابات جاهزة" (admin@syba-community.ma + member@syba-community.ma + Demo@1234)
+  * حذف state showDemoBanner + setShowDemoBanner
+  * حذف imports غير المستخدمة: X, Info
+- من README.md:
+  * استبدال "سجّل دخول بـadmin@syba-community.ma / Demo@1234" بمؤشر آمن
+  * استبدال "كلمة المرور: Demo@1234" بمؤشر آمن
+  * توسيم البريد بـ"(demo فقط)"
+- من DEPLOYMENT.md:
+  * استبدال "بـadmin@syba-community.ma" بمؤشر آمن
+  * استبدال "admin@syba-community.ma / Demo@1234" بـ"بيانات الاعتماد التجريبية"
+- من docs/POST-DEPLOYMENT-CHECKLIST.md:
+  * استبدال "admin@syba-community.ma / Demo@1234" بمؤشر آمن
+- من docs/ADMIN-GUIDE-AR.md:
+  * استبدال كل "Demo@1234" بـ"(انظر .env.example — لا تُكشف هنا)"
+  * توسيم كل "admin@syba-community.ma" بـ"(demo)"
+
+### النشر على Vercel
+- commit: "v1.1.0 — Security hardening: rotate secrets, remove exposed credentials"
+- push إلى GitHub (9 files changed, 319 insertions, 157 deletions)
+- إعادة النشر على Vercel: نجح في 51s build + 2m deploy
+- الرابط الإنتاجي: https://my-project-eta-drab.vercel.app
+
+### الاختبار النهائي
+- /api/health: ✅ يعمل — يُشخّص "supabase_paused" + hint واضح
+- /login: ✅ لا يحوي أي بيانات اعتماد (Demo@1234, admin@syba, وضع التجربة, حسابات جاهزة)
+- /: ✅ لا يحوي DemoBanner
+- /api/setup/seed بدون مفتاح: ✅ يعيد "مفتاح غير صالح" (401)
+- /api/setup/seed بمفتاح خاطئ: ✅ يعيد "مفتاح غير صالح" (401)
+- /api/setup/seed GET: يعرض حالة DB + hint للاستئناف
+
+Stage Summary:
+- ✅ NEXTAUTH_SECRET الجديد مُولّد + مُحدّث على Vercel (لم يُكشف في أي مكان)
+- ✅ SETUP_KEY مستقل مُولّد + مُحدّث على Vercel (لم يُكشف)
+- ✅ /api/setup/seed يستخدم SETUP_KEY + setup_completed flag
+- ✅ /api/health endpoint للتشخيص الآمن
+- ✅ DemoBanner محذوف من الصفحة الرئيسية
+- ✅ بيانات الاعتماد محذوفة من login + كل الـdocs العامة
+- ✅ DEPLOYMENT.md يحوي قسم "الأمان" بـ6 تحذيرات صارمة
+- ✅ النشر على Vercel نجح: https://my-project-eta-drab.vercel.app
+- ⚠️ Supabase project لا يزال موقوفاً — يحتاج استئناف يدوي من Dashboard
+
+الإحصاء:
+- ملفات معدّلة: 9 (4 docs + 4 code + 1 .gitignore)
+- ملف جديد: 1 (src/app/api/health/route.ts)
+- إدراجات: 319 سطر
+- حذوفات: 157 سطر
+- Lint: 0 أخطاء
+- Build: 51s (نجح)
+- Deploy: 2m (نجح)
+
+الفجوات المتبقية بصراحة:
+- Supabase project موقوف — يحتاج استئناف يدوي من Dashboard
+- بعد الاستئناف: شغّل POST /api/setup/seed مع SETUP_KEY (المفتاح في .env.secrets محلياً)
