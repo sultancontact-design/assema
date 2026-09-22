@@ -31,9 +31,29 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-.env*
+.env
+.env.local
+.env.production
+!.env.example
 
-# vercel
+# Database (local SQLite — لا تُرفع للإنتاج)
+db/custom.db
+db/custom.db-journal
+prisma/dev.db
+prisma/dev.db-journal
+
+# Lighthouse / Vitals
+/lighthouse/
+lighthouse-vitals.json
+
+# MailHog (local)
+mailhog-mails.json
+mailhog.log
+
+# Agent context
+/agent-ctx/
+
+# Vercel
 .vercel
 
 

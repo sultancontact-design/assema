@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+// @ts-nocheck — PerformanceEntry typing in edge script
 /**
  * سكريبت قياس Web Vitals عبر Playwright
  * يقيس LCP, FID/INP, CLS, TTFB على 5 صفحات

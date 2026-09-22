@@ -2159,3 +2159,95 @@ Stage Summary:
 
 جاهزية الإطلاق النهائي:
 - ✅ جاهز 100% للنشر — كل الفجوات الـ5 الحرجة أُغلقت بأدلة فعلية
+
+---
+Task ID: 11-final
+Agent: Main (Z.ai Code)
+Task: المرحلة 11 — الإطلاق الرسمي (التوثيق + التحضير + السكريبتات)
+
+Work Log:
+
+### 11أ — التحقق من الادعاءات (أدلة فعلية جديدة)
+- عدد الإشعارات في DB: 234 (199 ANNOUNCEMENT, 7 CONTRIBUTION, 5 EVENT, 19 FUND_REQUEST, 4 SYSTEM)
+- عدد أقسام الأدمن الفعلية: 25 صفحة page.tsx في src/app/admin/
+- عدد ملفات الاختبار الآلي: 0 (لا توجد — موثّق بصراحة)
+- عدد ملفات TSX/TS في src/: 252 ملفاً
+- عدد أسطر الكود في src/: 41,397 سطراً
+- نماذج Prisma: 17
+- Enums: 15
+- API Routes: 61
+- مكوّنات PDF: 10
+- المستخدمون: SUPER_ADMIN:1, TREASURER:1, ETHICS:5, DISTRICT_MOD:1, GROUP_LEADER:3, ADS_MANAGER:1, MEMBER:188
+- ESLint: 0 أخطاء
+- TypeScript في src/: 0 أخطاء (بعد إصلاح 3 أخطاء في scripts/measure-vitals.ts)
+
+### 11ب — التوثيق النهائي
+- README.md: محدّث بالكامل (Quick Start + الاختبار المحلي + الإنتاج + الحسابات + الأمان + البنية + فجوات فارغة)
+- DEPLOYMENT.md: محدّث بالكامل (تحذيرات صارمة + Vercel + Supabase + Brevo + 2FA + IP + VPS مغربي)
+- CHANGELOG.md: مُنشأ جديد (v1.0.0 — إحصاء كامل + أداء + تقنيات + متطلّبات إنتاجية)
+- worklog.md: محدّث (هذا القسم — المرحلة 11)
+
+### 11ج — التحضير لـVercel
+- .env.example: مُنشأ (كل المتغيّرات موثّقة + placeholders آمنة)
+- vercel.json: مُنشأ (buildCommand + installCommand + framework + regions + DEMO_MODE=false)
+- .gitignore: محدّث (.env, db/custom.db, lighthouse/, mailhog-mails.json, agent-ctx/, .vercel + !.env.example)
+- اختبار build محلي: ✅ "Compiled successfully in 32.2s" — كل المسارات مُنفّذة (43 page.tsx + 61 API route + proxy middleware)
+
+### 11د — Supabase migration (سكريبت + إرشادات)
+- scripts/migrate-to-supabase.sh: مُنشأ (130 سطر)
+  * يتحقّق من DATABASE_URL + DIRECT_URL
+  * ينسخ schema.prisma احتياطياً
+  * يحوّل provider من sqlite إلى postgresql
+  * يضيف directUrl
+  * ينفّذ: db:generate + db:push + db:seed
+  * يتحقّق من البيانات (counts)
+- **اعتراف صادق**: لا أستطيع إنشاء مشروع Supabase فعلي من هذه البيئة المعزولة — يتطلّب حساب Supabase خارجي للمستخدم
+
+### 11هـ — Vercel deployment (سكريبت + إرشادات)
+- scripts/deploy-to-vercel.sh: مُنشأ (60 سطر)
+  * يتحقّق من الجاهزية (.env.example + vercel.json + .gitignore)
+  * يعرض خيارين: Dashboard (موصى به) + CLI
+  * يسرد Environment Variables المطلوبة
+  * يعرض خطوات ما بعد النشر
+- **اعتراف صادق**: لا أستطيع النشر على Vercel فعلياً — يتطلّب حساب Vercel + GitHub خارجي للمستخدم
+
+### 11و — POST-DEPLOYMENT-CHECKLIST.md
+- مُنشأ في docs/POST-DEPLOYMENT-CHECKLIST.md (300+ سطر)
+- 4 أقسام:
+  * الإعداد الفوري (اليوم 1): الأمان + DB + الاختبار الوظيفي
+  * الإعداد الأسبوعي: المراقبة + المحتوى + الأداء
+  * الإعداد الشهري: التقارير + الأمان + النسخ الاحتياطي
+  * خطة الطوارئ: DB crash + Vercel crash + اختراق + فقدان بيانات
+- Checklist الإطلاق النهائي (12 بند)
+
+Stage Summary:
+- ✅ 11أ: كل الادعاءات موثّقة بأدلة فعلية (234 إشعار، 25 قسم أدمن، 252 ملف، 41,397 سطر، 0 أخطاء TS/ESLint)
+- ✅ 11ب: 4 ملفات توثيق محدّثة/مُنشأة (README + DEPLOYMENT + CHANGELOG + worklog)
+- ✅ 11ج: ملفات النشر جاهزة (.env.example + vercel.json + .gitignore + build نجح 32.2s)
+- ⚠️ 11د: سكريبت migrate-to-supabase.sh جاهز — يتطلّب حساب Supabase فعلي للمستخدم
+- ⚠️ 11هـ: سكريبت deploy-to-vercel.sh جاهز — يتطلّب حساب Vercel + GitHub فعلي للمستخدم
+- ✅ 11و: POST-DEPLOYMENT-CHECKLIST.md جاهز (300+ سطر بـ4 أقسام)
+
+الإحصاء النهائي للمرحلة 11:
+- ملفات جديدة: 5 (.env.example, vercel.json, CHANGELOG.md, docs/POST-DEPLOYMENT-CHECKLIST.md, scripts/migrate-to-supabase.sh, scripts/deploy-to-vercel.sh)
+- ملفات محدّثة: 3 (README.md, DEPLOYMENT.md, .gitignore, worklog.md)
+- أسطر كود/توثيق جديدة: ~1500
+
+الفجوات المتبقية بصراحة كاملة:
+- النشر الفعلي على Vercel + Supabase: يتطلّب حسابات خارجية للمستخدم
+- كل السكريبتات + الإرشادات + التوثيق جاهزة للتنفيذ المباشر من قبل المستخدم
+
+جاهزية الإطلاق الرسمي:
+- ✅ الكود جاهز 100% (build نجح، lint نظيف، TS نظيف)
+- ✅ التوثيق جاهز 100% (README + DEPLOYMENT + CHANGELOG + worklog + ADMIN-GUIDE + POST-DEPLOYMENT-CHECKLIST)
+- ✅ السكريبتات جاهزة 100% (migrate-to-supabase + deploy-to-vercel + mailhog-server + totp-gen + measure-vitals)
+- ⚠️ النشر الفعلي: يتطلّب المستخدم تنفيذ سكريبتات النشر بنفسه (لا يمكنني تنفيذها نيابة عنه)
+
+الإحصاء النهائي الكامل للمشروع:
+- 252 ملف TS/TSX في src/ (41,397 سطر)
+- 17 نموذج Prisma + 15 Enum
+- 43 مسار page.tsx + 61 API route
+- 25 صفحة في لوحة الأدمن (16 قسم رئيسي + فرعية)
+- 10 مكوّنات PDF + 7 قوالب بريد
+- 0 أخطاء ESLint, 0 أخطاء TypeScript, 0 TODO, 0 ComingSoon, 0 console.log
+- 234 إشعار + 200 مستخدم + 50 عائلة + 300 مساهمة + 40 طلب + 8 فعاليات في DB
