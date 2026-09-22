@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
   Check,
@@ -385,15 +386,26 @@ function ContributionsTable({
 function RequestsTable({
   requests,
   canVote,
+  canReview = true,
 }: {
   requests: AdminFundRequestRow[];
   canVote: boolean;
+  canReview?: boolean;
 }) {
   const [statusFilter, setStatusFilter] = React.useState<string>("ALL");
   const [voteRequest, setVoteRequest] = React.useState<AdminFundRequestRow | null>(null);
   const [voteDecision, setVoteDecision] = React.useState<ApprovalDecision>("APPROVE");
   const [voteNote, setVoteNote] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
+
+  // حالة تحديث الحالة (للأمين)
+  const [statusRequest, setStatusRequest] = React.useState<AdminFundRequestRow | null>(null);
+  const [newStatus, setNewStatus] = React.useState<string>("");
+  const [reviewNote, setReviewNote] = React.useState("");
+  // تفاصيل الصرف
+  const [disbursementMethod, setDisbursementMethod] = React.useState<string>("BANK_TRANSFER");
+  const [disbursementRef, setDisbursementRef] = React.useState<string>("");
+  const [submittingStatus, setSubmittingStatus] = React.useState(false);
 
   const filtered = React.useMemo(() => {
     if (statusFilter === "ALL") return requests;
@@ -436,6 +448,78 @@ function RequestsTable({
     } finally {
       setSubmitting(false);
     }
+  }
+
+  // إرسال تحديث الحالة (PATCH endpoint جديد للأمين)
+  async function submitStatusUpdate() {
+    if (!statusRequest || !newStatus) return;
+    setSubmittingStatus(true);
+    try {
+      const payload: Record<string, unknown> = {
+        status: newStatus,
+        note: reviewNote || undefined,
+      };
+      // إذا الانتقال إلى DISBURSED، أضف تفاصيل الصرف
+      if (newStatus === "DISBURSED") {
+        payload.disbursementMethod = disbursementMethod;
+        payload.disbursementRef = disbursementRef || undefined;
+      }
+      const res = await fetch(
+        `/api/admin/fund-requests/${statusRequest.id}/status`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        toast.error(data?.error ?? "فشل تحديث الحالة");
+        return;
+      }
+      toast.success(data.message ?? "تم تحديث الحالة");
+      // تحديث محلي للحالة
+      const idx = requests.findIndex((r) => r.id === statusRequest.id);
+      if (idx >= 0) {
+        requests[idx] = {
+          ...requests[idx],
+          status: newStatus as AdminFundRequestRow["status"],
+        };
+      }
+      setStatusRequest(null);
+      setNewStatus("");
+      setReviewNote("");
+      setDisbursementRef("");
+    } catch {
+      toast.error("تعذّر الاتصال بالخادم");
+    } finally {
+      setSubmittingStatus(false);
+    }
+  }
+
+  // تحديد الأزرار الديناميكية حسب الحالة الحالية
+  function getTreasurerActions(r: AdminFundRequestRow): { label: string; to: string; variant?: "default" | "outline" | "destructive" | "secondary" }[] {
+    const actions: { label: string; to: string; variant?: "default" | "outline" | "destructive" | "secondary" }[] = [];
+    switch (r.status) {
+      case "SUBMITTED":
+        actions.push({ label: "بدء المراجعة", to: "UNDER_REVIEW", variant: "default" });
+        actions.push({ label: "رفض", to: "REJECTED", variant: "destructive" });
+        break;
+      case "UNDER_REVIEW":
+        if (r.amountRequested < 1000) {
+          actions.push({ label: "موافقة", to: "APPROVED", variant: "default" });
+        }
+        actions.push({ label: "رفض", to: "REJECTED", variant: "destructive" });
+        break;
+      case "APPROVED":
+        actions.push({ label: "تسجيل الصرف", to: "DISBURSED", variant: "default" });
+        actions.push({ label: "رفض", to: "REJECTED", variant: "destructive" });
+        break;
+      case "DISBURSED":
+        actions.push({ label: "إغلاق الطلب", to: "COMPLETED", variant: "secondary" });
+        break;
+    }
+    return actions;
   }
 
   return (
@@ -487,6 +571,11 @@ function RequestsTable({
               {canVote && (
                 <TableHead className="text-start text-xs text-muted-foreground">
                   تصويت
+                </TableHead>
+              )}
+              {canReview && (
+                <TableHead className="text-start text-xs text-muted-foreground">
+                  إجراءات الأمين
                 </TableHead>
               )}
             </TableRow>
@@ -563,6 +652,34 @@ function RequestsTable({
                       ) : (
                         <span className="text-xs text-muted-foreground">—</span>
                       )}
+                    </TableCell>
+                  )}
+                  {canReview && (
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1.5">
+                        {getTreasurerActions(r).map((action) => (
+                          <Button
+                            key={action.to}
+                            variant={action.variant ?? "outline"}
+                            size="sm"
+                            className="h-9 text-xs"
+                            onClick={() => {
+                              setStatusRequest(r);
+                              setNewStatus(action.to);
+                              setReviewNote("");
+                              setDisbursementRef("");
+                              setDisbursementMethod("BANK_TRANSFER");
+                            }}
+                          >
+                            {action.label}
+                          </Button>
+                        ))}
+                        {getTreasurerActions(r).length === 0 && (
+                          <span className="text-xs text-muted-foreground">
+                            حالة نهائية
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                   )}
                 </TableRow>
@@ -695,6 +812,111 @@ function RequestsTable({
               disabled={submitting}
             >
               {submitting ? "جارٍ التسجيل..." : "تسجيل الصوت"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* نافذة تحديث الحالة (للأمين) */}
+      <Dialog
+        open={!!statusRequest}
+        onOpenChange={(v) => {
+          if (!v) {
+            setStatusRequest(null);
+            setNewStatus("");
+            setReviewNote("");
+            setDisbursementRef("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>تحديث حالة الطلب</DialogTitle>
+            <DialogDescription>
+              {statusRequest?.anonymousCode} — {statusRequest ? FUND_REQUEST_TYPE_LABELS[statusRequest.type].label : ""}
+              {" · "}
+              {statusRequest ? formatMAD(statusRequest.amountRequested) : ""}
+              {" · "}
+              {statusRequest ? `الحالة: ${FUND_REQUEST_STATUS_LABELS[statusRequest.status].label}` : ""}
+              {" → "}
+              {newStatus ? FUND_REQUEST_STATUS_LABELS[newStatus as keyof typeof FUND_REQUEST_STATUS_LABELS]?.label : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="rounded-md border border-border bg-muted/30 p-3">
+              <p className="text-xs text-muted-foreground">عنوان الطلب</p>
+              <p className="text-sm text-foreground">{statusRequest?.title}</p>
+            </div>
+
+            {/* تفاصيل الصرف — تظهر فقط عند الانتقال إلى DISBURSED */}
+            {newStatus === "DISBURSED" && (
+              <div className="space-y-3 rounded-md border border-emerald-200 bg-emerald-50/50 p-3">
+                <p className="text-xs font-medium text-emerald-700">
+                  تفاصيل الصرف
+                </p>
+                <div className="space-y-2">
+                  <div>
+                    <Label className="text-xs">طريقة الصرف</Label>
+                    <Select value={disbursementMethod} onValueChange={setDisbursementMethod}>
+                      <SelectTrigger className="h-9 mt-1" aria-label="طريقة الصرف">
+                        <SelectValue placeholder="اختر الطريقة" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="BANK_TRANSFER">تحويل بنكي</SelectItem>
+                        <SelectItem value="CASH">نقدي</SelectItem>
+                        <SelectItem value="CMI">CMI</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">مرجع الصرف (اختياري)</Label>
+                    <Input
+                      className="h-9 mt-1"
+                      placeholder="رقم التحويل، إيصال، إلخ."
+                      value={disbursementRef}
+                      onChange={(e) => setDisbursementRef(e.target.value)}
+                      dir="ltr"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <Label>ملاحظة (اختياري)</Label>
+              <Textarea
+                className="mt-1 min-h-20"
+                placeholder={
+                  newStatus === "REJECTED"
+                    ? "سبب الرفض..."
+                    : newStatus === "DISBURSED"
+                    ? "تفاصيل الصرف..."
+                    : "ملاحظات المراجعة..."
+                }
+                value={reviewNote}
+                onChange={(e) => setReviewNote(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setStatusRequest(null);
+                setNewStatus("");
+                setReviewNote("");
+              }}
+              className="h-10"
+            >
+              إلغاء
+            </Button>
+            <Button
+              onClick={submitStatusUpdate}
+              disabled={submittingStatus}
+              variant={newStatus === "REJECTED" ? "destructive" : "default"}
+              className="h-10"
+            >
+              {submittingStatus ? "جارٍ التحديث..." : "تأكيد التحديث"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,0 +1,47 @@
+{
+  "home": {
+    "ttfb": 250.39999999990687,
+    "fcp": 680,
+    "domContentLoaded": 1241.6000000000931,
+    "loadTime": 1242.5,
+    "transferSize": 69841,
+    "lcp": 1376,
+    "cls": 0.0019006196952160493
+  },
+  "login": {
+    "ttfb": 182.40000000037253,
+    "fcp": 500,
+    "domContentLoaded": 489.20000000018626,
+    "loadTime": 714.7000000001863,
+    "transferSize": 29918,
+    "lcp": 828,
+    "cls": 0.0001219874252507716
+  },
+  "community-fund": {
+    "ttfb": 81.89999999990687,
+    "fcp": 240,
+    "domContentLoaded": 824.6000000000931,
+    "loadTime": 847.1000000000931,
+    "transferSize": 40911,
+    "lcp": 932,
+    "cls": 0.0001219874252507716
+  },
+  "page-403": {
+    "ttfb": 811.5,
+    "fcp": 1140,
+    "domContentLoaded": 1151.8000000002794,
+    "loadTime": 1333.6000000000931,
+    "transferSize": 34576,
+    "lcp": 1528,
+    "cls": 0.00010313991970486111
+  },
+  "demo-access": {
+    "ttfb": 213.10000000009313,
+    "fcp": 704,
+    "domContentLoaded": 919.2000000001863,
+    "loadTime": 967.1000000000931,
+    "transferSize": 90604,
+    "lcp": 1036,
+    "cls": 0.0004888374485596707
+  }
+}

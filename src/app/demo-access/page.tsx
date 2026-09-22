@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { ROLE_LABELS, ROLE_HIERARCHY } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
@@ -98,7 +99,16 @@ export const metadata = {
     "صفحة عرض توضيحي بحسابات جاهزة لكل دور على المنصة. جرّب المنصة بحساب مشرف عام، أمين صندوق، لجنة نزاهة، مشرف حي، رئيس مجموعة، عضو، أو زائر.",
 };
 
+// Force dynamic — حتى يُقرأ DEMO_MODE من البيئة في كل طلب
+export const dynamic = "force-dynamic";
+
 export default async function DemoAccessPage() {
+  // حماية أمنية: الصفحة تُفعّل فقط في وضع العرض (DEMO_MODE=true)
+  // في الإنتاج: يُضبط DEMO_MODE=false (أو يُحذف)، فتعود الصفحة 404
+  if (process.env.DEMO_MODE !== "true") {
+    notFound();
+  }
+
   const accounts = await getDemoAccounts();
 
   // رتّب الحسابات حسب الترتيب الافتراضي
