@@ -94,8 +94,20 @@ const AD_PACKAGES = [
   },
 ];
 
+// Force dynamic — لا نُريد prerender أثناء الـbuild (DB قد لا يكون متاحاً)
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
-  const { fundStats, familyCount } = await getHomePageStats();
+  // graceful fallback إذا DB غير متاح (مثلاً أثناء build قبل الـmigration)
+  let fundStats = { totalContributions: 0, balance: 0 } as { totalContributions: number; balance: number };
+  let familyCount = 0;
+  try {
+    const result = await getHomePageStats();
+    fundStats = result.fundStats;
+    familyCount = result.familyCount;
+  } catch {
+    // DB غير متاح — استخدم قيم افتراضية
+  }
   const LIVE_STATS = [
     { label: "أسرة مسجّلة", value: formatNumber(familyCount), icon: Users, color: "text-secondary" },
     { label: "درهم مساهم", value: formatNumber(fundStats.totalContributions), icon: HandCoins, color: "text-primary" },
