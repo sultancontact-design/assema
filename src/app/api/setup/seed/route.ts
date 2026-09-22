@@ -1,6 +1,6 @@
 // ===================================================================
-//  POST /api/setup/seed — تشغيل seed مرة واحدة (إذا DB فارغ)
-//  محمي بـ SECRET_KEY أو DEV فقط
+//  /api/setup/seed — تشغيل migration + seed مرة واحدة
+//  يستدعى بعد استئناف Supabase project
 // ===================================================================
 
 import { NextResponse } from "next/server";
@@ -10,39 +10,86 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 export async function POST(request: Request) {
-  // تحقق من أن DB فارغ قبل الـseed
+  const body = await request.json().catch(() => ({}));
+  const setupKey = request.headers.get("x-setup-key") || body?.setupKey;
+
+  // تحقق بسيط من المفتاح (يجب أن يطابق NEXTAUTH_SECRET)
+  if (setupKey !== process.env.NEXTAUTH_SECRET) {
+    return NextResponse.json({ error: "مفتاح غير صالح" }, { status: 401 });
+  }
+
   try {
-    const userCount = await db.user.count();
-
-    if (userCount > 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: `DB ليس فارغاً (${userCount} مستخدم موجود). الـseed مُقدّم للحالات الأولى فقط.`,
-        },
-        { status: 409 }
-      );
-    }
-
-    // استدعاء seed.ts مباشرة
     const { exec } = await import("child_process");
     const { promisify } = await import("util");
     const execAsync = promisify(exec);
 
-    const { stdout, stderr } = await execAsync("bun run db:seed", {
-      cwd: process.cwd(),
-      timeout: 50000,
-    });
+    const results: { step: string; status: string; output?: string }[] = [];
 
-    // التحقق من النتيجة
-    const finalCount = await db.user.count();
+    // 1) prisma db push (إنشاء الـschema)
+    try {
+      const { stdout, stderr } = await execAsync(
+        "bunx prisma db push --accept-data-loss",
+        { cwd: process.cwd(), timeout: 45000 }
+      );
+      results.push({
+        step: "prisma db push",
+        status: "success",
+        output: (stdout + stderr).substring(0, 300),
+      });
+    } catch (e) {
+      results.push({
+        step: "prisma db push",
+        status: "failed",
+        output: e instanceof Error ? e.message.substring(0, 300) : "error",
+      });
+      return NextResponse.json({ success: false, results }, { status: 500 });
+    }
+
+    // 2) فحص إذا DB فارغ
+    const userCount = await db.user.count();
+
+    if (userCount > 0) {
+      return NextResponse.json({
+        success: true,
+        message: "الـschema أُنشئ. DB يحوي بيانات — تم تخطّي الـseed.",
+        userCount,
+        results,
+      });
+    }
+
+    // 3) seed
+    try {
+      const { stdout, stderr } = await execAsync("bun run db:seed", {
+        cwd: process.cwd(),
+        timeout: 50000,
+      });
+      results.push({
+        step: "db:seed",
+        status: "success",
+        output: (stdout + stderr).substring(0, 500),
+      });
+    } catch (e) {
+      results.push({
+        step: "db:seed",
+        status: "failed",
+        output: e instanceof Error ? e.message.substring(0, 300) : "error",
+      });
+    }
+
+    // 4) تحقّق نهائي
+    const finalUsers = await db.user.count();
+    const finalFamilies = await db.family.count();
+    const finalContributions = await db.contribution.count();
 
     return NextResponse.json({
       success: true,
-      message: "تم تشغيل الـseed بنجاح",
-      usersCreated: finalCount,
-      stdout: stdout.substring(0, 500),
-      stderr: stderr ? stderr.substring(0, 500) : null,
+      message: "اكتمل الإعداد",
+      finalCounts: {
+        users: finalUsers,
+        families: finalFamilies,
+        contributions: finalContributions,
+      },
+      results,
     });
   } catch (error) {
     return NextResponse.json(
@@ -63,10 +110,14 @@ export async function GET() {
       users: userCount,
       families: familyCount,
       isEmpty: userCount === 0,
+      hint: userCount === 0 ? "DB فارغ — استدعِ POST /api/setup/seed بعد استئناف Supabase" : "DB يحوي بيانات",
     });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "DB not reachable" },
+      {
+        error: error instanceof Error ? error.message : "DB not reachable",
+        hint: "Supabase project may be paused — استئنفه من https://supabase.com/dashboard/project/uigwfpddaawiwvsxmggj",
+      },
       { status: 500 }
     );
   }
