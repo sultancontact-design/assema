@@ -1,0 +1,654 @@
+// ===================================================================
+//  سيدي يوسف بن علي العاصمة — منصة المعروف الرقمي
+//  Prisma Schema (MVP — 5 وحدات)
+//  متوافق مع SQLite (محلي) و PostgreSQL (إنتاج Supabase)
+//  كل الجداول: id, createdAt, updatedAt, deletedAt (Soft Delete)
+// ===================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ===================================================================
+//  Enums (تُخزَّن كنصوص في SQLite، Enum في PostgreSQL)
+// ===================================================================
+
+// الأدوار الثمانية
+enum Role {
+  GUEST           // زائر
+  MEMBER          // عضو
+  GROUP_LEADER    // رئيس مجموعة
+  DISTRICT_MOD    // مشرف حي
+  TREASURER       // أمين الصندوق
+  ETHICS_COMMITTEE // لجنة النزاهة
+  SUPER_ADMIN     // سوبر أدمن
+  ADS_MANAGER     // مسؤول إعلانات
+}
+
+enum UserStatus {
+  ACTIVE
+  PENDING
+  SUSPENDED
+  DISABLED
+}
+
+enum ContributionStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  REFUNDED
+}
+
+enum ContributionMethod {
+  BANK_TRANSFER   // تحويل بنكي
+  CASH            // نقداً عبر أمين الصندوق
+  CMI             // CMI (للمرحلة المدفوعة)
+}
+
+enum FundRequestType {
+  MEDICAL         // مرض
+  DEATH           // وفاة
+  WEDDING         // عرس
+  EDUCATION       // تعليم
+  EMERGENCY       // طوارئ
+  MICRO_PROJECT   // مشروع صغير
+}
+
+enum FundRequestStatus {
+  SUBMITTED       // مُقدَّم
+  UNDER_REVIEW    // قيد المراجعة
+  APPROVED        // موافَق
+  REJECTED        // مرفوض
+  DISBURSED       // مَصروف
+  COMPLETED       // مكتمل
+}
+
+enum ApprovalDecision {
+  APPROVE
+  REJECT
+  ABSTAIN
+}
+
+enum EventType {
+  MONTHLY         // شهري
+  SEASONAL        // موسمي
+  SPECIAL         // خاص
+  SOLIDARITY      // تضامني
+  CULTURAL        // ثقافي
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+enum RegistrationStatus {
+  REGISTERED
+  ATTENDED
+  CANCELLED
+  NO_SHOW
+}
+
+enum NotificationType {
+  SYSTEM
+  CONTRIBUTION
+  FUND_REQUEST
+  EVENT
+  GROUP
+  COMPLAINT
+  ANNOUNCEMENT
+}
+
+enum ComplaintType {
+  FINANCIAL
+  BEHAVIORAL
+  TECHNICAL
+  SUGGESTION
+  OTHER
+}
+
+enum ComplaintStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  REJECTED
+}
+
+enum AdStatus {
+  DRAFT
+  PENDING
+  ACTIVE
+  PAUSED
+  EXPIRED
+  REJECTED
+}
+
+enum AdPackage {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+  SPONSOR
+}
+
+// ===================================================================
+//  النماذج الأساسية
+// ===================================================================
+
+model District {
+  id          String   @id @default(cuid())
+  name        String   @unique   // "سيدي يوسف بن علي"
+  slug        String   @unique
+  city        String   @default("مراكش")
+  region      String   @default("مراكش آسفي")
+  description String?
+  // حدود الحي (SVG path) — خريطة حرارية محلية
+  boundarySvg String?
+  isActive    Boolean  @default(true)
+  isDefault   Boolean  @default(false)
+
+  families    Family[]
+  users       User[]
+  groups      Group[]
+  events      Event[]
+  ads         Ad[]
+  complaints  Complaint[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  @@index([isActive])
+}
+
+model Family {
+  id              String   @id @default(cuid())
+  familyName      String   // "بنشقرون"
+  districtId      String
+  district        District @relation(fields: [districtId], references: [id], onDelete: Cascade)
+  headOfFamilyId  String?  // رب الأسرة (User)
+  headOfFamily    User?    @relation("FamilyHead", fields: [headOfFamilyId], references: [id])
+  address         String?
+  economicStatus  String   @default("متوسط") // ضعيف / متوسط / جيد
+  memberCount     Int      @default(1)
+  isActive        Boolean  @default(true)
+  notes           String?
+
+  members         User[]
+  contributions   Contribution[]
+  fundRequests    FundRequest[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  @@index([districtId])
+  @@index([familyName])
+}
+
+model User {
+  id                String       @id @default(cuid())
+  // الهوية
+  firstName         String       // الاسم الشخصي
+  lastName          String       // اسم العائلة
+  fullName          String       // "محمد بنشقرون" (مولّد)
+  email             String       @unique
+  phone             String       @unique  // 06XXXXXXXX
+  nationalIdHash    String?      // رقم البطاقة الوطنية (مشفّر)
+  passwordHash      String       // bcrypt
+  avatar            String?
+  // العلاقات
+  districtId        String
+  district          District     @relation(fields: [districtId], references: [id])
+  familyId          String?
+  family            Family?      @relation(fields: [familyId], references: [id])
+  isFamilyHead      Boolean      @default(false)
+  // الدور والحالة
+  role              Role         @default(MEMBER)
+  status            UserStatus   @default(PENDING)
+  emailVerified     DateTime?
+  // التفاصيل الاجتماعية
+  profession        String?      // "معلم"
+  skills            String?      // مفصولة بفاصلة
+  interests         String?
+  birthDate         DateTime?
+  gender            String?      // ذكر/أنثى
+  // الأمان
+  twoFactorEnabled  Boolean      @default(false)
+  twoFactorSecret   String?
+  twoFactorBackupCodes String?  // JSON array of bcrypt-hashed 8-char backup codes
+  failedLoginCount  Int          @default(0)
+  lockedUntil       DateTime?
+  lastLoginAt       DateTime?
+  lastLoginIp       String?
+  // نقاط اللعب (Gamification)
+  points            Int          @default(0)
+  level             Int          @default(1)
+  badges            String?      // JSON array of badge IDs
+
+  // العلاقات
+  familyHeadOf      Family[]     @relation("FamilyHead")
+  contributions     Contribution[]
+  fundRequests      FundRequest[]
+  approvalsGiven    FundRequestApproval[]
+  groupsLed         GroupMember[] @relation("GroupLeader")
+  groupMemberships  GroupMember[]
+  eventRegistrations EventRegistration[]
+  notifications     Notification[]
+  complaintsFiled   Complaint[]  @relation("ComplaintFiledBy")
+  complaintsHandled Complaint[]  @relation("ComplaintHandledBy")
+  auditLogs         AuditLog[]
+  adsManaged        Ad[]         @relation("AdManager")
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  deletedAt         DateTime?
+
+  @@index([districtId])
+  @@index([familyId])
+  @@index([role])
+  @@index([status])
+  @@index([phone])
+}
+
+// ===================================================================
+//  المجموعات (Interest Groups)
+// ===================================================================
+
+model Group {
+  id          String         @id @default(cuid())
+  name        String         // "مجموعة الأمهات"
+  slug        String         @unique
+  description String?
+  districtId  String
+  district    District       @relation(fields: [districtId], references: [id], onDelete: Cascade)
+  category    String         @default("عام")
+  icon        String?
+  coverImage  String?
+  isDefault   Boolean        @default(false) // المجموعات الافتراضية
+  isActive    Boolean        @default(true)
+  // الإعدادات
+  isPrivate   Boolean        @default(false) // انضمام بدعوة
+  maxMembers  Int?
+  // العلاقات
+  members     GroupMember[]
+  events      Event[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  @@index([districtId])
+  @@index([slug])
+}
+
+model GroupMember {
+  id          String    @id @default(cuid())
+  groupId     String
+  group       Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        String    @default("member") // leader / moderator / member
+  joinedAt    DateTime  @default(now())
+  isApproved  Boolean   @default(true)
+
+  // العلاقة العكسية لرئيس المجموعة
+  ledBy       User[]    @relation("GroupLeader")
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([groupId, userId])
+  @@index([userId])
+}
+
+// ===================================================================
+//  صندوق المعروف الرقمي (Digital Maârouf Fund)
+// ===================================================================
+
+model Contribution {
+  id            String              @id @default(cuid())
+  userId        String
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  familyId      String
+  family        Family              @relation(fields: [familyId], references: [id])
+  districtId    String
+  // المبلغ والشهر
+  amount        Float               // بالدرهم
+  month         String              // "2024-01"
+  year          Int
+  // الدفع
+  method        ContributionMethod  @default(BANK_TRANSFER)
+  receiptNumber String?             // رقم الإيصال الرقمي (مولّد)
+  receiptImage  String?             // مسار صورة الإيصال المرفوعة
+  bankReference String?             // مرجع التحويل البنكي
+  // الحالة
+  status        ContributionStatus  @default(PENDING)
+  confirmedById String?
+  confirmedAt   DateTime?
+  note          String?
+  // الإيصال الرقمي (UUID لكل مساهمة)
+  digitalReceipt String?            @unique
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([status])
+  @@index([month])
+  @@index([year])
+}
+
+model FundRequest {
+  id              String              @id @default(cuid())
+  userId          String
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  familyId        String
+  family          Family              @relation(fields: [familyId], references: [id])
+  districtId      String
+  // نوع الطلب
+  type            FundRequestType
+  amountRequested Float
+  amountApproved  Float?
+  amountDisbursed Float?
+  // التفاصيل
+  title           String
+  description     String
+  // المرفقات (JSON array of file paths)
+  attachments     String?
+  // الموقع (مستشفى، إلخ)
+  location        String?
+  // الحالة
+  status          FundRequestStatus   @default(SUBMITTED)
+  // الموافقات
+  approvals       FundRequestApproval[]
+  // متى يحتاج لجنة النزاهة؟
+  requiresEthics  Boolean             @default(false) // true إذا > 1000 درهم
+  reviewedById    String?
+  reviewedAt      DateTime?
+  reviewedNote    String?
+  disbursedAt     DateTime?
+  disbursedById   String?
+  disbursementMethod String?
+  disbursementRef String?
+  // الإيصال النهائي
+  finalReceipt    String?             @unique
+  completedAt     DateTime?
+  // الكرامة: رقم رمزي بدل الاسم في العلن
+  anonymousCode   String?             // "SY-001"
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([status])
+  @@index([type])
+}
+
+model FundRequestApproval {
+  id          String           @id @default(cuid())
+  requestId   String
+  request     FundRequest      @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  approverId  String
+  approver    User             @relation(fields: [approverId], references: [id])
+  decision    ApprovalDecision
+  note        String?
+  // متى صوّت
+  decidedAt   DateTime         @default(now())
+
+  createdAt   DateTime @default(now())
+
+  @@unique([requestId, approverId])
+  @@index([requestId])
+}
+
+// ===================================================================
+//  الفعاليات والمناسبات (Events)
+// ===================================================================
+
+model Event {
+  id              String      @id @default(cuid())
+  title           String
+  slug            String      @unique
+  description     String
+  districtId      String
+  district        District    @relation(fields: [districtId], references: [id], onDelete: Cascade)
+  // النوع والتاريخ
+  type            EventType
+  status          EventStatus  @default(DRAFT)
+  startDate       DateTime
+  endDate         DateTime?
+  location        String
+  // خريطة SVG محلية للموقع
+  locationMapSvg  String?
+  // الصور
+  coverImage      String?
+  galleryImages   String?      // JSON array
+  // التذاكر
+  maxAttendees    Int?
+  isRegistrationOpen Boolean   @default(true)
+  requiresApproval Boolean     @default(false)
+  // العلاقات
+  groupId         String?
+  group           Group?       @relation(fields: [groupId], references: [id])
+  organizerId     String?
+  registrations   EventRegistration[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  @@index([districtId])
+  @@index([status])
+  @@index([startDate])
+}
+
+model EventRegistration {
+  id          String             @id @default(cuid())
+  eventId     String
+  event       Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // التذكرة الرقمية
+  qrCode      String             @unique  // محتوى QR (سيُولَّد كـ SVG)
+  ticketCode  String             @unique  // "EV-2024-001"
+  status      RegistrationStatus @default(REGISTERED)
+  registeredAt DateTime         @default(now())
+  attendedAt  DateTime?
+  // معلومات إضافية
+  notes       String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([eventId, userId])
+  @@index([userId])
+  @@index([eventId])
+}
+
+// ===================================================================
+//  الإشعارات (Notifications)
+// ===================================================================
+
+model Notification {
+  id        String            @id @default(cuid())
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  message   String
+  link      String?            // "/community/fund/requests/123"
+  isRead    Boolean            @default(false)
+  readAt    DateTime?
+  metadata  String?            // JSON
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+  @@index([type])
+}
+
+// ===================================================================
+//  الإعلانات والرعايات (Ads & Sponsorships) — placeholder
+// ===================================================================
+
+model Ad {
+  id            String      @id @default(cuid())
+  title         String
+  advertiserName String
+  advertiserEmail String?
+  advertiserPhone String?
+  districtId    String
+  district      District    @relation(fields: [districtId], references: [id], onDelete: Cascade)
+  // الحزمة
+  package       AdPackage   @default(BRONZE)
+  // المحتوى
+  imageUrl      String?
+  targetUrl     String?
+  placement     String      @default("sidebar") // header / sidebar / in-feed / footer / popup
+  // التواريخ
+  startDate     DateTime
+  endDate       DateTime
+  // الحالة
+  status        AdStatus    @default(PENDING)
+  // الإحصاءات
+  views         Int         @default(0)
+  clicks        Int         @default(0)
+  // السعر
+  amountPaid    Float        @default(0)
+  // الإدارة
+  managerId     String?
+  manager       User?       @relation("AdManager", fields: [managerId], references: [id])
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([districtId, status])
+  @@index([status])
+  @@index([endDate])
+}
+
+// ===================================================================
+//  الشكاوى والاقتراحات (Complaints & Feedback)
+// ===================================================================
+
+model Complaint {
+  id          String          @id @default(cuid())
+  // إن كانت مجهولة
+  isAnonymous Boolean         @default(false)
+  // الجهة المشتكية
+  filedById   String?
+  filedBy     User?           @relation("ComplaintFiledBy", fields: [filedById], references: [id])
+  districtId  String?
+  district    District?       @relation(fields: [districtId], references: [id])
+  // المحتوى
+  type        ComplaintType
+  subject     String
+  description String
+  attachments String?         // JSON array
+  // الإدارة
+  status      ComplaintStatus @default(OPEN)
+  priority    String          @default("normal") // low/normal/high/urgent
+  handledById String?
+  handledBy   User?           @relation("ComplaintHandledBy", fields: [handledById], references: [id])
+  resolution String?
+  resolvedAt  DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+  @@index([type])
+  @@index([districtId])
+}
+
+// ===================================================================
+//  سجل النشاط (Audit Log)
+// ===================================================================
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorId     String?
+  actor       User?    @relation(fields: [actorId], references: [id])
+  action      String   // "user.login", "fund.request.approved"
+  entity      String?  // "User", "FundRequest"
+  entityId    String?
+  ipAddress   String?
+  userAgent   String?
+  metadata    String?  // JSON
+  // الخطور
+  severity    String   @default("info") // info/warning/critical
+
+  createdAt   DateTime @default(now())
+
+  @@index([actorId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([entity, entityId])
+}
+
+// ===================================================================
+//  الإعدادات (Settings) — Key-Value
+// ===================================================================
+
+model Setting {
+  id          String   @id @default(cuid())
+  key         String   @unique  // "site.name", "fund.threshold.ethics"
+  value       String
+  type        String   @default("string") // string/int/bool/json
+  category    String   @default("general")
+  isPublic    Boolean  @default(true)
+  description String?
+
+  updatedAt   DateTime @updatedAt
+}
+
+// ===================================================================
+//  سجل البريد الإلكتروني (Email Log) — تتبّع كل بريد مُرسَل
+// ===================================================================
+
+model EmailLog {
+  id         String    @id @default(cuid())
+  to         String
+  subject    String
+  body       String    // HTML body
+  status     String    @default("sent") // sent | failed | pending
+  error      String?
+  messageId  String?
+  sentAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([status])
+  @@index([to])
+  @@index([createdAt])
+}
+
+// ===================================================================
+//  قائمة IP المسموح بها (IP Allowlist)
+//  - تُفعَّل عبر Setting: security.ip_allowlist.enabled
+//  - عند التفعيل، يُسمح فقط بـIP المُدرجة في هذا الجدول
+// ===================================================================
+
+model AllowedIP {
+  id        String   @id @default(cuid())
+  ip        String   @unique
+  note      String?
+  isActive  Boolean  @default(true)
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+}
