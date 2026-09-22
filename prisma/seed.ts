@@ -77,8 +77,8 @@ const CONTRIBUTION_AMOUNTS = [20, 20, 20, 50, 50, 50, 100, 100, 200];
 // 1. CLEAR ALL DATA (in safe FK order)
 // -------------------------------------------------------------------
 async function clearAll() {
-  // Disable FK enforcement temporarily for SQLite
-  await db.$executeRawUnsafe("PRAGMA foreign_keys = OFF");
+  // For PostgreSQL: disable triggers temporarily (equivalent to SQLite PRAGMA foreign_keys=OFF)
+  try { await db.$executeRawUnsafe("SET session_replication_role = 'replica'"); } catch {}
   await db.$transaction([
     db.fundRequestApproval.deleteMany({}),
     db.fundRequest.deleteMany({}),
@@ -96,9 +96,9 @@ async function clearAll() {
     db.family.deleteMany({}),
     db.district.deleteMany({}),
   ]);
-  // Implicit m-n join table for GroupLeader relation
-  await db.$executeRawUnsafe("DELETE FROM `_GroupLeader`");
-  await db.$executeRawUnsafe("PRAGMA foreign_keys = ON");
+  // Implicit m-n join table for GroupLeader relation (PostgreSQL needs double-quoted table name)
+  try { await db.$executeRawUnsafe('DELETE FROM "_GroupLeader"'); } catch {}
+  try { await db.$executeRawUnsafe("SET session_replication_role = 'origin'"); } catch {}
   console.log("✓ تم مسح كل البيانات السابقة");
 }
 
