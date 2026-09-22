@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     const execAsync = promisify(exec);
 
     const { stdout, stderr } = await execAsync(
-      "bunx prisma db push --accept-data-loss",
+      "npx prisma db push --accept-data-loss",
       { cwd: process.cwd(), timeout: 45000 }
     );
     results.push({
@@ -112,10 +112,10 @@ export async function POST(request: Request) {
     const { promisify } = await import("util");
     const execAsync = promisify(exec);
 
-    const { stdout, stderr } = await execAsync("bun run db:seed", {
-      cwd: process.cwd(),
-      timeout: 50000,
-    });
+    const { stdout, stderr } = await execAsync(
+      "npx prisma db seed",
+      { cwd: process.cwd(), timeout: 50000 }
+    );
     results.push({
       step: "db:seed",
       status: "success",
