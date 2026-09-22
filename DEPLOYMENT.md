@@ -80,9 +80,10 @@ DATABASE_URL="postgresql://postgres:[pass]@db.[ref].supabase.co:5432/postgres" \
 |---------|--------|
 | `DATABASE_URL` | Pooler connection (مع `?pgbouncer=true`) |
 | `DIRECT_URL` | Direct connection (بدون pooling) |
-| `NEXTAUTH_SECRET` | (32-byte hex من `openssl rand -hex 32`) |
+| `NEXTAUTH_SECRET` | ولّد جديدة: `openssl rand -hex 32` — **لا تُكشفها في أي تقرير أو commit** |
 | `NEXTAUTH_URL` | `https://<project>.vercel.app` |
 | `DEMO_MODE` | `false` ⚠️ إلزامي |
+| `SETUP_KEY` | ولّد جديدة: `openssl rand -hex 16` — لـ/api/setup/seed فقط، احذفها بعد الاستخدام |
 | `SMTP_HOST` | `smtp-relay.brevo.com` (لاحقاً) |
 | `SMTP_PORT` | `587` |
 | `SMTP_USER` | (بريد Brevo) |
@@ -97,11 +98,40 @@ DATABASE_URL="postgresql://postgres:[pass]@db.[ref].supabase.co:5432/postgres" \
 ```bash
 # افتح الرابط في المتصفّح
 # 1. / يجب أن تظهر الصفحة الرئيسية
-# 2. /login → admin@syba-community.ma / Demo@1234
+# 2. /login → سجّل دخول (لا تُكشف بيانات الاعتماد في صفحات الإنتاج)
 # 3. /admin → 16 قسم
 # 4. /community → لوحة المجتمع
 # 5. /community/fund → صندوق المعروف (3 تبويبات)
 ```
+
+---
+
+## 🔒 الأمان — قواعد صارمة
+
+### ⚠️ تحذيرات حرجة
+
+1. **لا تُكشف `NEXTAUTH_SECRET` في أي تقرير، commit، لقطة، أو رسالة.** أي شخص يملكه يمكنه تزوير جلسات المشرفين.
+   - ولّد جديدة: `openssl rand -hex 32`
+   - ضعها في Vercel Environment Variables كـ`Secret` type
+   - لا تضعها في `.env.example` أو أي ملف يُرفع لـGit
+
+2. **`SETUP_KEY` مستقل عن `NEXTAUTH_SECRET`** — استخدمه فقط لـ`/api/setup/seed` مرة واحدة، ثم احذفه من Vercel.
+
+3. **`DEMO_MODE=false` إلزامي للإنتاج** — يحمي `/demo-access` (تُعطّل الصفحة وتعود 404).
+
+4. **بيانات الاعتماد التجريبية (بيانات الاعتماد التجريبية)** — تُستخدم فقط في وضع DEMO. للإنتاج:
+   - غيّر كلمة مرور المشرف العام فور أول login
+   - أنشئ حسابات حقيقية للمشرفين
+   - فعّل 2FA لكل SUPER_ADMIN
+
+5. **بعد الإطلاق، احذف `/api/setup/seed` من الكود** — لأنه يفتح باب تشغيل الـseed.
+
+6. **`/api/health` آمن** — لا يكشف credentials، فقط hostname + عدد البيانات.
+
+### فحص أمني دوري
+- شهرياً: راجع Vercel env vars واحذف القديمة
+- شهرياً: دور `NEXTAUTH_SECRET` كل 3 أشهر
+- فوراً عند أي اشتباه: غيّر `NEXTAUTH_SECRET` + أعد النشر
 
 ---
 
@@ -143,7 +173,7 @@ DATABASE_URL="postgresql://postgres:[pass]@db.[ref].supabase.co:5432/postgres" \
 
 ## 🔐 2FA للمشرف العام
 
-1. سجّل دخول بـ`admin@syba-community.ma`
+1. سجّل دخول ببيانات المشرف (انظر .env.example)
 2. اذهب لـ`/admin/settings/security`
 3. اضغط "تفعيل 2FA"
 4. امسح QR بـGoogle Authenticator (أو Authy)

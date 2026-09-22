@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ZelligeDivider } from "@/components/shared/zellige-divider";
-import { DemoBanner } from "@/components/demo/demo-banner";
 import { getFundStats } from "@/lib/fund-stats";
 import { formatNumber } from "@/lib/constants";
 import { db } from "@/lib/db";
@@ -115,7 +114,6 @@ export default async function HomePage() {
   ];
   return (
     <div className="flex flex-col">
-      <DemoBanner />
       {/* ─────────── قسم البطل (Hero) ─────────── */}
       <section className="relative overflow-hidden border-b border-border">
         {/* خلفية زخرفية خفيفة */}

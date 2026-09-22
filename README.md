@@ -16,7 +16,7 @@ bun run db:push && bun run db:seed
 bun run dev           # http://localhost:3000
 ```
 
-سجّل دخول بـ`admin@syba-community.ma` / `Demo@1234`.
+سجّل دخول (انظر بيانات الاعتماد في وضع DEMO عبر `/demo-access` — محمي بـDEMO_MODE=true).
 
 ---
 
@@ -62,11 +62,11 @@ bun run scripts/measure-vitals.ts
 
 ## 🔑 الحسابات التجريبية (في وضع العرض)
 
-كلمة المرور لكل الحسابات: `Demo@1234`
+كلمة المرور: (انظر `/demo-access` في وضع DEMO فقط — محمي بـDEMO_MODE=true)
 
 | الدور | البريد | الصلاحيات |
 |------|--------|----------|
-| مشرف عام | `admin@syba-community.ma` | كل الصلاحيات |
+| مشرف عام | `admin@syba-community.ma` (demo فقط) | كل الصلاحيات |
 | أمين الصندوق | `treasurer@syba-community.ma` | تأكيد المساهمات + صرف الطلبات < 1000 |
 | عضو لجنة نزاهة (5) | `user5@...` إلى `user9@...` | تصويت على الطلبات > 1000 |
 | مشرف حي | (موجود في DB) | إدارة محتوى الحي |
