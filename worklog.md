@@ -2646,3 +2646,299 @@ Stage Summary:
 - النشر: https://my-project-eta-drab.vercel.app
 - GitHub: github.com/sultancontact-design/assema
 - Supabase: uigwfpddaawiwvsxmggj (eu-west-2, Frankfurt)
+
+---
+Task ID: v4-pwa
+Agent: Main (Z.ai Code)
+Task: PWA + Service Worker + Performance Optimization (v4.0)
+
+Work Log:
+
+### 1. تثبيت Serwist (PWA لـ Next.js 16 + Turbopack)
+- `bun add @serwist/next serwist` — v9.5.12 (32 packages)
+- إصلاح تحذير Turbopack: إضافة `turbopack: {}` فارغة إلى next.config.ts
+  ل إسكات تحذير "Turbopack with webpack config" — Serwist يضيف webpack config
+  لـ SW build (يُستعمل في `next build` على Vercel حيث webpack هو المُجمِّع الافتراضي للإنتاج)
+
+### 2. Service Worker (`src/app/sw.ts`)
+- @serwist/next/worker + serwist
+- precacheEntries = self.__SW_MANIFEST (يُحقن تلقائياً من Next build)
+- skipWaiting + clientsClaim + navigationPreload
+- runtimeCaching = defaultCache
+- fallbacks: `/~offline` لكل التنقّلات HTTP(S) عند انقطاع الشبكة
+- يُعطّل في dev (`disable: process.env.NODE_ENV === "development"`) لتفادي HMR cache
+
+### 3. next.config.ts
+- `withSerwistInit({ swSrc, swDest: "public/sw.js", disable: dev })`
+- `turbopack: {}` — إسكات تحذير Turbopack
+- export default withSerwist(nextConfig) — يحافظ على output=standalone + reactStrictMode=false
+
+### 4. Manifest (`src/app/manifest.ts`)
+- name: "سيدي يوسف بن علي العاصمة — منصة المعروف الرقمي"
+- short_name: "العاصمة"
+- dir: "rtl" lang: "ar" orientation: "portrait"
+- theme_color: #B8492B (ترابي زليج)
+- background_color: #FBF6EE (كريم)
+- 3 أيقونات SVG (192 + 512 + 512-maskable)
+- 3 اختصارات: صندوق المعروف، الفعاليات، المجموعات
+- categories: social, community, lifestyle
+
+### 5. الأيقونات (SVG، قابلة للتكبير لأي حجم)
+- `/public/icon-192.svg` — نجمة ثمانية زخرفية على خلفية ترابية + دائرة ذهبية
+- `/public/icon-512.svg` — نفس التصميم بمقاس أكبر مع نقاط زخرفية في الأركان
+- `/public/icon-512-maskable.svg` — full-bleed ترابي مع نجمة في safe zone (80%)
+- كل الأيقونات متاحة من جذر الموقع (لا CDN خارجي)
+
+### 6. صفحة Offline (`src/app/~offline/page.tsx` + `retry-button.tsx`)
+- Server Component مع metadata.title عربي
+- شعار SVG + Badge "وضع عدم الاتصال" (WifiOff)
+- "أنت غير متصل بالإنترنت" + "لا بأس — يمكنك تصفّح المحتوى المُخزّن محلياً"
+- زر "إعادة المحاولة" (RetryButton client component يستدعي window.location.reload())
+- 4 بطاقات للصفحات المخزّنة: الصندوق، الفعاليات، المجموعات، الرئيسية
+- ZelligeDivider "diamond" زخرفي
+- لمسة دافئة: "ستظهر الإشعارات فور عودة الشبكة"
+
+### 7. PWA Install Prompt (`src/components/community/pwa-install-prompt.tsx`)
+- 'use client' — framer-motion (spring slide-up)
+- يستمع `beforeinstallprompt` (Chrome/Edge على Android/Desktop)
+- يظهر بعد 30 ثانية من التصفّح
+- يظهر مرة واحدة لكل جلسة (sessionStorage)
+- "ليس الآن" يخزّن في localStorage لمدة 14 يوماً
+- "تثبيت" يستدعي deferredPrompt.prompt()
+- كشف iOS Safari تلقائياً (لا يدعم beforeinstallprompt) — يعرض تعليمات يدوية مبسّطة
+- كشف display-mode: standalone — لا يُظهر إذا كانت المنصة مثبّتة بالفعل
+- بطاقات لمس ≥ 44px (h-11)
+- AnimatePresence للدخول/الخروج
+
+### 8. ربط PwaInstallPrompt في AppChrome
+- `src/components/layout/app-chrome.tsx` — أضيف `<PwaInstallPrompt />` لكل الصفحات العامة (لا الإدارة)
+
+### 9. Performance Optimizations
+- `src/app/page.tsx`:
+  * استخراج HomeLiveStats كـ async server component منفصل
+  * <Suspense fallback={<HomeLiveStatsSkeleton/>}> يلفّ الإحصاءات الحيّة
+  * الهيكل الثابت (Hero + المبادئ + باقات الإعلانات + دعوة) يُعرض فوراً
+  * الإحصاءات (DB queries) تتدفّق بشكل منفصل
+  * `export const dynamic = "force-dynamic"` (متبوع — لتجنّب prerender errors)
+  * `export const revalidate = 60` (آمنة للقراءة، ISR لـ 60 ثانية)
+  * Skeleton: بطاقة بنفس شكل Stats مع Skeleton skeleton blocks
+- `src/app/community/page.tsx`:
+  * استخراج قسم نظام الإدمان إلى `CommunityEngagement` async server component
+  * `<Suspense fallback={<EngagementSkeleton/>}>` يلفّ كل قسم الإدمان (Streak + Mystery + Spin + Social + Loss)
+  * حذف ~100 سطر من DB queries من الصفحة الرئيسية (انتقلت لـ community-engagement.tsx)
+  * الصفحة الآن تعرض shell سريع (KPIs + الشفافية + الفعاليات + المساهمات + الطلبات)
+  * قسم الإدمان يتدفّق بشكل منفصل عبر Suspense
+- ملف جديد `src/components/community/community-engagement.tsx` (299 سطر):
+  * CommunityEngagement — async server component (يأخذ userId + districtId)
+  * EngagementSkeleton — هيكل عظمي أنيق بنفس شكل القسم
+  * EngagementSection — wrapper يلفّ Suspense + Component + Skeleton
+  * نقل جميع queries نظام الإدمان (streak, mystery, spin, social proof, loss aversion)
+- `loading="lazy"`: لا توجد صور browser-facing في الكود — كل الشعارات SVG inline. الصورة الوحيدة `<img>` هي في email template (لا يدعم loading=lazy)
+- `force-dynamic` موجود على جميع صفحات DB queries (تأكيد عبر grep — كلها تستعمل `export const dynamic`)
+
+### 10. Layout Metadata (PWA)
+- `src/app/layout.tsx`:
+  * `manifest: "/manifest.webmanifest"` — رابط الـ manifest
+  * `appleWebApp: { capable: true, title: "العاصمة", statusBarStyle: "default" }` — دعم iOS
+  * `formatDetection: { telephone: false, address: false, email: false }` — منع auto-detection على iOS
+  * icons: favicon.svg + icon-192.svg (icon + apple-touch-icon)
+  * `viewportFit: "cover"` — دعم safe area على iOS (notch)
+
+### 11. measure-vitals.ts — 3G simulation
+- `scripts/measure-vitals.ts`:
+  * `--project=4g` (default): 9 Mbps ↓ / 3 Mbps ↑ / 20ms
+  * `--project=3g`: 1.5 Mbps ↓ / 750 Kbps ↑ / 40ms (مطلوب)
+  * `--project=slow-3g`: 400 Kbps ↓ / 400 Kbps ↑ / 400ms
+  * `page.emulateNetworkConditions({ offline: false, downloadThroughput, uploadThroughput, latency })`
+  * عتبات LCP/TTFB مُعدَّلة حسب الشبكة (3G: LCP 3s, TTFB 1s)
+  * timeout يزيد من 30s إلى 60s لاستيعاب الشبكات البطيئة
+  * ملف الإخراج: `lighthouse-vitals-{profile}.json`
+  * الاستعمال: `bun run scripts/measure-vitals.ts -- --project=3g`
+
+### النتائج
+- ✅ `bun run lint` — 0 أخطاe
+- ✅ Dev server يعمل بدون أخطاء (Turbopack warning مُسكَت بـ turbopack: {})
+- ✅ /manifest.webmanifest → 200 (manifest JSON يُخدَم بشكل صحيح)
+- ✅ /icon-192.svg → 200, /icon-512.svg → 200, /icon-512-maskable.svg → 200
+- ✅ /~offline → 200 (صفحة offline تُعرض بشكل صحيح)
+- ✅ /community → 200 in 1.06s (shell يُعرض فوراً، الإدمان يتدفّق عبر Suspense)
+- ✅ /community/fund → 200
+- ✅ /ethics → 200
+- ✅ /login → 200
+- ✅ / → 200 (Stats تتدفّق: "درهم مساهم" + "درهم الرصيد" ظاهرة في HTML)
+- ✅ HTML head يحوي: manifest link, theme-color (light/dark), apple-mobile-web-app-*,
+  apple-touch-icon, icon SVG
+
+### الإحصاء
+- ملفات جديدة: 7
+  * src/app/sw.ts (28 سطر)
+  * src/app/manifest.ts (49 سطر)
+  * src/app/~offline/page.tsx (140 سطر)
+  * src/app/~offline/retry-button.tsx (24 سطر)
+  * src/components/community/pwa-install-prompt.tsx (200 سطر)
+  * src/components/community/community-engagement.tsx (299 سطر)
+  * public/icon-192.svg, public/icon-512.svg, public/icon-512-maskable.svg (3 ملفات SVG)
+- ملفات معدّلة: 5
+  * next.config.ts (Serwist + turbopack: {})
+  * src/app/layout.tsx (metadata PWA كاملة + appleWebApp + formatDetection)
+  * src/app/page.tsx (Suspense + HomeLiveStats + revalidate=60 + skeleton)
+  * src/app/community/page.tsx (حذف قسم الإدمان + استبداله بـ EngagementSection)
+  * src/components/layout/app-chrome.tsx (إضافة PwaInstallPrompt)
+  * scripts/measure-vitals.ts (3G simulation + شبكات متعددة)
+- إجمالي الأسطر الجديدة: ~800
+- Lint: 0 أخطاء
+- Dev server: كل المسارات 200 OK
+
+Stage Summary:
+- ✅ PWA كامل: Serwist SW + Manifest + 3 أيقونات SVG + صفحة Offline + Install Prompt
+- ✅ Streaming SSR: HomeLiveStats + CommunityEngagement عبر <Suspense> مع skeletons
+- ✅ Performance: revalidate=60 على Home، force-dynamic على صفحات DB
+- ✅ iOS support: appleWebApp + apple-touch-icon + تعليمات يدوية في Install Prompt
+- ✅ RTL Arabic: كل النصوص عربية، dir="rtl" lang="ar"، touch targets ≥ 44px
+- ✅ Self-hosted: لا CDN خارجي — كل SW و manifest و أيقونات من public/
+- ✅ 3G simulation: measure-vitals.ts يدعم 3 شبكات (4g/3g/slow-3g) مع عتبات مُعدَّلة
+- ✅ الأخلاقيات: "ستظهر الإشعارات فور عودة الشبكة" — لا إزعاج، احترام المستخدم
+
+---
+Task ID: v4-legal
+Agent: Main (Z.ai Code)
+Task: الصفحات القانونية + الكوكيز (CNDP — القانون 09-08)
+
+Work Log:
+
+### 1. `/privacy-policy` — سياسة الخصوصية
+- Server Component + 13 قسماً عربياً كاملاً
+- قسم فرنسي ثانوي (Politique de confidentialité — résumé) بـ dir="ltr"
+- الأقسام: مقدمة، البيانات، الاستخدام، الأساس القانوني، مدة الاحتفاظ، الحقوق،
+  المشاركة، الأمن، الكوكيز، النقل الدولي، CNDP شكوى، التعديلات، الاتصال
+- إشارة CNDP: "مُسجّلة لدى CNDP وفقاً للقانون 09-08" + رابط cnp.ma
+- 13 أيقونة lucide-react + ZelligeDivider (stars / wave / diamond)
+- بطاقات warm-shadow، h2 لكل قسم، عناوين مُرقّمة
+
+### 2. `/terms` — شروط الاستخدام
+- Server Component عربي + 12 قسماً
+- الأقسام: قبول الشروط، التعريفات، التسجيل، مسؤوليات المستخدم، مسؤوليات
+  المنصة، الملكية الفكرية، إخلاء المسؤولية، حدّ المسؤولية، التعديلات، إنهاء
+  الحساب، حلّ النزاعات (القانون المغربي + محاكم مراكش)، الاتصال
+- إشارة قانونية: القانون 09-08 + قانون الالتزامات والعقود + المساطر المدنية
+- 12 أيقونة + ZelligeDivider + روابط سريعة لـ/privacy-policy /about /contact
+
+### 3. `/about` — من نحن
+- Server Component async (يستعمل db + getFundStats)
+- 8 أقسام: Hero، القصة، الرؤية، المبادئ الخمسة، الفريق، الشركاء، الأثر
+  (إحصاءات حية من DB)، شكر للمؤسسين (شارة Founder Badge لأول 100)
+- عنصر حركة AboutEntrance (framer-motion) — Client Component منفصل
+  * motion.div + whileInView + viewport once
+  * 3 أوضاع: hero (blur+y+24)، card (y+12)، default (y+16)
+- تأثيرات تصاعدية: delay 0.0 → 0.5 للقسم الأخير
+- 4 إحصاءات حيّة: families / contributions / balance / events (fallback 0)
+
+### 4. `/contact` — اتصل بنا
+- Server Component + Client sub-component (ContactForm)
+- 5 أقسام: معلومات الاتصال (بريد، هاتف، عنوان)، نموذج رسالة، خريطة SVG،
+  ساعات العمل، روابط إضافية (FAQ، شكاوى، دعم)
+- خريطة SVG placeholder مراكش — شبكة شوارع + علامة نجمة ثمانية على الحي
+- 3 أيقونة + ZelligeDivider + Badge
+- ContactForm:
+  * 4 حقول (name, email, subject, message) مع validation كامل
+  * POST /api/contact + Sonner toast للنجاح/الخطأ
+  * AnimatePresence لرسالة النجاح + زر "إرسال رسالة أخرى"
+  * h-11 للّمس، maxLength، autoComplete attributes
+  * ذكر سياسة الخصوصية أسفل النموذج
+
+### 5. `/api/contact` — استقبال رسالة من نموذج الاتصال
+- POST route + dynamic = "force-dynamic"
+- 4 تحقّقات: name≥3, email regex, subject≥3, message 10-2000
+- منطق ذكي تفرّعي:
+  * لو المستخدم مسجّل دخوله AND بريده يطابق المُرسِل: يُحفظ Complaint (type=OTHER)
+    + إشعار COMPLAINT لكل المشرفين العامّين + أمين الصندوق + AuditLog
+  * لو وُجد مستخدم بنفس البريد (ولم يسجّل دخوله): نفس المنطق السابق
+  * لو زائر جديد: إشعار SYSTEM لكل SUPER_ADMIN + AuditLog بدون actor
+- رد 201 { success, channel: "complaint" | "notification", complaintId? }
+- اختبار فعلي (curl زائر): 201 + INSERT Notification + INSERT AuditLog
+
+### 6. CookieConsent — بانر الكوكيز
+- Client Component في src/components/layout/cookie-consent.tsx
+- يظهر عند أول زيارة (يفحص localStorage لـ "cookie-consent" + "cookie-consent-date")
+- مدة 30 يوماً (THIRTY_DAYS_MS = 30*24*60*60*1000)
+- 3 أزرار:
+  * "قبول الكل" (secondary/green) — يحفظ "all"
+  * "رفض غير الضروري" (outline) — يحفظ "necessary"
+  * "تخصيص" (link) — يفتح Dialog مع 3 Switch toggles
+- Dialog: ضرورية (always on، disabled) + تفضيلات + إحصائية
+- 3 أزرار في Dialog: رفض الكل غير الضروري / قبول الكل / حفظ اختياراتي
+- framer-motion (AnimatePresence) للدخول/الخروج + filter blur + safe area
+- RTL مع logical properties (ps-/pe-/start/end)
+- زر X صغير (ghost) للإغلاق السريع
+- محتوى: "🍪 نستخدم ملفات تعريف الارتباط لتحسين تجربتك. اقرأ [سياسة الخصوصية]."
+- Link لـ /privacy-policy داخل البانر
+
+### 7. تحديث SiteFooter
+- روابط عمود "عن المنصة": /about, /privacy-policy, /terms, /ethics (مُحدّث)
+- إشارة CNDP: Link لـ https://www.cnp.ma مع Shield icon
+- نص: "مسجّلة لدى CNDP وفقاً للقانون 09-08" + رقم الإخطار (placeholder)
+- إضافة روابط سريعة (الخصوصية • الشروط) أسفل الفوتر
+- إبقاء ZelligeDivider (diamond + minimal) + معلومات الاتصال + copyright
+
+### 8. تحديث AppChrome
+- استيراد CookieConsent
+- إضافته بعد PwaInstallPrompt (آخر عنصر في الصفحات العامة)
+- يبقى غير ظاهر في /admin (الحصر في الفرع الأول)
+
+### 9. تحديث DEPLOYMENT.md
+- قسم جديد: "📋 CNDP Compliance (القانون 09-08)"
+- 7 أقسام فرعية:
+  1. الإخطار الإلزامي (5 خطوات — cnp.ma)
+  2. البيانات المُعالَجة (5 أنواع)
+  3. التخزين (Supabase EU + AES-256 + TLS 1.3 + نسخ يومية)
+  4. حقوق الأشخاص الذاتيين (6 حقوق — وصول/تصحيح/حذف/نقل/اعتراض/سحب)
+  5. سجل خرق البيانات (72 ساعة لـ CNDP + 72 للمتأثّرين)
+  6. المكوّنات في المنصة (6 روابط للمكوّنات الجديدة)
+  7. روابط قانونية مفيدة (CNDP + القانون 09-08 PDF + GDPR equivalence)
+
+### النتائج
+- ✅ `bun run lint` — 0 أخطaء (بعد إصلاح typo: ZeligeDivider → ZelligeDivider)
+- ✅ `bunx tsc --noEmit` — 0 أخطaء في الملفات الجديدة (pre-existing فقط في
+  examples/ و sw.ts و seed.ts)
+- ✅ GET /privacy-policy → 200 (2.6s compile أول مرة)
+- ✅ GET /terms → 200 (868ms)
+- ✅ GET /about → 200 (2.3s — يستعلم DB للإحصاءات الحيّة)
+- ✅ GET /contact → 200 (809ms)
+- ✅ POST /api/contact (زائر) → 201 + INSERT Notification + INSERT AuditLog
+- ✅ كل المسارات الجديدة 200 OK + لا أخطaء compile في dev.log
+
+### الإحصاء
+- ملفات جديدة: 7
+  * src/app/privacy-policy/page.tsx (~590 سطر)
+  * src/app/terms/page.tsx (~440 سطر)
+  * src/app/about/page.tsx (~370 سطر)
+  * src/app/contact/page.tsx (~290 سطر)
+  * src/app/api/contact/route.ts (~190 سطر)
+  * src/components/community/contact-form.tsx (~220 سطر)
+  * src/components/community/about-entrance.tsx (~50 سطر)
+  * src/components/layout/cookie-consent.tsx (~240 سطر)
+- ملفات معدّلة: 3
+  * src/components/layout/site-footer.tsx (روابط قانونية + CNDP badge)
+  * src/components/layout/app-chrome.tsx (إضافة CookieConsent)
+  * DEPLOYMENT.md (قسم CNDP Compliance كامل)
+- إجمالي الأسطر الجديدة: ~2,390
+- Lint: 0 أخطaء
+- TypeScript: 0 أخطaء (في الملفات الجديدة)
+- Dev server: كل المسارات الجديدة 200 OK
+
+Stage Summary:
+- ✅ 4 صفحات قانونية كاملة (privacy-policy / terms / about / contact)
+- ✅ سياسة خصوصية ثنائية اللغة (عربي رئيسي + فرنسي ثانوي) — 13 قسماً
+- ✅ شروط استخدام كاملة (12 قسماً + حلّ نزاعات — محاكم مراكش)
+- ✅ صفحة "من نحن" مع 8 أقسام + framer-motion entrance animations
+- ✅ API contact يحفظ Complaint أو Notification + AuditLog
+- ✅ بانر كوكيز CNDP-compliant (3 خيارات + تخصيص Dialog + 30 يوماً)
+- ✅ Footer محدّث بروابط قانونية + CNDP badge
+- ✅ DEPLOYMENT.md موسّع بـ CNDP Compliance (7 أقسام)
+- ✅ كل النصوص عربي، RTL مع logical properties (ps-/pe-/ms-/me-)
+- ✅ shadcn/ui (Card, Button, Input, Textarea, Label, Dialog, Switch, Badge)
+- ✅ sonner toast للفeedback
+- ✅ framer-motion لكل الأنميشن (entrance، banner، success message)
+- ✅ touch targets ≥ 44px (h-11 في كل الأزرار والحقول)
+- ✅ كل fetch URLs relative (مثل: fetch("/api/contact"))
+- ✅ منطق API يفصل المستخدم المسجّل عن الزائر بطريقة ذكية

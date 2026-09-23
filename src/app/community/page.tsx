@@ -39,13 +39,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ZelligeDivider } from "@/components/shared/zellige-divider";
 import { DashboardMotion } from "@/components/community/dashboard-motion";
-import { StreakWidget } from "@/components/community/streak-widget";
-import { MysteryBox } from "@/components/community/mystery-box";
-import { SpinWheel } from "@/components/community/spin-wheel";
-import { SocialProofWidget } from "@/components/community/social-proof-widget";
-import { LossAversionWidget } from "@/components/community/loss-aversion-widget";
-import { getStreakStatus } from "@/lib/streak-engine";
-import { canOpenMysteryBox, canSpinWheel, SPIN_SEGMENTS } from "@/lib/rewards-engine";
+import { EngagementSection } from "@/components/community/community-engagement";
 import type {
   ContributionStatus,
   FundRequestStatus,
@@ -203,127 +197,10 @@ export default async function CommunityDashboardPage() {
     },
   ];
 
-  // 9) بيانات نظام الإدمان
-  const nowEng = new Date();
-  const fifteenMinAgo = new Date(nowEng.getTime() - 15 * 60 * 1000);
-  const weekAgoEng = new Date(nowEng.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const monthStartEng = new Date(nowEng.getFullYear(), nowEng.getMonth(), 1);
-  const lastMonthStartEng = new Date(nowEng.getFullYear(), nowEng.getMonth() - 1, 1);
-
-  const [
-    streakStatus,
-    mysteryEligibility,
-    spinEligibility,
-    socialProofData,
-    lossAversionDataRaw,
-  ] = await Promise.all([
-    getStreakStatus(user.id),
-    canOpenMysteryBox(user.id),
-    canSpinWheel(user.id),
-    // social proof
-    Promise.all([
-      db.user.count({
-        where: {
-          districtId: user.districtId,
-          lastLoginAt: { gte: fifteenMinAgo },
-          status: "ACTIVE",
-          deletedAt: null,
-        },
-      }),
-      db.contribution.count({
-        where: {
-          districtId: user.districtId,
-          createdAt: { gte: weekAgoEng },
-          status: "CONFIRMED",
-        },
-      }),
-      db.event.count({
-        where: {
-          districtId: user.districtId,
-          startDate: { gt: nowEng },
-          status: { in: ["PUBLISHED", "ONGOING"] },
-          deletedAt: null,
-        },
-      }),
-      db.userActivity.findMany({
-        where: {
-          isPublic: true,
-          user: { districtId: user.districtId, deletedAt: null },
-        },
-        orderBy: { createdAt: "desc" },
-        take: 5,
-        select: {
-          id: true,
-          type: true,
-          description: true,
-          createdAt: true,
-          user: { select: { fullName: true } },
-        },
-      }),
-    ]).then(([activeNowCount, weeklyContributions, upcomingEvents, recentActivitiesRaw]) => ({
-      activeNowCount,
-      weeklyContributions,
-      upcomingEvents,
-      recentActivities: recentActivitiesRaw.map((a) => ({
-        id: a.id,
-        type: a.type,
-        description: a.description,
-        createdAt: a.createdAt.toISOString(),
-        user: { name: a.user.fullName },
-      })),
-    })),
-    // loss aversion raw
-    Promise.all([
-      db.contribution.aggregate({
-        where: { userId: user.id, status: "PENDING" },
-        _sum: { amount: true },
-      }),
-      db.userBadge.findMany({
-        where: { userId: user.id },
-        orderBy: { earnedAt: "desc" },
-        take: 5,
-        include: { badge: true },
-      }),
-      db.userActivity.count({
-        where: { userId: user.id, createdAt: { gte: monthStartEng } },
-      }),
-      db.userActivity.count({
-        where: {
-          userId: user.id,
-          createdAt: { gte: lastMonthStartEng, lt: monthStartEng },
-        },
-      }),
-    ]).then(([pendingAgg, recentBadgesRaw, thisMonthActivities, lastMonthActivities]) => {
-      let balanceTrendPct = 0;
-      if (lastMonthActivities > 0) {
-        balanceTrendPct = ((thisMonthActivities - lastMonthActivities) / lastMonthActivities) * 100;
-      } else if (thisMonthActivities > 0) {
-        balanceTrendPct = 100;
-      }
-      return {
-        pendingPoints: pendingAgg._sum.amount ?? 0,
-        recentBadges: recentBadgesRaw.map((ub) => ({
-          id: ub.badge.id,
-          name: ub.badge.name,
-          icon: ub.badge.icon,
-          rarity: ub.badge.rarity,
-          earnedAt: ub.earnedAt.toISOString(),
-        })),
-        balanceTrendPct: Math.round(balanceTrendPct * 10) / 10,
-        thisMonthActivities,
-      };
-    }),
-  ]);
-
-  const lossAversionData = {
-    streakAtRisk: streakStatus.atRisk,
-    streakHoursUntilBreak: streakStatus.hoursUntilBreak,
-    streakCurrent: streakStatus.currentStreak,
-    pendingPoints: lossAversionDataRaw.pendingPoints,
-    recentBadges: lossAversionDataRaw.recentBadges,
-    balanceTrendPct: lossAversionDataRaw.balanceTrendPct,
-    thisMonthActivities: lossAversionDataRaw.thisMonthActivities,
-  };
+  // 9) نظام الإدمان — يُحمَّل الآن بشكل متدفّق عبر <Suspense>
+  //    (CommunityEngagement في src/components/community/community-engagement.tsx)
+  //    لذا لا نحتاج لجلب بياناته هنا — القسم يُعرض فوراً ويُكمَّل بالبيانات
+  //    عند جاهزيتها.
 
   return (
     <DashboardMotion>
@@ -358,53 +235,11 @@ export default async function CommunityDashboardPage() {
 
         <ZelligeDivider variant="diamond" />
 
-        {/* نظام الإدمان — السلاسل + المكافآت + الدليل الاجتماعي + الفقدان */}
-        <section aria-labelledby="engagement-section" className="space-y-4">
-          <div className="flex items-center justify-between gap-2">
-            <h2 id="engagement-section" className="font-heading text-xl font-bold text-foreground">
-              نظام التفاعل اليومي
-            </h2>
-            <Button asChild variant="ghost" size="sm" className="h-11">
-              <Link href="/community/hooks">
-                حلقة الإدمان
-                <ArrowLeft className="size-4" />
-              </Link>
-            </Button>
-          </div>
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <StreakWidget
-                variant="large"
-                initial={{
-                  currentStreak: streakStatus.currentStreak,
-                  longestStreak: streakStatus.longestStreak,
-                  freezes: streakStatus.freezes,
-                  totalCheckIns: streakStatus.totalCheckIns,
-                  hoursUntilBreak: streakStatus.hoursUntilBreak,
-                  atRisk: streakStatus.atRisk,
-                  checkedInToday: streakStatus.checkedInToday,
-                }}
-              />
-              <SocialProofWidget initial={socialProofData} />
-            </div>
-            <div className="space-y-4">
-              <LossAversionWidget initial={lossAversionData} />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <MysteryBox
-              eligible={mysteryEligibility.eligible}
-              reason={mysteryEligibility.reason}
-              contributionsSince={mysteryEligibility.contributionsSince}
-              required={mysteryEligibility.required}
-            />
-            <SpinWheel
-              segments={SPIN_SEGMENTS}
-              eligible={spinEligibility.eligible}
-              reason={spinEligibility.reason}
-            />
-          </div>
-        </section>
+        {/* نظام الإدمان — يُحمَّل بشكل متدفّق عبر Suspense */}
+        <EngagementSection
+          userId={user.id}
+          districtId={user.districtId}
+        />
 
         <ZelligeDivider variant="minimal" />
 

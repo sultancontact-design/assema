@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import {
   ArrowLeft,
   Heart,
@@ -14,19 +15,84 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ZelligeDivider } from "@/components/shared/zellige-divider";
 import { getFundStats } from "@/lib/fund-stats";
 import { formatNumber } from "@/lib/constants";
 import { db } from "@/lib/db";
 
-// صفحة عامة — تجلب الإحصاءات الحقيقية من قاعدة البيانات
-async function getHomePageStats() {
-  const [fundStats, familyCount, userCount] = await Promise.all([
-    getFundStats(),
-    db.family.count({ where: { isActive: true, deletedAt: null } }),
-    db.user.count({ where: { deletedAt: null, status: "ACTIVE" } }),
-  ]);
-  return { fundStats, familyCount, userCount };
+// Force dynamic — لا نُريد prerender أثناء الـbuild (DB قد لا يكون متاحاً)
+export const dynamic = "force-dynamic";
+// السماح بالـ ISR لمدّة 60 ثانية على الإحصاءات (آمنة للقراءة)
+export const revalidate = 60;
+
+// ===================================================================
+//  المكوّن المتدفّق (streamed) — الإحصاءات الحيّة مُغلّفة بـ Suspense
+//  parent يُعيد shell ثابت فوراً، والإحصاءات تتدفّق عند جاهزيتها.
+// ===================================================================
+
+async function HomeLiveStats() {
+  let fundStats = {
+    totalContributions: 0,
+    balance: 0,
+  } as { totalContributions: number; balance: number };
+  let familyCount = 0;
+  try {
+    const [fund, family, user] = await Promise.all([
+      getFundStats(),
+      db.family.count({ where: { isActive: true, deletedAt: null } }),
+      db.user.count({ where: { deletedAt: null, status: "ACTIVE" } }),
+    ]);
+    fundStats = fund;
+    familyCount = family;
+    // user موجود لضمان توليد الـ query لكن لم يُعرض هنا
+    void user;
+  } catch {
+    // DB غير متاح — استخدم قيم افتراضية
+  }
+
+  const LIVE_STATS = [
+    { label: "أسرة مسجّلة", value: formatNumber(familyCount), icon: Users, color: "text-secondary" },
+    { label: "درهم مساهم", value: formatNumber(fundStats.totalContributions), icon: HandCoins, color: "text-primary" },
+    { label: "درهم الرصيد", value: formatNumber(fundStats.balance), icon: Scale, color: "text-accent" },
+  ];
+
+  return (
+    <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
+      {LIVE_STATS.map((stat) => {
+        const Icon = stat.icon;
+        return (
+          <Card key={stat.label} className="text-center warm-shadow border-border">
+            <CardContent className="pt-6 pb-6">
+              <Icon className={`size-7 mx-auto mb-2 ${stat.color}`} />
+              <div className="font-heading text-3xl font-extrabold text-foreground">
+                {stat.value}
+              </div>
+              <div className="text-sm text-muted-foreground mt-1">
+                {stat.label}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+function HomeLiveStatsSkeleton() {
+  return (
+    <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto" aria-hidden>
+      {[0, 1, 2].map((i) => (
+        <Card key={i} className="text-center warm-shadow border-border">
+          <CardContent className="pt-6 pb-6">
+            <Skeleton className="size-7 mx-auto mb-2 rounded-full" />
+            <Skeleton className="h-9 w-2/3 mx-auto mb-2" />
+            <Skeleton className="h-4 w-1/2 mx-auto" />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
 }
 
 const PRINCIPLES = [
@@ -93,25 +159,7 @@ const AD_PACKAGES = [
   },
 ];
 
-// Force dynamic — لا نُريد prerender أثناء الـbuild (DB قد لا يكون متاحاً)
-export const dynamic = "force-dynamic";
-
-export default async function HomePage() {
-  // graceful fallback إذا DB غير متاح (مثلاً أثناء build قبل الـmigration)
-  let fundStats = { totalContributions: 0, balance: 0 } as { totalContributions: number; balance: number };
-  let familyCount = 0;
-  try {
-    const result = await getHomePageStats();
-    fundStats = result.fundStats;
-    familyCount = result.familyCount;
-  } catch {
-    // DB غير متاح — استخدم قيم افتراضية
-  }
-  const LIVE_STATS = [
-    { label: "أسرة مسجّلة", value: formatNumber(familyCount), icon: Users, color: "text-secondary" },
-    { label: "درهم مساهم", value: formatNumber(fundStats.totalContributions), icon: HandCoins, color: "text-primary" },
-    { label: "درهم الرصيد", value: formatNumber(fundStats.balance), icon: Scale, color: "text-accent" },
-  ];
+export default function HomePage() {
   return (
     <div className="flex flex-col">
       {/* ─────────── قسم البطل (Hero) ─────────── */}
@@ -172,30 +220,10 @@ export default async function HomePage() {
             <ZelligeDivider variant="diamond" className="opacity-70" />
           </div>
 
-          {/* الأرقام الحية */}
-          <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
-            {LIVE_STATS.map((stat) => {
-              const Icon = stat.icon;
-              return (
-                <Card
-                  key={stat.label}
-                  className="text-center warm-shadow border-border"
-                >
-                  <CardContent className="pt-6 pb-6">
-                    <Icon
-                      className={`size-7 mx-auto mb-2 ${stat.color}`}
-                    />
-                    <div className="font-heading text-3xl font-extrabold text-foreground">
-                      {stat.value}
-                    </div>
-                    <div className="text-sm text-muted-foreground mt-1">
-                      {stat.label}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+          {/* الأرقام الحيّة — متدفّقة عبر Suspense */}
+          <Suspense fallback={<HomeLiveStatsSkeleton />}>
+            <HomeLiveStats />
+          </Suspense>
         </div>
       </section>
 

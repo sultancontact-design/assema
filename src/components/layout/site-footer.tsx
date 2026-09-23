@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Heart, Mail, MapPin, Phone } from "lucide-react";
+import { Heart, Mail, MapPin, Phone, Shield } from "lucide-react";
 import { ZelligeDivider } from "@/components/shared/zellige-divider";
 import { SiteLogo } from "@/components/shared/site-logo";
 
@@ -17,9 +17,9 @@ const FOOTER_LINKS = {
     title: "عن المنصة",
     links: [
       { href: "/about", label: "من نحن" },
-      { href: "/principles", label: "المبادئ" },
-      { href: "/privacy", label: "الخصوصية" },
-      { href: "/terms", label: "الشروط" },
+      { href: "/privacy-policy", label: "سياسة الخصوصية" },
+      { href: "/terms", label: "شروط الاستخدام" },
+      { href: "/ethics", label: "تصميمنا الأخلاقي" },
     ],
   },
   contact: {
@@ -43,8 +43,8 @@ export function SiteFooter() {
           <div className="col-span-2 md:col-span-1">
             <SiteLogo size="md" />
             <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
-              منصة اجتماعية تضامنية لرقمنة المعروف المغربي في حي سيدي يوسف بن علي
-              بمراكش. من حي إلى عاصمة... المعروف الرقمي.
+              منصة اجتماعية تضامنية لرقمنة المعروف المغربي في حي سيدي يوسف بن
+              علي بمراكش. من حي إلى عاصمة... المعروف الرقمي.
             </p>
             <div className="mt-4 flex items-center gap-1.5 text-xs text-muted-foreground">
               <Heart className="size-3.5 text-primary" />
@@ -92,15 +92,45 @@ export function SiteFooter() {
 
         <ZelligeDivider variant="minimal" className="mb-6 opacity-50" />
 
+        {/* إشارة CNDP */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-6">
+          <Link
+            href="https://www.cnp.ma"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-md border border-secondary/30 bg-secondary/5 px-3 py-2 text-xs text-foreground hover:bg-secondary/10 transition-colors"
+          >
+            <Shield className="size-4 text-secondary" />
+            <span>مسجّلة لدى CNDP وفقاً للقانون 09-08</span>
+          </Link>
+          <p className="text-xs text-muted-foreground text-center sm:text-end">
+            رقم الإخطار: يُنشر فور الحصول عليه من اللجنة الوطنية
+          </p>
+        </div>
+
         {/* أسفل الفوتر */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
           <p>
             © {new Date().getFullYear()} سيدي يوسف بن علي العاصمة. جميع الحقوق
             محفوظة.
           </p>
-          <p className="text-center">
-            رخصة الاستخدام: المشروع مفتوح المصدر لخدمة المجتمع
-          </p>
+          <div className="flex items-center gap-3 flex-wrap justify-center">
+            <Link
+              href="/privacy-policy"
+              className="hover:text-primary transition-colors"
+            >
+              الخصوصية
+            </Link>
+            <span className="text-muted-foreground/30">•</span>
+            <Link
+              href="/terms"
+              className="hover:text-primary transition-colors"
+            >
+              الشروط
+            </Link>
+            <span className="text-muted-foreground/30">•</span>
+            <span>رخصة الاستخدام: المشروع مفتوح المصدر لخدمة المجتمع</span>
+          </div>
         </div>
       </div>
     </footer>

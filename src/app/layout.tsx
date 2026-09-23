@@ -33,6 +33,18 @@ export const metadata: Metadata = {
     "المجتمع المدني",
   ],
   authors: [{ name: "سيدي يوسف بن علي العاصمة" }],
+  applicationName: "سيدي يوسف بن علي العاصمة",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "العاصمة",
+    statusBarStyle: "default",
+  },
+  formatDetection: {
+    telephone: false,
+    address: false,
+    email: false,
+  },
   openGraph: {
     title: "سيدي يوسف بن علي العاصمة — منصة المعروف الرقمي",
     description: "من حي إلى عاصمة... المعروف الرقمي",
@@ -45,7 +57,12 @@ export const metadata: Metadata = {
     description: "من حي إلى عاصمة... المعروف الرقمي",
   },
   icons: {
-    icon: "/favicon.svg",
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.svg", sizes: "192x192", type: "image/svg+xml" },
+    ],
+    apple: [{ url: "/icon-192.svg", sizes: "192x192", type: "image/svg+xml" }],
+    shortcut: ["/favicon.svg"],
   },
 };
 
@@ -57,6 +74,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
