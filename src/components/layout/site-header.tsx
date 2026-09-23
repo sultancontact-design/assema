@@ -10,7 +10,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Menu, X, Heart, Users, CalendarDays, Home as HomeIcon, Newspaper } from "lucide-react";
+import { Menu, X, Heart, Users, CalendarDays, Home as HomeIcon, Newspaper, Mail, MessageSquare, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,6 +32,9 @@ const NAV_LINKS = [
   { href: "/community/fund", label: "صندوق المعروف", icon: Heart },
   { href: "/community/events", label: "الفعاليات", icon: CalendarDays },
   { href: "/community/groups", label: "المجموعات", icon: Newspaper },
+  { href: "/community/messages", label: "الرسائل", icon: Mail },
+  { href: "/community/discussions", label: "النقاشات", icon: MessageSquare },
+  { href: "/community/initiatives", label: "المبادرات", icon: Lightbulb },
 ];
 
 export function SiteHeader() {
@@ -106,7 +109,7 @@ export function SiteHeader() {
           <SiteLogo size="md" />
 
           {/* قائمة سطح المكتب */}
-          <nav className="hidden md:flex items-center gap-1" aria-label="القائمة الرئيسية">
+          <nav className="hidden lg:flex items-center gap-0.5" aria-label="القائمة الرئيسية">
             {NAV_LINKS.map((link) => {
               const Icon = link.icon;
               const active =
@@ -117,15 +120,15 @@ export function SiteHeader() {
                   key={link.href}
                   href={link.href}
                   className={cn(
-                    "flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                    "flex items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors",
                     active
                       ? "bg-primary/10 text-primary"
                       : "text-foreground/70 hover:bg-accent/40 hover:text-accent-foreground"
                   )}
                   aria-current={active ? "page" : undefined}
                 >
-                  <Icon className="size-4" />
-                  <span>{link.label}</span>
+                  <Icon className="size-4 shrink-0" />
+                  <span className="whitespace-nowrap">{link.label}</span>
                 </Link>
               );
             })}
@@ -170,7 +173,7 @@ export function SiteHeader() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="md:hidden"
+                  className="lg:hidden"
                   aria-label="فتح القائمة"
                 >
                   {open ? <X className="size-5" /> : <Menu className="size-5" />}

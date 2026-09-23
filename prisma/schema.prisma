@@ -269,6 +269,12 @@ model User {
   followers         UserRelationship[] @relation("Following")
   smartNotifications SmartNotification[]
   notificationPref  NotificationPreference?
+  sentMessages      DirectMessage[] @relation("MessageSender")
+  receivedMessages   DirectMessage[] @relation("MessageReceiver")
+  discussions       Discussion[]
+  discussionReplies  DiscussionReply[]
+  initiatives       Initiative[]
+  initiativeVotes   InitiativeVote[]
 
   // ─────────── الاقتصاد والمتجر (v5.0) ───────────
   pointsLedger      PointsLedger[]
@@ -278,6 +284,7 @@ model User {
   referrals         Referral[]
   blogPosts         BlogPost[]
   guideItems        GuideItem[]
+
 
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -1046,3 +1053,103 @@ model EngagementMetric {
   
   @@index([date])
 }
+
+// ===================================================================
+//  التفاعل الاجتماعي — v9.0
+//  DirectMessage + Discussion + DiscussionReply + Initiative + InitiativeVote
+// ===================================================================
+
+// الرسائل المباشرة بين المستخدمين
+model DirectMessage {
+  id          String   @id @default(cuid())
+  senderId    String
+  receiverId  String
+  content     String
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+  
+  sender      User     @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver    User     @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  
+  @@index([senderId])
+  @@index([receiverId, readAt])
+  @@index([createdAt])
+}
+
+// النقاشات الجماعية
+model Discussion {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  authorId    String
+  groupId     String?   // optional: linked to a group
+  districtId  String?  // optional: linked to a district
+  category    String   @default("general") // general, question, suggestion, announcement
+  isPinned    Boolean  @default(false)
+  views       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  replies     DiscussionReply[]
+  
+  @@index([authorId])
+  @@index([groupId])
+  @@index([districtId])
+  @@index([createdAt])
+}
+
+model DiscussionReply {
+  id           String   @id @default(cuid())
+  discussionId String
+  authorId     String
+  content      String
+  parentId     String?   // for nested replies
+  likes        Int       @default(0)
+  createdAt    DateTime  @default(now())
+  
+  discussion   Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  author       User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  
+  @@index([discussionId])
+  @@index([authorId])
+}
+
+// المبادرات والاقتراحات
+model Initiative {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  category    String   // EDUCATION, HEALTH, ENVIRONMENT, CULTURE, SOCIAL, INFRASTRUCTURE
+  status      String   @default("proposed") // proposed, under_review, approved, rejected, in_progress, completed
+  proposerId  String
+  districtId  String?
+  targetDate  DateTime?
+  votes       Int      @default(0)
+  budget      Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  proposer    User     @relation(fields: [proposerId], references: [id], onDelete: Cascade)
+  supporters  InitiativeVote[]
+  
+  @@index([status])
+  @@index([category])
+  @@index([districtId])
+  @@index([createdAt])
+}
+
+model InitiativeVote {
+  id          String   @id @default(cuid())
+  initiativeId String
+  userId      String
+  createdAt   DateTime @default(now())
+  
+  initiative  Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([initiativeId, userId])
+  @@index([initiativeId])
+}
+
+// ===================================================================

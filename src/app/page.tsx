@@ -20,6 +20,8 @@ import { ZelligeDivider } from "@/components/shared/zellige-divider";
 import { getFundStats } from "@/lib/fund-stats";
 import { formatNumber } from "@/lib/constants";
 import { db } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
+import { VisitorWelcome } from "@/components/community/visitor-welcome";
 
 // Force dynamic — لا نُريد prerender أثناء الـbuild (DB قد لا يكون متاحاً)
 export const dynamic = "force-dynamic";
@@ -159,7 +161,8 @@ const AD_PACKAGES = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const user = await getCurrentUser();
   return (
     <div className="flex flex-col">
       {/* ─────────── قسم البطل (Hero) ─────────── */}
@@ -226,6 +229,13 @@ export default function HomePage() {
           </Suspense>
         </div>
       </section>
+
+      {/* ─────────── بانر ترحيب للزائر (فقط لغير المسجّلين) ─────────── */}
+      {!user && (
+        <div className="container mx-auto py-8">
+          <VisitorWelcome />
+        </div>
+      )}
 
       {/* ─────────── المبادئ ─────────── */}
       <section className="container mx-auto px-4 py-16 md:py-20">

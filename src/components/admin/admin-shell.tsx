@@ -39,6 +39,9 @@ import {
   Target,
   Gift,
   ShoppingCart,
+  Mail,
+  MessageSquare,
+  Lightbulb,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -140,6 +143,10 @@ const NAV_LINKS: NavLinkItem[] = [
   { href: "/admin/challenges", label: "التحديات", icon: Target, match: "challenges" },
   { href: "/admin/rewards", label: "المكافآت", icon: Gift, match: "rewards" },
   { href: "/admin/store", label: "المتجر", icon: ShoppingCart, match: "store" },
+  { href: "/admin/messages", label: "الرسائل", icon: Mail, match: "messages" },
+  { href: "/admin/discussions", label: "النقاشات", icon: MessageSquare, match: "discussions" },
+  { href: "/admin/initiatives", label: "المبادرات", icon: Lightbulb, match: "initiatives" },
+  { href: "/admin/district-monitor", label: "مراقبة الأحياء", icon: MapPin, match: "district-monitor" },
   { href: "/admin/analytics", label: "التحليلات", icon: BarChart3, match: "analytics" },
   { href: "/admin/reports", label: "التقارير", icon: BarChart3, match: "reports" },
   { href: "/admin/engagement", label: "الانتماء والتفاعل", icon: Activity, match: "engagement" },
@@ -176,6 +183,10 @@ const SECTION_TITLES: Record<string, string> = {
   rewards: "المكافآت",
   store: "المتجر",
   analytics: "التحليلات",
+  messages: "الرسائل",
+  discussions: "النقاشات",
+  initiatives: "المبادرات",
+  "district-monitor": "مراقبة الأحياء",
 };
 
 // ===================================================================

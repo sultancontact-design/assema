@@ -375,6 +375,45 @@ export const STORY_CATEGORIES = [
 ] as const;
 
 // ===================================================================
+//  التفاعل الاجتماعي — v9.0
+// ===================================================================
+
+export const DISCUSSION_CATEGORIES = [
+  { value: "general", label: "نقاش عام", icon: "💬" },
+  { value: "question", label: "سؤال", icon: "❓" },
+  { value: "suggestion", label: "اقتراح", icon: "💡" },
+  { value: "announcement", label: "إعلان", icon: "📢" },
+] as const;
+
+export const DISCUSSION_CATEGORY_LABELS: Record<string, string> = Object.fromEntries(
+  DISCUSSION_CATEGORIES.map((c) => [c.value, c.label])
+);
+
+export const INITIATIVE_CATEGORIES = [
+  { value: "EDUCATION", label: "تعليم", icon: "📚", color: "blue" },
+  { value: "HEALTH", label: "صحة", icon: "🩺", color: "rose" },
+  { value: "ENVIRONMENT", label: "بيئة", icon: "🌱", color: "emerald" },
+  { value: "CULTURE", label: "ثقافة", icon: "🎭", color: "amber" },
+  { value: "SOCIAL", label: "اجتماعي", icon: "🤝", color: "secondary" },
+  { value: "INFRASTRUCTURE", label: "بنية تحتية", icon: "🏗️", color: "slate" },
+] as const;
+
+export const INITIATIVE_CATEGORY_LABELS: Record<string, { label: string; icon: string; color: string }> =
+  Object.fromEntries(INITIATIVE_CATEGORIES.map((c) => [c.value, { label: c.label, icon: c.icon, color: c.color }]));
+
+export const INITIATIVE_STATUSES = [
+  { value: "proposed", label: "مقترحة", color: "slate" },
+  { value: "under_review", label: "قيد المراجعة", color: "amber" },
+  { value: "approved", label: "مقبولة", color: "blue" },
+  { value: "rejected", label: "مرفوضة", color: "rose" },
+  { value: "in_progress", label: "قيد التنفيذ", color: "secondary" },
+  { value: "completed", label: "مكتملة", color: "emerald" },
+] as const;
+
+export const INITIATIVE_STATUS_LABELS: Record<string, { label: string; color: string }> =
+  Object.fromEntries(INITIATIVE_STATUSES.map((s) => [s.value, { label: s.label, color: s.color }]));
+
+// ===================================================================
 //  معلومات الحي الرئيسي
 // ===================================================================
 
