@@ -42,6 +42,7 @@ import {
   Mail,
   MessageSquare,
   Lightbulb,
+  Radio,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -148,6 +149,7 @@ const NAV_LINKS: NavLinkItem[] = [
   { href: "/admin/initiatives", label: "المبادرات", icon: Lightbulb, match: "initiatives" },
   { href: "/admin/district-monitor", label: "مراقبة الأحياء", icon: MapPin, match: "district-monitor" },
   { href: "/admin/analytics", label: "التحليلات", icon: BarChart3, match: "analytics" },
+  { href: "/admin/live", label: "النشاط الحي", icon: Radio, match: "live" },
   { href: "/admin/reports", label: "التقارير", icon: BarChart3, match: "reports" },
   { href: "/admin/engagement", label: "الانتماء والتفاعل", icon: Activity, match: "engagement" },
   { href: "/admin/notifications", label: "الإشعارات", icon: Bell, match: "notifications" },
