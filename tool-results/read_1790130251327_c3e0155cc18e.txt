@@ -1,0 +1,901 @@
+     1→// ===================================================================
+     2→//  سيدي يوسف بن علي العاصمة — منصة المعروف الرقمي
+     3→//  Prisma Schema (MVP — 5 وحدات)
+     4→//  متوافق مع SQLite (محلي) و PostgreSQL (إنتاج Supabase)
+     5→//  كل الجداول: id, createdAt, updatedAt, deletedAt (Soft Delete)
+     6→// ===================================================================
+     7→
+     8→generator client {
+     9→  provider = "prisma-client-js"
+    10→}
+    11→
+    12→datasource db {
+    13→  provider = "postgresql"
+    14→  url      = env("DATABASE_URL")
+    15→  directUrl = env("DIRECT_URL")
+    16→}
+    17→
+    18→// ===================================================================
+    19→//  Enums (تُخزَّن كنصوص في SQLite، Enum في PostgreSQL)
+    20→// ===================================================================
+    21→
+    22→// الأدوار الثمانية
+    23→enum Role {
+    24→  GUEST           // زائر
+    25→  MEMBER          // عضو
+    26→  GROUP_LEADER    // رئيس مجموعة
+    27→  DISTRICT_MOD    // مشرف حي
+    28→  TREASURER       // أمين الصندوق
+    29→  ETHICS_COMMITTEE // لجنة النزاهة
+    30→  SUPER_ADMIN     // سوبر أدمن
+    31→  ADS_MANAGER     // مسؤول إعلانات
+    32→}
+    33→
+    34→enum UserStatus {
+    35→  ACTIVE
+    36→  PENDING
+    37→  SUSPENDED
+    38→  DISABLED
+    39→}
+    40→
+    41→enum ContributionStatus {
+    42→  PENDING
+    43→  CONFIRMED
+    44→  REJECTED
+    45→  REFUNDED
+    46→}
+    47→
+    48→enum ContributionMethod {
+    49→  BANK_TRANSFER   // تحويل بنكي
+    50→  CASH            // نقداً عبر أمين الصندوق
+    51→  CMI             // CMI (للمرحلة المدفوعة)
+    52→}
+    53→
+    54→enum FundRequestType {
+    55→  MEDICAL         // مرض
+    56→  DEATH           // وفاة
+    57→  WEDDING         // عرس
+    58→  EDUCATION       // تعليم
+    59→  EMERGENCY       // طوارئ
+    60→  MICRO_PROJECT   // مشروع صغير
+    61→}
+    62→
+    63→enum FundRequestStatus {
+    64→  SUBMITTED       // مُقدَّم
+    65→  UNDER_REVIEW    // قيد المراجعة
+    66→  APPROVED        // موافَق
+    67→  REJECTED        // مرفوض
+    68→  DISBURSED       // مَصروف
+    69→  COMPLETED       // مكتمل
+    70→}
+    71→
+    72→enum ApprovalDecision {
+    73→  APPROVE
+    74→  REJECT
+    75→  ABSTAIN
+    76→}
+    77→
+    78→enum EventType {
+    79→  MONTHLY         // شهري
+    80→  SEASONAL        // موسمي
+    81→  SPECIAL         // خاص
+    82→  SOLIDARITY      // تضامني
+    83→  CULTURAL        // ثقافي
+    84→}
+    85→
+    86→enum EventStatus {
+    87→  DRAFT
+    88→  PUBLISHED
+    89→  ONGOING
+    90→  COMPLETED
+    91→  CANCELLED
+    92→}
+    93→
+    94→enum RegistrationStatus {
+    95→  REGISTERED
+    96→  ATTENDED
+    97→  CANCELLED
+    98→  NO_SHOW
+    99→}
+   100→
+   101→enum NotificationType {
+   102→  SYSTEM
+   103→  CONTRIBUTION
+   104→  FUND_REQUEST
+   105→  EVENT
+   106→  GROUP
+   107→  COMPLAINT
+   108→  ANNOUNCEMENT
+   109→}
+   110→
+   111→enum ComplaintType {
+   112→  FINANCIAL
+   113→  BEHAVIORAL
+   114→  TECHNICAL
+   115→  SUGGESTION
+   116→  OTHER
+   117→}
+   118→
+   119→enum ComplaintStatus {
+   120→  OPEN
+   121→  IN_PROGRESS
+   122→  RESOLVED
+   123→  CLOSED
+   124→  REJECTED
+   125→}
+   126→
+   127→enum AdStatus {
+   128→  DRAFT
+   129→  PENDING
+   130→  ACTIVE
+   131→  PAUSED
+   132→  EXPIRED
+   133→  REJECTED
+   134→}
+   135→
+   136→enum AdPackage {
+   137→  BRONZE
+   138→  SILVER
+   139→  GOLD
+   140→  PLATINUM
+   141→  SPONSOR
+   142→}
+   143→
+   144→// ===================================================================
+   145→//  النماذج الأساسية
+   146→// ===================================================================
+   147→
+   148→model District {
+   149→  id          String   @id @default(cuid())
+   150→  name        String   @unique   // "سيدي يوسف بن علي"
+   151→  slug        String   @unique
+   152→  // أسماء ثنائية اللغة (عربي + فرنسي) للعرض على الخريطة
+   153→  nameAr       String?
+   154→  nameFr       String?
+   155→  // إحصاءات سكانية ومنصوية لكل حي
+   156→  population   Int?
+   157→  members      Int     @default(0)
+   158→  familiesCount Int   @default(0)
+   159→  contributions Int   @default(0)
+   160→  city        String   @default("مراكش")
+   161→  region      String   @default("مراكش آسفي")
+   162→  description String?
+   163→  // حدود الحي (SVG path) — خريطة حرارية محلية
+   164→  boundarySvg String?
+   165→  isActive    Boolean  @default(true)
+   166→  isDefault   Boolean  @default(false)
+   167→
+   168→  families    Family[]
+   169→  users       User[]
+   170→  groups      Group[]
+   171→  events      Event[]
+   172→  ads         Ad[]
+   173→  complaints  Complaint[]
+   174→
+   175→  createdAt   DateTime @default(now())
+   176→  updatedAt   DateTime @updatedAt
+   177→  deletedAt   DateTime?
+   178→
+   179→  @@index([isActive])
+   180→}
+   181→
+   182→model Family {
+   183→  id              String   @id @default(cuid())
+   184→  familyName      String   // "بنشقرون"
+   185→  districtId      String
+   186→  district        District @relation(fields: [districtId], references: [id], onDelete: Cascade)
+   187→  headOfFamilyId  String?  // رب الأسرة (User)
+   188→  headOfFamily    User?    @relation("FamilyHead", fields: [headOfFamilyId], references: [id])
+   189→  address         String?
+   190→  economicStatus  String   @default("متوسط") // ضعيف / متوسط / جيد
+   191→  memberCount     Int      @default(1)
+   192→  isActive        Boolean  @default(true)
+   193→  notes           String?
+   194→
+   195→  members         User[]
+   196→  contributions   Contribution[]
+   197→  fundRequests    FundRequest[]
+   198→
+   199→  createdAt       DateTime @default(now())
+   200→  updatedAt       DateTime @updatedAt
+   201→  deletedAt       DateTime?
+   202→
+   203→  @@index([districtId])
+   204→  @@index([familyName])
+   205→}
+   206→
+   207→model User {
+   208→  id                String       @id @default(cuid())
+   209→  // الهوية
+   210→  firstName         String       // الاسم الشخصي
+   211→  lastName          String       // اسم العائلة
+   212→  fullName          String       // "محمد بنشقرون" (مولّد)
+   213→  email             String       @unique
+   214→  phone             String       @unique  // 06XXXXXXXX
+   215→  nationalIdHash    String?      // رقم البطاقة الوطنية (مشفّر)
+   216→  passwordHash      String       // bcrypt
+   217→  avatar            String?
+   218→  // العلاقات
+   219→  districtId        String
+   220→  district          District     @relation(fields: [districtId], references: [id])
+   221→  familyId          String?
+   222→  family            Family?      @relation(fields: [familyId], references: [id])
+   223→  isFamilyHead      Boolean      @default(false)
+   224→  // الدور والحالة
+   225→  role              Role         @default(MEMBER)
+   226→  status            UserStatus   @default(PENDING)
+   227→  emailVerified     DateTime?
+   228→  // التفاصيل الاجتماعية
+   229→  profession        String?      // "معلم"
+   230→  skills            String?      // مفصولة بفاصلة
+   231→  interests         String?
+   232→  birthDate         DateTime?
+   233→  gender            String?      // ذكر/أنثى
+   234→  // الأمان
+   235→  twoFactorEnabled  Boolean      @default(false)
+   236→  twoFactorSecret   String?
+   237→  twoFactorBackupCodes String?  // JSON array of bcrypt-hashed 8-char backup codes
+   238→  failedLoginCount  Int          @default(0)
+   239→  lockedUntil       DateTime?
+   240→  lastLoginAt       DateTime?
+   241→  lastLoginIp       String?
+   242→  // نقاط اللعب (Gamification)
+   243→  points            Int          @default(0)
+   244→  level             Int          @default(1)
+   245→  badges            String?      // JSON array of badge IDs
+   246→
+   247→  // العلاقات
+   248→  familyHeadOf      Family[]     @relation("FamilyHead")
+   249→  contributions     Contribution[]
+   250→  fundRequests      FundRequest[]
+   251→  approvalsGiven    FundRequestApproval[]
+   252→  groupsLed         GroupMember[] @relation("GroupLeader")
+   253→  groupMemberships  GroupMember[]
+   254→  eventRegistrations EventRegistration[]
+   255→  notifications     Notification[]
+   256→  complaintsFiled   Complaint[]  @relation("ComplaintFiledBy")
+   257→  complaintsHandled Complaint[]  @relation("ComplaintHandledBy")
+   258→  auditLogs         AuditLog[]
+   259→  adsManaged        Ad[]         @relation("AdManager")
+   260→  
+   261→  // ─────────── علاقات هندسة الإدمان (v3.0) ───────────
+   262→  streak            UserStreak?
+   263→  variableRewards   VariableReward[]
+   264→  userChallenges    UserChallenge[]
+   265→  userBadges        UserBadge[]
+   266→  activities        UserActivity[]
+   267→  following         UserRelationship[] @relation("Follower")
+   268→  followers         UserRelationship[] @relation("Following")
+   269→  smartNotifications SmartNotification[]
+   270→  notificationPref  NotificationPreference?
+   271→
+   272→  createdAt         DateTime @default(now())
+   273→  updatedAt         DateTime @updatedAt
+   274→  deletedAt         DateTime?
+   275→
+   276→  @@index([districtId])
+   277→  @@index([familyId])
+   278→  @@index([role])
+   279→  @@index([status])
+   280→  @@index([phone])
+   281→}
+   282→
+   283→// ===================================================================
+   284→//  المجموعات (Interest Groups)
+   285→// ===================================================================
+   286→
+   287→model Group {
+   288→  id          String         @id @default(cuid())
+   289→  name        String         // "مجموعة الأمهات"
+   290→  slug        String         @unique
+   291→  description String?
+   292→  districtId  String
+   293→  district    District       @relation(fields: [districtId], references: [id], onDelete: Cascade)
+   294→  category    String         @default("عام")
+   295→  icon        String?
+   296→  coverImage  String?
+   297→  isDefault   Boolean        @default(false) // المجموعات الافتراضية
+   298→  isActive    Boolean        @default(true)
+   299→  // الإعدادات
+   300→  isPrivate   Boolean        @default(false) // انضمام بدعوة
+   301→  maxMembers  Int?
+   302→  // العلاقات
+   303→  members     GroupMember[]
+   304→  events      Event[]
+   305→
+   306→  createdAt   DateTime @default(now())
+   307→  updatedAt   DateTime @updatedAt
+   308→  deletedAt   DateTime?
+   309→
+   310→  @@index([districtId])
+   311→  @@index([slug])
+   312→}
+   313→
+   314→model GroupMember {
+   315→  id          String    @id @default(cuid())
+   316→  groupId     String
+   317→  group       Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+   318→  userId      String
+   319→  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+   320→  role        String    @default("member") // leader / moderator / member
+   321→  joinedAt    DateTime  @default(now())
+   322→  isApproved  Boolean   @default(true)
+   323→
+   324→  // العلاقة العكسية لرئيس المجموعة
+   325→  ledBy       User[]    @relation("GroupLeader")
+   326→
+   327→  createdAt   DateTime @default(now())
+   328→  updatedAt   DateTime @updatedAt
+   329→
+   330→  @@unique([groupId, userId])
+   331→  @@index([userId])
+   332→}
+   333→
+   334→// ===================================================================
+   335→//  صندوق المعروف الرقمي (Digital Maârouf Fund)
+   336→// ===================================================================
+   337→
+   338→model Contribution {
+   339→  id            String              @id @default(cuid())
+   340→  userId        String
+   341→  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+   342→  familyId      String
+   343→  family        Family              @relation(fields: [familyId], references: [id])
+   344→  districtId    String
+   345→  // المبلغ والشهر
+   346→  amount        Float               // بالدرهم
+   347→  month         String              // "2024-01"
+   348→  year          Int
+   349→  // الدفع
+   350→  method        ContributionMethod  @default(BANK_TRANSFER)
+   351→  receiptNumber String?             // رقم الإيصال الرقمي (مولّد)
+   352→  receiptImage  String?             // مسار صورة الإيصال المرفوعة
+   353→  bankReference String?             // مرجع التحويل البنكي
+   354→  // الحالة
+   355→  status        ContributionStatus  @default(PENDING)
+   356→  confirmedById String?
+   357→  confirmedAt   DateTime?
+   358→  note          String?
+   359→  // الإيصال الرقمي (UUID لكل مساهمة)
+   360→  digitalReceipt String?            @unique
+   361→
+   362→  createdAt     DateTime @default(now())
+   363→  updatedAt     DateTime @updatedAt
+   364→
+   365→  @@index([userId])
+   366→  @@index([familyId])
+   367→  @@index([status])
+   368→  @@index([month])
+   369→  @@index([year])
+   370→}
+   371→
+   372→model FundRequest {
+   373→  id              String              @id @default(cuid())
+   374→  userId          String
+   375→  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+   376→  familyId        String
+   377→  family          Family              @relation(fields: [familyId], references: [id])
+   378→  districtId      String
+   379→  // نوع الطلب
+   380→  type            FundRequestType
+   381→  amountRequested Float
+   382→  amountApproved  Float?
+   383→  amountDisbursed Float?
+   384→  // التفاصيل
+   385→  title           String
+   386→  description     String
+   387→  // المرفقات (JSON array of file paths)
+   388→  attachments     String?
+   389→  // الموقع (مستشفى، إلخ)
+   390→  location        String?
+   391→  // الحالة
+   392→  status          FundRequestStatus   @default(SUBMITTED)
+   393→  // الموافقات
+   394→  approvals       FundRequestApproval[]
+   395→  // متى يحتاج لجنة النزاهة؟
+   396→  requiresEthics  Boolean             @default(false) // true إذا > 1000 درهم
+   397→  reviewedById    String?
+   398→  reviewedAt      DateTime?
+   399→  reviewedNote    String?
+   400→  disbursedAt     DateTime?
+   401→  disbursedById   String?
+   402→  disbursementMethod String?
+   403→  disbursementRef String?
+   404→  // الإيصال النهائي
+   405→  finalReceipt    String?             @unique
+   406→  completedAt     DateTime?
+   407→  // الكرامة: رقم رمزي بدل الاسم في العلن
+   408→  anonymousCode   String?             // "SY-001"
+   409→
+   410→  createdAt       DateTime @default(now())
+   411→  updatedAt       DateTime @updatedAt
+   412→  deletedAt       DateTime?
+   413→
+   414→  @@index([userId])
+   415→  @@index([familyId])
+   416→  @@index([status])
+   417→  @@index([type])
+   418→}
+   419→
+   420→model FundRequestApproval {
+   421→  id          String           @id @default(cuid())
+   422→  requestId   String
+   423→  request     FundRequest      @relation(fields: [requestId], references: [id], onDelete: Cascade)
+   424→  approverId  String
+   425→  approver    User             @relation(fields: [approverId], references: [id])
+   426→  decision    ApprovalDecision
+   427→  note        String?
+   428→  // متى صوّت
+   429→  decidedAt   DateTime         @default(now())
+   430→
+   431→  createdAt   DateTime @default(now())
+   432→
+   433→  @@unique([requestId, approverId])
+   434→  @@index([requestId])
+   435→}
+   436→
+   437→// ===================================================================
+   438→//  الفعاليات والمناسبات (Events)
+   439→// ===================================================================
+   440→
+   441→model Event {
+   442→  id              String      @id @default(cuid())
+   443→  title           String
+   444→  slug            String      @unique
+   445→  description     String
+   446→  districtId      String
+   447→  district        District    @relation(fields: [districtId], references: [id], onDelete: Cascade)
+   448→  // النوع والتاريخ
+   449→  type            EventType
+   450→  status          EventStatus  @default(DRAFT)
+   451→  startDate       DateTime
+   452→  endDate         DateTime?
+   453→  location        String
+   454→  // خريطة SVG محلية للموقع
+   455→  locationMapSvg  String?
+   456→  // الصور
+   457→  coverImage      String?
+   458→  galleryImages   String?      // JSON array
+   459→  // التذاكر
+   460→  maxAttendees    Int?
+   461→  isRegistrationOpen Boolean   @default(true)
+   462→  requiresApproval Boolean     @default(false)
+   463→  // العلاقات
+   464→  groupId         String?
+   465→  group           Group?       @relation(fields: [groupId], references: [id])
+   466→  organizerId     String?
+   467→  registrations   EventRegistration[]
+   468→
+   469→  createdAt       DateTime @default(now())
+   470→  updatedAt       DateTime @updatedAt
+   471→  deletedAt       DateTime?
+   472→
+   473→  @@index([districtId])
+   474→  @@index([status])
+   475→  @@index([startDate])
+   476→}
+   477→
+   478→model EventRegistration {
+   479→  id          String             @id @default(cuid())
+   480→  eventId     String
+   481→  event       Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+   482→  userId      String
+   483→  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+   484→  // التذكرة الرقمية
+   485→  qrCode      String             @unique  // محتوى QR (سيُولَّد كـ SVG)
+   486→  ticketCode  String             @unique  // "EV-2024-001"
+   487→  status      RegistrationStatus @default(REGISTERED)
+   488→  registeredAt DateTime         @default(now())
+   489→  attendedAt  DateTime?
+   490→  // معلومات إضافية
+   491→  notes       String?
+   492→
+   493→  createdAt   DateTime @default(now())
+   494→  updatedAt   DateTime @updatedAt
+   495→
+   496→  @@unique([eventId, userId])
+   497→  @@index([userId])
+   498→  @@index([eventId])
+   499→}
+   500→
+   501→// ===================================================================
+   502→//  الإشعارات (Notifications)
+   503→// ===================================================================
+   504→
+   505→model Notification {
+   506→  id        String            @id @default(cuid())
+   507→  userId    String
+   508→  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+   509→  type      NotificationType
+   510→  title     String
+   511→  message   String
+   512→  link      String?            // "/community/fund/requests/123"
+   513→  isRead    Boolean            @default(false)
+   514→  readAt    DateTime?
+   515→  metadata  String?            // JSON
+   516→
+   517→  createdAt DateTime @default(now())
+   518→
+   519→  @@index([userId, isRead])
+   520→  @@index([type])
+   521→}
+   522→
+   523→// ===================================================================
+   524→//  الإعلانات والرعايات (Ads & Sponsorships) — placeholder
+   525→// ===================================================================
+   526→
+   527→model Ad {
+   528→  id            String      @id @default(cuid())
+   529→  title         String
+   530→  advertiserName String
+   531→  advertiserEmail String?
+   532→  advertiserPhone String?
+   533→  districtId    String
+   534→  district      District    @relation(fields: [districtId], references: [id], onDelete: Cascade)
+   535→  // الحزمة
+   536→  package       AdPackage   @default(BRONZE)
+   537→  // المحتوى
+   538→  imageUrl      String?
+   539→  targetUrl     String?
+   540→  placement     String      @default("sidebar") // header / sidebar / in-feed / footer / popup
+   541→  // التواريخ
+   542→  startDate     DateTime
+   543→  endDate       DateTime
+   544→  // الحالة
+   545→  status        AdStatus    @default(PENDING)
+   546→  // الإحصاءات
+   547→  views         Int         @default(0)
+   548→  clicks        Int         @default(0)
+   549→  // السعر
+   550→  amountPaid    Float        @default(0)
+   551→  // الإدارة
+   552→  managerId     String?
+   553→  manager       User?       @relation("AdManager", fields: [managerId], references: [id])
+   554→
+   555→  createdAt     DateTime @default(now())
+   556→  updatedAt     DateTime @updatedAt
+   557→
+   558→  @@index([districtId, status])
+   559→  @@index([status])
+   560→  @@index([endDate])
+   561→}
+   562→
+   563→// ===================================================================
+   564→//  الشكاوى والاقتراحات (Complaints & Feedback)
+   565→// ===================================================================
+   566→
+   567→model Complaint {
+   568→  id          String          @id @default(cuid())
+   569→  // إن كانت مجهولة
+   570→  isAnonymous Boolean         @default(false)
+   571→  // الجهة المشتكية
+   572→  filedById   String?
+   573→  filedBy     User?           @relation("ComplaintFiledBy", fields: [filedById], references: [id])
+   574→  districtId  String?
+   575→  district    District?       @relation(fields: [districtId], references: [id])
+   576→  // المحتوى
+   577→  type        ComplaintType
+   578→  subject     String
+   579→  description String
+   580→  attachments String?         // JSON array
+   581→  // الإدارة
+   582→  status      ComplaintStatus @default(OPEN)
+   583→  priority    String          @default("normal") // low/normal/high/urgent
+   584→  handledById String?
+   585→  handledBy   User?           @relation("ComplaintHandledBy", fields: [handledById], references: [id])
+   586→  resolution String?
+   587→  resolvedAt  DateTime?
+   588→
+   589→  createdAt   DateTime @default(now())
+   590→  updatedAt   DateTime @updatedAt
+   591→
+   592→  @@index([status])
+   593→  @@index([type])
+   594→  @@index([districtId])
+   595→}
+   596→
+   597→// ===================================================================
+   598→//  سجل النشاط (Audit Log)
+   599→// ===================================================================
+   600→
+   601→model AuditLog {
+   602→  id          String   @id @default(cuid())
+   603→  actorId     String?
+   604→  actor       User?    @relation(fields: [actorId], references: [id])
+   605→  action      String   // "user.login", "fund.request.approved"
+   606→  entity      String?  // "User", "FundRequest"
+   607→  entityId    String?
+   608→  ipAddress   String?
+   609→  userAgent   String?
+   610→  metadata    String?  // JSON
+   611→  // الخطور
+   612→  severity    String   @default("info") // info/warning/critical
+   613→
+   614→  createdAt   DateTime @default(now())
+   615→
+   616→  @@index([actorId])
+   617→  @@index([action])
+   618→  @@index([createdAt])
+   619→  @@index([entity, entityId])
+   620→}
+   621→
+   622→// ===================================================================
+   623→//  الإعدادات (Settings) — Key-Value
+   624→// ===================================================================
+   625→
+   626→model Setting {
+   627→  id          String   @id @default(cuid())
+   628→  key         String   @unique  // "site.name", "fund.threshold.ethics"
+   629→  value       String
+   630→  type        String   @default("string") // string/int/bool/json
+   631→  category    String   @default("general")
+   632→  isPublic    Boolean  @default(true)
+   633→  description String?
+   634→
+   635→  updatedAt   DateTime @updatedAt
+   636→}
+   637→
+   638→// ===================================================================
+   639→//  سجل البريد الإلكتروني (Email Log) — تتبّع كل بريد مُرسَل
+   640→// ===================================================================
+   641→
+   642→model EmailLog {
+   643→  id         String    @id @default(cuid())
+   644→  to         String
+   645→  subject    String
+   646→  body       String    // HTML body
+   647→  status     String    @default("sent") // sent | failed | pending
+   648→  error      String?
+   649→  messageId  String?
+   650→  sentAt     DateTime?
+   651→  createdAt  DateTime  @default(now())
+   652→
+   653→  @@index([status])
+   654→  @@index([to])
+   655→  @@index([createdAt])
+   656→}
+   657→
+   658→// ===================================================================
+   659→//  قائمة IP المسموح بها (IP Allowlist)
+   660→//  - تُفعَّل عبر Setting: security.ip_allowlist.enabled
+   661→//  - عند التفعيل، يُسمح فقط بـIP المُدرجة في هذا الجدول
+   662→// ===================================================================
+   663→
+   664→model AllowedIP {
+   665→  id        String   @id @default(cuid())
+   666→  ip        String   @unique
+   667→  note      String?
+   668→  isActive  Boolean  @default(true)
+   669→  createdBy String?
+   670→  createdAt DateTime @default(now())
+   671→  updatedAt DateTime @updatedAt
+   672→
+   673→  @@index([isActive])
+   674→}
+   675→
+   676→// ===================================================================
+   677→//  هندسة الإدمان (Engagement Engineering) — v3.0
+   678→//  مستوحاة من Octalysis Framework + Hook Model + Prospect Theory
+   679→// ===================================================================
+   680→
+   681→// ─────────── المحور 1: السلاسل (Streaks) ───────────
+   682→model UserStreak {
+   683→  id            String    @id @default(cuid())
+   684→  userId        String    @unique
+   685→  currentStreak Int       @default(0)
+   686→  longestStreak Int       @default(0)
+   687→  lastActivity  DateTime?
+   688→  freezes       Int       @default(2)  // 2 freezes مجانية
+   689→  freezeUsedAt  DateTime?
+   690→  lastCheckIn   DateTime? // آخر تسجيل دخول يومي
+   691→  totalCheckIns Int       @default(0)
+   692→  
+   693→  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+   694→  
+   695→  createdAt     DateTime  @default(now())
+   696→  updatedAt     DateTime  @updatedAt
+   697→  
+   698→  @@index([userId])
+   699→}
+   700→
+   701→// ─────────── المحور 2: المكافآت المتغيرة ───────────
+   702→model VariableReward {
+   703→  id          String   @id @default(cuid())
+   704→  userId      String
+   705→  type        String   // MYSTERY_BOX, SPIN_WHEEL, LUCKY_DRAW
+   706→  reward      String   // POINTS, FREEZE, BADGE, DISCOUNT
+   707→  value       Int      // عدد النقاط أو قيمة المكافأة
+   708→  badgeId     String?  // معرّف الشارة إن كانت المكافأة شارة
+   709→  drawnAt     DateTime @default(now())
+   710→
+   711→  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+   712→  badge       Badge?   @relation(fields: [badgeId], references: [id], onDelete: SetNull)
+   713→
+   714→  @@index([userId])
+   715→  @@index([type])
+   716→  @@index([drawnAt])
+   717→}
+   718→
+   719→// ─────────── المحور 3: الندرة (Scarcity) ───────────
+   720→model Challenge {
+   721→  id          String    @id @default(cuid())
+   722→  title       String
+   723→  description String
+   724→  type        String    // SEASONAL, DAILY, WEEKLY, LIMITED
+   725→  status      String    @default("active") // active, expired, completed
+   726→  pointsReward Int      @default(0)
+   727→  requiredCount Int     @default(1) // عدد المهام المطلوبة
+   728→  startDate   DateTime
+   729→  endDate     DateTime
+   730→  badgeId     String?
+   731→  
+   732→  participants UserChallenge[]
+   733→  
+   734→  createdAt   DateTime  @default(now())
+   735→  updatedAt   DateTime  @updatedAt
+   736→  
+   737→  @@index([status])
+   738→  @@index([endDate])
+   739→}
+   740→
+   741→model UserChallenge {
+   742→  id          String    @id @default(cuid())
+   743→  userId      String
+   744→  challengeId String
+   745→  progress    Int       @default(0)
+   746→  completed   Boolean   @default(false)
+   747→  completedAt DateTime?
+   748→  
+   749→  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+   750→  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+   751→  
+   752→  createdAt   DateTime  @default(now())
+   753→  updatedAt   DateTime  @updatedAt
+   754→  
+   755→  @@unique([userId, challengeId])
+   756→  @@index([userId])
+   757→  @@index([challengeId])
+   758→}
+   759→
+   760→// ─────────── الشارات ───────────
+   761→model Badge {
+   762→  id          String    @id @default(cuid())
+   763→  name        String    @unique
+   764→  slug        String    @unique
+   765→  description String
+   766→  icon        String    // emoji أو SVG name
+   767→  rarity      String    @default("common") // common, rare, epic, legendary
+   768→  isLimited   Boolean   @default(false)
+   769→  availableFrom DateTime?
+   770→  availableUntil DateTime?
+   771→  maxRecipients Int?     // أقصى عدد مستفيدين (للندرة)
+   772→  currentRecipients Int  @default(0)
+   773→  
+   774→  userBadges  UserBadge[]
+   775→  rewards     VariableReward[]
+   776→
+   777→  createdAt   DateTime  @default(now())
+   778→
+   779→  @@index([rarity])
+   780→  @@index([isLimited])
+   781→}
+   782→
+   783→model UserBadge {
+   784→  id          String    @id @default(cuid())
+   785→  userId      String
+   786→  badgeId     String
+   787→  earnedAt    DateTime  @default(now())
+   788→
+   789→  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+   790→  badge       Badge     @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+   791→
+   792→  @@unique([userId, badgeId])
+   793→  @@index([userId])
+   794→  @@index([badgeId])
+   795→}
+   796→
+   797→// ─────────── المحور 4: الدليل الاجتماعي ───────────
+   798→model UserActivity {
+   799→  id          String    @id @default(cuid())
+   800→  userId      String
+   801→  type        String    // LOGIN, CONTRIBUTION, FUND_REQUEST, EVENT_REGISTER, GROUP_JOIN, BADGE_EARNED, STREAK_MILESTONE
+   802→  description String
+   803→  metadata    String?   // JSON
+   804→  isPublic    Boolean   @default(true)
+   805→  
+   806→  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+   807→  
+   808→  createdAt   DateTime  @default(now())
+   809→  
+   810→  @@index([userId, isPublic])
+   811→  @@index([createdAt])
+   812→  @@index([type])
+   813→}
+   814→
+   815→// ─────────── المحور 7: الاستثمار — العلاقات ───────────
+   816→model UserRelationship {
+   817→  id          String    @id @default(cuid())
+   818→  followerId  String    // من يتابع
+   819→  followingId String   // من يُتابَع
+   820→  status      String    @default("active") // active, blocked
+   821→  createdAt   DateTime  @default(now())
+   822→  
+   823→  follower    User      @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+   824→  following   User      @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+   825→  
+   826→  @@unique([followerId, followingId])
+   827→  @@index([followerId])
+   828→  @@index([followingId])
+   829→}
+   830→
+   831→// ─────────── المحور 6: الإشعارات الذكية ───────────
+   832→model SmartNotification {
+   833→  id          String    @id @default(cuid())
+   834→  userId      String
+   835→  type        String    // STREAK, MYSTERY_BOX, SOCIAL, URGENCY, REWARD, CHALLENGE, LOSS, ACHIEVEMENT, RECOMMENDATION, WELCOME_BACK
+   836→  title       String
+   837→  body        String
+   838→  actionUrl   String?
+   839→  icon        String?   // emoji
+   840→  sentAt      DateTime  @default(now())
+   841→  openedAt    DateTime?
+   842→  expiresAt   DateTime?
+   843→  
+   844→  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+   845→  
+   846→  createdAt   DateTime  @default(now())
+   847→  
+   848→  @@index([userId, openedAt])
+   849→  @@index([type])
+   850→  @@index([sentAt])
+   851→}
+   852→
+   853→// ─────────── إعدادات الإشعارات (opt-in/opt-out) ───────────
+   854→model NotificationPreference {
+   855→  id          String    @id @default(cuid())
+   856→  userId      String    @unique
+   857→  streakAlerts Boolean  @default(true)
+   858→  mysteryBoxAlerts Boolean @default(true)
+   859→  socialAlerts Boolean @default(true)
+   860→  urgencyAlerts Boolean @default(true)
+   861→  rewardAlerts Boolean @default(true)
+   862→  challengeAlerts Boolean @default(true)
+   863→  lossAlerts Boolean   @default(true)
+   864→  achievementAlerts Boolean @default(true)
+   865→  recommendationAlerts Boolean @default(true)
+   866→  welcomeBackAlerts Boolean @default(true)
+   867→  quietHoursStart Int  @default(22) // 10م — لا إشعارات
+   868→  quietHoursEnd Int    @default(7)  // 7ص
+   869→  dailyLimit Int       @default(5)  // أقصى 5/يوم
+   870→  
+   871→  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+   872→  
+   873→  createdAt   DateTime  @default(now())
+   874→  updatedAt   DateTime  @updatedAt
+   875→}
+   876→
+   877→// ─────────── المحور 9: لوحة الإدمان ───────────
+   878→model EngagementMetric {
+   879→  id          String    @id @default(cuid())
+   880→  date        DateTime  @default(now())
+   881→  dau         Int       @default(0)   // Daily Active Users
+   882→  mau         Int       @default(0)   // Monthly Active Users
+   883→  newUsers    Int       @default(0)
+   884→  retentionD1 Float     @default(0)  // Retention Day 1
+   885→  retentionD7 Float     @default(0)  // Retention Day 7
+   886→  retentionD30 Float    @default(0)  // Retention Day 30
+   887→  avgSessionTime Int   @default(0)  // seconds
+   888→  avgSessionsPerUser Float @default(0)
+   889→  avgStreak   Float    @default(0)
+   890→  mysteryBoxesOpened Int @default(0)
+   891→  spinWheelsUsed Int   @default(0)
+   892→  challengesCompleted Int @default(0)
+   893→  notificationsSent Int @default(0)
+   894→  notificationsOpened Int @default(0)
+   895→  notificationOpenRate Float @default(0)
+   896→  
+   897→  createdAt   DateTime  @default(now())
+   898→  
+   899→  @@index([date])
+   900→}
+   901→

@@ -2942,3 +2942,387 @@ Stage Summary:
 - ✅ touch targets ≥ 44px (h-11 في كل الأزرار والحقول)
 - ✅ كل fetch URLs relative (مثل: fetch("/api/contact"))
 - ✅ منطق API يفصل المستخدم المسجّل عن الزائر بطريقة ذكية
+
+---
+Task ID: v5-map
+Agent: Main (Z.ai Code)
+Task: خريطة مراكش التفاعلية + خريطة المغرب + صفحة الحي + تحديد الموقع
+
+Work Log:
+
+### 1. تحديث Prisma Schema (District model)
+- إضافة 6 حقول جديدة لنموذج District:
+  * nameAr (String?) — الاسم بالعربية
+  * nameFr (String?) — الاسم بالفرنسية
+  * population (Int?) — التعداد السكاني التقريبي
+  * members (Int @default(0)) — عدد الأعضاء النشطون (cached)
+  * familiesCount (Int @default(0)) — عدد الأسر (cached)
+  * contributions (Int @default(0)) — إجمالي المساهمات بالدرهم (cached)
+- `bun run db:push` → نجح، Prisma Client v6.19.2 regenerated
+
+### 2. بذر 5 أحياء بمراكش — `prisma/seed-districts.ts`
+- 5 أحياء مع boundarySvg مبسّطة (polygon paths) وviewBox 0..400:
+  1. سيدي يوسف بن علي (سكان: 116532) — الحي المركزي (isDefault=true)
+     جنوب شرق المدينة: "M 200 290 L 290 260 L 370 300 L 340 380 L 220 375 L 180 330 Z"
+  2. المدينة (Médina) — سكان: 192745 — وسط الخريطة
+  3. جليز (Guéliz) — سكان: 148196 — شمال غرب
+  4. المنارة (Ménara) — سكان: 148137 — جنوب غرب
+  5. النخيل (Annakhil) — سكان: 120000 — شرق
+- computeLiveStats(districtId): يحسب members/familiesCount/contributions
+  من جداول User/Family/Contribution الفعلية ويُحدّث الـcache
+- تشغيل: `bun prisma/seed-districts.ts`
+  ✓ سيدي يوسف بن علي: 198 عضو، 50 أسرة، 15750 د.م مساهمات
+  ✓ باقي الأحياء: 0 أعضاء بعد (جاهزة للاستقبال)
+
+### 3. مكوّن خريطة مراكش — `src/components/community/marrakech-map.tsx` (370 سطر)
+- 'use client' + framer-motion + useRouter + lucide-react
+- SVG viewBox="0 0 400 400" مع preserveAspectRatio="xMidYMid meet"
+- 5 أحياء كـ <motion.path> من d.boundarySvg
+- Choropleth: لون ترابي (rgba(184,73,43,...)) بكثافة تتناسب مع members
+- Tooltip HTML ديناميكي على hover (اسم عربي + فرنسي + عدد الأعضاء + السكان)
+- Click ينقل إلى /community/districts/[slug] عبر router.push
+- Keyboard accessible: tabIndex=0 + role="link" + Enter/Space navigation
+- whileHover scale 1.012 + animate fill للـhover
+- خلفية zellige-bg (pattern بنقاط ذهبية) + warm-shadow filter
+- علامة الشمال (نجمة ثمانية + حرف "ش")
+- تسميات ثلاثية اللغة (عربي + فرنسي + عدد الأعضاء) لكل حي
+- Legend: 6 خانات تدرّج لوني (منخفضة → مرتفعة)
+- highlightSlug prop يُبرز حيّاً محدداً (يستخدم في صفحة الحي المفردة)
+- responsive: width 100% + touch-manipulation
+
+### 4. مكوّن خريطة المغرب — `src/components/community/morocco-map.tsx` (320 سطر)
+- 'use client' + framer-motion
+- SVG viewBox="0 0 320 360" للجهات الـ12
+- كل جهة = <motion.path> قابل للنقر
+- جهة مراكش-آسفي مُبرَزة بلون أخضر صنوبر (#2D5A3D)
+- باقي الجهات بترابي الزليج (#B8492B)
+- Click على مراكش-آسفي ينقل إلى /community/map (باقي الجهات: cursor default)
+- Tooltip: اسم عربي + فرنسي + عدد الأعضاء + عدد الأحياء المسجّلة
+- قائمة جانبية (sidebar) ترتّب الجهات حسب الأعضاء مع Progress bar
+- المجموع الكلي للزوار في أسفل القائمة
+- responsive: grid md:grid-cols-[1fr_280px] (خريطة + قائمة)
+
+### 5. ثوابت الجهات الـ12 — `src/lib/morocco-regions.ts`
+- MOROCCO_REGIONS: مصفوفة بـ 12 جهة حسب التقسيم الإداري 2015
+- لكل جهة: slug + nameAr + nameFr + boundarySvg (polygon مبسّط)
+- مراكش-آسفي: isPrimary=true
+- REGION_BY_SLUG: خريطة للاستعلام المباشر
+
+### 6. صفحة الخريطة — `/community/map` (Server Component)
+- العنوان: "خريطة أحياء مراكش"
+- Badge "مراكش" + "5 أحياء · 12 جهة"
+- بطاقة خريطة مراكش مع GeolocationButton في الـheader
+- 4 إحصاءات مجمّعة عبر كل الأحياء: أعضاء/أسر/مساهمات/سكان
+- بطاقة رصيد الصندوق (balance + thisMonthDisbursed) من getFundStats()
+- ZelligeDivider (stars)
+- بطاقة خريطة المغرب
+- metadata: title + description عربية
+- dynamic = "force-dynamic"
+
+### 7. صفحة تفاصيل الحيّ — `/community/districts/[slug]` (Server Component)
+- generateMetadata: اسم الحي عربي + فرنسي + city
+- البطاقة الرئيسية:
+  * Badges: city + region + "الحي المركزي" (لو isDefault)
+  * h1: nameAr (عربي) + nameFr (فرنسي dir=ltr) + description + population
+  * زر "انضمام لهذا الحي" (JoinDistrictButton)
+- 4 إحصاءات StatCards: أعضاء + أسر + مساهمات + رصيد الصندوق (getFundStats)
+- بطاقة نسبة المشاركة (Progress) + عدد الفعاليات القادمة
+- ZelligeDivider (diamond)
+- خريطة مصغّرة MarrakechMap مع highlightSlug=هذا الحي
+- قائمة أكثر 5 أعضاء نشاطاً (حسب points) — أسماء عامّة فقط:
+  * ترتيب 1-3 بألوان (ذهبي/ترابي/أخضر)
+  * Avatar + الاسم + profession + مستوى + نقاط
+- ZelligeDivider (stars)
+- 3 فعاليات قادمة في الحي (Event.findMany where startDate >= now):
+  * Badge نوع الفعالية + "التسجيل مفتوح" (لو isRegistrationOpen)
+  * Link للفعالية + تاريخ + مكان
+  * Progress لملء المقاعد (seatsFilled/seatsTotal)
+  * زر "تفاصيل الفعالية"
+- CTA سفلي "هل أنت من سكان...؟" + زر انضمام (لو ليس نفس حيّ المستخدم)
+
+### 8. مكوّن JoinDistrictButton — `src/components/community/join-district-button.tsx`
+- 'use client' + AlertDialog للتأكيد
+- 3 حالات:
+  1. زائر: زر "سجّل الدخول للانضمام" يوجّه لـ/login?callbackUrl=
+  2. عضو في حي آخر: AlertDialog "نعم، انضمّ الآن" يرسل POST /api/community/districts/join
+  3. عضو في نفس الحي: زر مُعطّل "أنت عضو في هذا الحي"
+- sonner toast للنجاح/الخطأ
+- POST إلى /api/community/districts/join (self-service، لا يحتاج SUPER_ADMIN)
+- min-h-11 (≥ 44px) لكل الأزرار
+
+### 9. API: POST /api/community/districts/join — `src/app/api/community/districts/join/route.ts`
+- يتطلّب مصادقة فقط (Member يحقّ له تغيير حيّه ذاتياً)
+- body: { targetDistrictSlug: string }
+- يمنع الموظفين من الانتقال الذاتي (DISTRICT_MOD, TREASURER, ETHICS_COMMITTEE, SUPER_ADMIN, ADS_MANAGER, GROUP_LEADER) — يجب أن يطلبوا من مشرف عام
+- يُفرّغ familyId لو لم تكن العائلة في الحي الجديد
+- يُحدّث cache إحصاءات الحيّين القديم والجديد (members/familiesCount/contributions)
+- invalidateFundStats() لإعادة حساب صندوق المعروف
+- AuditLog: action="district.user_joined" + metadata
+
+### 10. مكوّن GeolocationButton — `src/components/community/geolocation-button.tsx`
+- 'use client' + framer-motion + sonner + lucide-react
+- زر "📍 حدّد موقعي" (Navigation icon) — min-h-11
+- يستعمل navigator.geolocation.getCurrentPosition()
+- يحوّل إحداثيات GPS إلى شبكة SVG (200,200 = مركز مراكش التقريبي)
+- يُظهر اقتراح: "اقتراح: أنت في مقاطعة [nameAr]. انضم الآن؟"
+  مع زر "انضمّ لهذا الحي" (Link لصفحة الحي) + "ليس الآن"
+- معالجة الأخطاء:
+  * PERMISSION_DENIED: "تم رفض إذن الوصول للموقع"
+  * TIMEOUT: "انتهت مهلة تحديد الموقع"
+  * outside Marrakech: "يبدو أنك خارج نطاق مراكش — اختر حيّك يدوياً"
+  * no-support: "المتصفّح لا يدعم خدمة تحديد الموقع"
+- يحفظ الاختيار في localStorage (mar-suggested-district + mar-geo-ts)
+- يسترجع آخر اقتراح من localStorage عند التحميل
+- AnimatePresence للدخول/الخروج
+
+### 11. إصلاح كاش Prisma Client في Turbopack
+- المشكلة: بعد `bunx prisma generate` (تحديث @prisma/client بنموذج District.nameAr)،
+  استمر Turbopack في استخدام PrismaClient القديم — يُعطي
+  "Unknown field `nameAr` for select statement on model `District`"
+- الحل في `src/lib/db.ts`:
+  1. استبدال `import { PrismaClient } from '@prisma/client'` بـ createRequire
+     ديناميكي يقرأ node_modules/@prisma/client مباشرة في وقت التشغيل،
+     متجاوزاً كاش Turbopack module graph.
+  2. SCHEMA_VERSION constant يُقارَن مع globalForPrisma.__prismaSchemaVersion:
+     لو اختلفت (مثلاً بعد db:push جديد)، يُهدم الكاش ويُعاد إنشاء العميل.
+
+### النتائج
+- ✅ `bun run db:push` — نجح، 6 حقول جديدة مُطبَّقة على Supabase
+- ✅ `bun prisma/seed-districts.ts` — 5 أحياء بمراكش، سيدي يوسف بـ 198 عضو
+- ✅ `bun run lint` — 0 أخطaء، 0 تحذيرات
+- ✅ `bunx prisma generate` — Prisma Client v6.19.2 regenerated (الأنواع تشمل nameAr)
+- ✅ Dev server: كل المسارات الجديدة 200 OK:
+  * GET /community/map → 200 (2.4s أول، 4.0s بعد آخر تعديل)
+  * GET /community/districts/sidi-youssef-ben-ali → 200 (4.9s)
+  * GET /community/districts/medina → 200 (4.5s)
+  * GET /community/districts/guelize → 200 (15.1s)
+  * GET /community/districts/menara → 200 (10.1s)
+  * GET /community/districts/annakhil → 200 (10.1s)
+  * POST /api/community/districts/join (زائر) → 401 (متوقّع)
+- ✅ HTML rendering: كل 12 جهة تظهر في HTML (طنجة/الشرق/فاس/الرباط/الدار البيضاء/
+  بني ملال/مراكش/درعة/سوس/كلميم/العيون/Dakhla) + "حدّد موقعي" + عناوين الصفحتين
+- ✅ SVG viewBoxes في HTML: 0 0 400 400 (مراكش) + 0 0 320 360 (المغرب) + 0 0 128 24 (ZelligeDivider)
+
+### الإحصاء
+- ملفات جديدة: 8
+  * src/components/community/marrakech-map.tsx (~370 سطر)
+  * src/components/community/morocco-map.tsx (~320 سطر)
+  * src/components/community/geolocation-button.tsx (~250 سطر)
+  * src/components/community/join-district-button.tsx (~140 سطر)
+  * src/lib/morocco-regions.ts (~100 سطر)
+  * src/app/community/map/page.tsx (~350 سطر)
+  * src/app/community/districts/[slug]/page.tsx (~470 سطر)
+  * src/app/api/community/districts/join/route.ts (~135 سطر)
+  * prisma/seed-districts.ts (~140 سطر)
+- ملفات معدّلة: 2
+  * prisma/schema.prisma (6 حقول على District)
+  * src/lib/db.ts (createRequire + SCHEMA_VERSION لتفادي كاش Turbopack)
+- إجمالي الأسطر الجديدة: ~2,275
+- Lint: 0 أخطaء، 0 تحذيرات
+- Dev server: كل المسارات الجديدة 200 OK
+
+Stage Summary:
+- ✅ نموذج District موسّع: nameAr/nameFr/population/members/familiesCount/contributions
+- ✅ 5 أحياء مراكش مزروعة: سيدي يوسف بن علي (198 عضو) + 4 أحياء جديدة (0 أعضاء)
+- ✅ خريطة مراكش التفاعلية: 5 polygons clickable + tooltip + choropleth + legend
+- ✅ خريطة المغرب الـ12 جهة: مراكش-آسفي مُبرَزة + قائمة جانبية بالترتيب
+- ✅ صفحة /community/map: خريطتان + 4 إحصاءات مجمّعة + صندوق المعروف
+- ✅ صفحة /community/districts/[slug]: اسم ثنائي + إحصاءات + فعاليات قادمة +
+  خريطة مصغّرة + أكثر 5 أعضاء نشاطاً + زر انضمام
+- ✅ API self-service /api/community/districts/join: أي عضو يستطيع تغيير حيّه
+- ✅ JoinDistrictButton: 3 حالات (زائر/عضو مختلف/عضو نفس الحي) + AlertDialog
+- ✅ GeolocationButton: GPS + اقتراح أقرب حي + معالجة أخطاء + localStorage
+- ✅ إصلاح Prisma Client cache في Turbopack: createRequire + SCHEMA_VERSION
+- ✅ كل النصوص عربي، RTL مع logical properties (ps-/pe-/ms-/me-)
+- ✅ shadcn/ui: Card, CardHeader, CardContent, CardTitle, Button, Badge, Progress,
+  Avatar, AlertDialog, Separator (في components موجود)
+- ✅ framer-motion لكل الأنميشن (motion.path, motion.div, AnimatePresence)
+- ✅ sonner toast للفeedback
+- ✅ touch targets ≥ 44px (min-h-11) لكل الأزرار
+- ✅ كل fetch URLs relative (مثل: fetch("/api/community/districts/join"))
+- ✅ Responsive: viewBox + preserveAspectRatio + touch-manipulation + grid md:
+
+---
+Task ID: v5-admin-economy
+Agent: Main (Z.ai Code)
+Task: Section 8 — لوحات إدارة الاقتصاد والنقاط والمتجر (v5.0)
+
+Work Log:
+
+### 1. تحديث Prisma Schema
+- إضافة 3 موديلات جديدة:
+  * PointsLedger: id, userId, amount (+/-), type (EARN/SPEND/ADJUST/PURCHASE/TRANSFER),
+    reason, adminId, balanceAfter, metadata, createdAt — @@index على userId, type, createdAt
+  * StoreItem: name, description, icon (emoji), pricePoints, type (FREEZE/BADGE/DISCOUNT/FEATURE/DIGITAL),
+    stock (null=unlimited), isActive, metadata, createdAt, updatedAt — @@index على isActive, type
+  * StoreOrder: userId, itemId, pricePaid, status (pending/completed/refunded), metadata, createdAt —
+    @@index على userId, itemId, status
+- إضافة علاقات على User: `pointsLedger PointsLedger[]`, `storeOrders StoreOrder[]`
+- رفع SCHEMA_VERSION في `src/lib/db.ts` إلى `v5-economy-2025-09-24`
+- `bun run db:push` → نجح في 10.42s + Prisma Client regenerated
+
+### 2. فصل المكتبة المشتركة (admin-lib / admin-export)
+- المشكلة: استيراد db (الذي يستعمل fs/path) من مكوّنات العميل يُسقط "Module not found: Can't resolve 'fs'"
+- الحل: تقسيم ملفّيْن:
+  * `src/lib/admin-lib.ts` (server-only): requireSuperAdmin, getEconomyStats, getAnalyticsSnapshot
+  * `src/lib/admin-export.ts` (client-safe): exportSheet (xlsx/csv), roleLabel, shortDate, formatPoints
+- تحديث 6 مكوّنات لتستورد من admin-export بدلاً من admin-lib
+
+### 3. تحديث Sidebar الإدارة
+- `src/components/admin/admin-shell.tsx`: إضافة 7 عناصر تنقّل جديدة:
+  * الاقتصاد (Coins) → /admin/economy
+  * السلاسل (Flame) → /admin/streaks
+  * الشارات (Award) → /admin/badges
+  * التحديات (Target) → /admin/challenges
+  * المكافآت (Gift) → /admin/rewards
+  * المتجر (ShoppingCart) → /admin/store
+  * التحليلات (BarChart3) → /admin/analytics
+- إضافة SECTION_TITLES لكل قسم
+
+### 4. APIs (16 مساراً جديداً)
+- POST /api/admin/economy/adjust: تعديل نقاط مع `db.$transaction` يُحدّث user.points + يُنشئ
+  PointsLedger ADJUST + audit log في معاملة واحدة موحّدة
+- GET  /api/admin/economy/ledger: قائمة سجلّات النقاط مع فلاتر (type/userId/dateRange/search/limit)
+- POST /api/admin/badges/grant: منح شارة لعدّة مستخدمين دفعة واحدة (يتحقّق maxRecipients +
+  @@unique [userId, badgeId]، يُنشئ UserActivity BADGE_EARNED)
+- POST /api/admin/badges/revoke: سحب شارة (يحذف UserBadge + ينقص currentRecipients)
+- POST /api/admin/badges/create: إنشاء شارة (يتحقّق من فرادة slug + name)
+- DELETE /api/admin/badges/delete?id=: حذف شارة (cascade UserBadge)
+- POST /api/admin/challenges/create + DELETE + POST update: CRUD تحديات
+- GET/POST /api/admin/store/items + PATCH/DELETE /api/admin/store/items/[id]
+- POST /api/admin/store/purchase: شراء بالنيابة (يخصم النقاط + يُنشئ StoreOrder + يُنقص المخزون
+  في معاملة موحّدة، يتعرّف على null stock كـunlimited)
+- GET  /api/admin/analytics: لقطة KPIs + retention curve + engagement + feature usage
+- POST /api/admin/streaks/update: تصفير/منح تجميد/تصفير جماعي
+
+### 5. صفحة 1 — /admin/economy (إدارة النقاط والاقتصاد)
+- بطاقات: نقاط مُصدَرة/مصروفة/معلّقة/تضخّم/معاملات
+- مخطّط خطّي 12 شهراً (issued / spent / net) — recharts LineChart + ReferenceLine
+- أعلى 10 حَمَلة للنقاط (ميداليات 🥇🥈🥉)
+- قواعد كسب النقاط (login=10، contribution=pts×0.1، event=20، streak=5/day) مع Switch
+- نموذج تعديل نقاط يدوي (multi-select مع checkboxes، amount +/-، reason required)
+- جدول سجلّ المعاملات بفلاتر (type/userId/search/from/to) + تصدير CSV
+
+### 6. صفحة 2 — /admin/streaks (إدارة السلاسل)
+- بطاقات (متوسط/أطول/إجمالي/محدّدون)
+- مخطّط أعمدة توزيع حسب الفئة (0، 1-3، 4-7، 8-14، 15-30، 31+)
+- جدول المستخدمين: fullName، role، currentStreak، longestStreak، freezes، lastCheckIn
+- إجراءات لكل صف: تصفير، منح تجميد إضافي
+- إجراءات جماعية: تصفير المحدد (multi-select مع checkboxes)
+- إعدادات النظام: تفعيل/إيقاف، سعر التجميد، حدّ التجميدات الشهرية (localStorage)
+
+### 7. صفحة 3 — /admin/badges (إدارة الشارات)
+- شارات في شبكة بطاقات (icon + ندرة Badge + عدّ المستلمين + العد التنازلي للمحدودة)
+- مخطّط دائري توزيع الندرة (common/rare/epic/legendary) — recharts PieChart
+- نموذج إنشاء شارة (name، slug مُولّد تلقائياً، description، emoji picker 16 اختيار،
+  rarity، isLimited، maxRecipients)
+- إجراءات لكل بطاقة: منح (multi-select مستخدمين + reason)، سحب (select مستخدم)، حذف
+
+### 8. صفحة 4 — /admin/challenges (إدارة التحديات)
+- بطاقات (إجمالي/نشطة/مكتملة/معدّل الإكمال)
+- جدول (title، type، status، participants، completed، Progress، pointsReward، endDate)
+- إجراءات لكل صف: تكرار (ينسخ بنفس البيانات بتواريخ جديدة)، إنهاء مبكّر، حذف
+- نموذج إنشاء (title، description، type DAILY/WEEKLY/MONTHLY/SEASONAL،
+  pointsReward، requiredCount، startDate، endDate) + تحقّق من التواريخ
+
+### 9. صفحة 5 — /admin/rewards (المكافآت المتغيرة)
+- مخطّط أعمدة استخدام الميزات (mystery boxes/spin wheels/lucky draws)
+- Mystery Box: جدول احتمالات قابل للتعديل (probability + rewardType + min/max points)
+  مع شارة المجموع (أحمر لو ≠ 100%)
+- Spin Wheel: 8 مقاطع قابلة للتعديل (label/weight/rewardType/value/color picker)
+  مع معاينة الألوان في الأسفل
+- Lucky Draw: prize pool + draw schedule + جدول آخر 10 فائزين
+- كل الإعدادات تُحفَظ في localStorage
+
+### 10. صفحة 6 — /admin/analytics (التحليلات المتقدمة)
+- 8 بطاقات KPI: DAU, MAU, DAU/MAU ratio, newUsers (7d), avgStreak, mysteryBoxes,
+  challengesCompleted, notificationsSent, avgSessionTime
+- 4 تبويبات (recharts):
+  * الاحتفاظ: منحنى خطّي 30 يوماً D1/D7/D30 + توزيع السلاسل 6 فئات بـProgress
+  * التفاعل: AreaChart آخر 12 شهراً
+  * الميزات: BarChart + بطاقتان (الأكثر/الأقل استخداماً)
+  * الإشعارات: BarChart مُرسلة vs مفتوحة حسب النوع
+- تقارير وتوصيات (danger/warning/info حسب الخطورة)
+- تصدير: CSV، Excel (XLSX.writeFile)، PDF (toast info)
+
+### 11. صفحة 7 — /admin/store (إدارة المتجر)
+- 4 بطاقات KPI: عناصر المتجر، إجمالي الطلبات، إجمالي الإيرادات، أكثر عنصر دخلاً
+- BarChart أفقي لأعلى 6 عناصر دخلاً
+- جدول العناصر (icon+name، type، price، stock ∞/n، orders، revenue، Switch isActive)
+- إجراءات لكل صف: شراء بالنيابة (Select مستخدم + يُظهر تحذير لو رصيده أقل)،
+  تعديل، حذف
+- نموذج إنشاء (name، description، emoji picker 12 اختيار، pricePoints، type،
+  stock null=unlimited، isActive)
+- نموذج تعديل (pre-filled)
+- جدول آخر 50 طلب
+
+### 12. تحديث صفحة /admin/users
+- إضافة أعمدة: المستوى (Badge)، النقاط (mono accent)، السلسلة (🔥 N)
+- إضافة checkbox لكل صف + checkbox "تحديد الكل" في الـheader
+- شريط إجراءات جماعية يظهر عند تحديد ≥ 1: "تعديل النقاط" (نموذج dialog)،
+  "إشعار جماعي" (نموذج dialog: title + Textarea message)، "إلغاء التحديد"
+- 3 إجراءات جديدة في الـdropdown لكل مستخدم:
+  * تعديل النقاط (Dialog: amount + reason → POST /api/admin/economy/adjust)
+  * منح شارة (Dialog: Select شارة + reason → POST /api/admin/badges/grant)
+  * عرض سجلّ النقاط (Sheet side=left: fetch /api/admin/economy/ledger?userId=...)
+- منع "منح شارة" لو لا توجد شارات (badgeOptions.length === 0)
+
+### النتائج
+- ✅ `bun run db:push` — 3 موديلات جديدة مُطبّقة على Supabase
+- ✅ `bun run lint` — 0 أخطاء، 0 تحذيرات
+- ✅ كل المسارات الجديدة 200 OK:
+  * GET /admin → 200
+  * GET /admin/users → 200
+  * GET /admin/economy → 200 (بعد إصلاح مشكلة fs)
+  * GET /admin/streaks → 200
+  * GET /admin/badges → 200
+  * GET /admin/challenges → 200
+  * GET /admin/rewards → 200
+  * GET /admin/analytics → 200
+  * GET /admin/store → 200
+- ✅ كل APIs 401 لغير المُصادَق (متوقّع):
+  * POST /api/admin/economy/adjust → 401
+  * GET  /api/admin/economy/ledger → 401
+  * POST /api/admin/badges/grant → 401
+  * POST /api/admin/badges/revoke → 401
+  * POST /api/admin/badges/create → 401
+  * GET  /api/admin/store/items → 401
+  * POST /api/admin/store/purchase → 401
+  * GET  /api/admin/analytics → 401
+  * POST /api/admin/streaks/update → 401
+  * POST /api/admin/challenges/create → 401
+
+### الإحصاء
+- ملفات جديدة: 24
+  * 8 صفحات (admin/economy, streaks, badges, challenges, rewards, analytics, store/pages)
+  * 7 مكوّنات عميلة (economy-admin, streaks-admin, badges-admin, challenges-admin,
+    rewards-admin, analytics-admin, store-admin)
+  * 9 مسارات API (economy/adjust+ledger، badges/grant+revoke+create+delete،
+    store/items+items/[id]+purchase، challenges/create+delete+update،
+    analytics، streaks/update)
+  * 2 ملفات lib (admin-lib + admin-export)
+- ملفات معدّلة: 4 (schema.prisma، lib/db.ts، admin-shell.tsx، users-table.tsx + users/page.tsx)
+- موديلات Prisma جديدة: 3 (PointsLedger, StoreItem, StoreOrder)
+- عناصر sidebar جديدة: 7
+- إجمالي الأسطر الجديدة: ~3,200
+- Lint: 0 أخطاء، 0 تحذيرات
+- Dev server: كل المسارات الجديدة 200 OK
+
+Stage Summary:
+- ✅ 3 موديلات جديدة (PointsLedger/StoreItem/StoreOrder) + علاقات على User
+- ✅ فصل المكتبة المشتركة (admin-lib server-only + admin-export client-safe)
+- ✅ 16 مسار API جديد (economy/badges/store/streaks/challenges/analytics) — كلها
+  تستعمل db.$transaction للatomicity + تنشئ audit logs
+- ✅ 7 صفحات إدارية جديدة: اقتصاد، سلاسل، شارات، تحديات، مكافآت، تحليلات، متجر
+- ✅ تحديث صفحة المستخدمين: 3 أعمدة جديدة (level/points/streak) + 3 إجراءات جديدة
+  لكل مستخدم + إجراءات جماعية (تعديل نقاط + إشعار جماعي)
+- ✅ Sidebar يضم الآن 21 رابط إداري مع كل الأقسام الجديدة
+- ✅ كل الرسوم البيانية recharts (LineChart/AreaChart/BarChart/PieChart)
+- ✅ كل التصديرات xlsx (CSV + Excel) عبر XLSX.writeFile على العميل
+- ✅ كل الإحصاءات حقيقية من قاعدة بيانات Supabase (DAU/MAU/نقاط/سلاسل/شارات/طلبات)
+- ✅ sonner toast لكل الإجراءات
+- ✅ RTL مع logical properties (ps-/pe-/ms-/me-/text-start/text-end)
+- ✅ touch targets ≥ 44px (min-h-11 لكل الأزرار الرئيسية، min-h-9 للأزرار الصغيرة)
+- ✅ كل fetch URLs relative (fetch("/api/admin/..."))
+- ✅ نمط MINIMAL REFINED: Card border border-border bg-card، accent ذهبي واحد #C8842A
+- ✅ كل النصوص عربية فصحى

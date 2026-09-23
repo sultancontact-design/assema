@@ -33,6 +33,12 @@ import {
   ChevronDown,
   MapPin,
   DatabaseBackup,
+  Coins,
+  Flame,
+  Award,
+  Target,
+  Gift,
+  ShoppingCart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -128,6 +134,13 @@ const NAV_LINKS: NavLinkItem[] = [
   { href: "/admin/events", label: "الفعاليات", icon: CalendarDays, match: "events" },
   { href: "/admin/complaints", label: "الشكاوى", icon: MessageSquareWarning, match: "complaints" },
   { href: "/admin/ads", label: "الإعلانات", icon: Megaphone, match: "ads", children: ADS_SUB_LINKS },
+  { href: "/admin/economy", label: "الاقتصاد", icon: Coins, match: "economy" },
+  { href: "/admin/streaks", label: "السلاسل", icon: Flame, match: "streaks" },
+  { href: "/admin/badges", label: "الشارات", icon: Award, match: "badges" },
+  { href: "/admin/challenges", label: "التحديات", icon: Target, match: "challenges" },
+  { href: "/admin/rewards", label: "المكافآت", icon: Gift, match: "rewards" },
+  { href: "/admin/store", label: "المتجر", icon: ShoppingCart, match: "store" },
+  { href: "/admin/analytics", label: "التحليلات", icon: BarChart3, match: "analytics" },
   { href: "/admin/reports", label: "التقارير", icon: BarChart3, match: "reports" },
   { href: "/admin/engagement", label: "الإدمان والتفاعل", icon: Activity, match: "engagement" },
   { href: "/admin/notifications", label: "الإشعارات", icon: Bell, match: "notifications" },
@@ -156,6 +169,13 @@ const SECTION_TITLES: Record<string, string> = {
   audit: "سجل النشاط",
   backup: "النسخ الاحتياطي",
   settings: "الإعدادات",
+  economy: "الاقتصاد",
+  streaks: "السلاسل",
+  badges: "الشارات",
+  challenges: "التحديات",
+  rewards: "المكافآت",
+  store: "المتجر",
+  analytics: "التحليلات",
 };
 
 // ===================================================================

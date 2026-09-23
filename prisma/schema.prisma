@@ -149,6 +149,14 @@ model District {
   id          String   @id @default(cuid())
   name        String   @unique   // "سيدي يوسف بن علي"
   slug        String   @unique
+  // أسماء ثنائية اللغة (عربي + فرنسي) للعرض على الخريطة
+  nameAr       String?
+  nameFr       String?
+  // إحصاءات سكانية ومنصوية لكل حي
+  population   Int?
+  members      Int     @default(0)
+  familiesCount Int   @default(0)
+  contributions Int   @default(0)
   city        String   @default("مراكش")
   region      String   @default("مراكش آسفي")
   description String?
@@ -261,6 +269,10 @@ model User {
   smartNotifications SmartNotification[]
   notificationPref  NotificationPreference?
 
+  // ─────────── الاقتصاد والمتجر (v5.0) ───────────
+  pointsLedger      PointsLedger[]
+  storeOrders       StoreOrder[]
+
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   deletedAt         DateTime?
@@ -270,6 +282,72 @@ model User {
   @@index([role])
   @@index([status])
   @@index([phone])
+}
+
+// ===================================================================
+//  الاقتصاد (Points Economy) — v5.0
+//  - PointsLedger: سجلّ كل معاملة نقاط (كسب/صرف/تعديل/شراء/تحويل)
+// ===================================================================
+
+model PointsLedger {
+  id           String   @id @default(cuid())
+  userId       String
+  amount       Int      // موجب=كسب، سالب=صرف
+  type         String   // EARN, SPEND, ADJUST, PURCHASE, TRANSFER
+  reason       String
+  adminId      String?  // من قام بالتعديل اليدوي
+  balanceAfter Int      // رصيد المستخدم بعد هذه المعاملة
+  metadata     String?  // JSON
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+// ===================================================================
+//  المتجر (Store) — v5.0
+// ===================================================================
+
+model StoreItem {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  icon        String   // emoji
+  pricePoints Int      // التكلفة بالنقاط
+  type        String   // FREEZE, BADGE, DISCOUNT, FEATURE, DIGITAL
+  stock       Int?     // null = غير محدود
+  isActive    Boolean  @default(true)
+  metadata    String?  // JSON
+
+  orders      StoreOrder[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([type])
+}
+
+model StoreOrder {
+  id          String   @id @default(cuid())
+  userId      String
+  itemId      String
+  pricePaid   Int      // النقاط المصروفة
+  status      String   @default("completed") // pending, completed, refunded
+  metadata    String?  // JSON
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item        StoreItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([itemId])
+  @@index([status])
 }
 
 // ===================================================================

@@ -1,0 +1,771 @@
+     1→"use client";
+     2→
+     3→// ===================================================================
+     4→//  UsersTable — جدول إدارة المستخدمين (client-side filtering)
+     5→//  - بحث debounced (300ms) على الاسم/البريد/الهاتف
+     6→//  - فلتر الدور (Select)
+     7→//  - فلتر الحالة (Select)
+     8→//  - جدول بـ8 أعمدة + إجراءات سطر منسدلة
+     9→//  - ترقيم صفحات (50/صفحة) داخل الذاكرة
+    10→// ===================================================================
+    11→
+    12→import * as React from "react";
+    13→import {
+    14→  Search,
+    15→  MoreVertical,
+    16→  Eye,
+    17→  Pencil,
+    18→  ShieldQuestion,
+    19→  Power,
+    20→  Trash2,
+    21→  Users as UsersIcon,
+    22→  ChevronLeft,
+    23→  ChevronRight,
+    24→} from "lucide-react";
+    25→import {
+    26→  Table,
+    27→  TableBody,
+    28→  TableCell,
+    29→  TableHead,
+    30→  TableHeader,
+    31→  TableRow,
+    32→} from "@/components/ui/table";
+    33→import { Input } from "@/components/ui/input";
+    34→import { Button } from "@/components/ui/button";
+    35→import { Badge } from "@/components/ui/badge";
+    36→import {
+    37→  Select,
+    38→  SelectContent,
+    39→  SelectItem,
+    40→  SelectTrigger,
+    41→  SelectValue,
+    42→} from "@/components/ui/select";
+    43→import {
+    44→  DropdownMenu,
+    45→  DropdownMenuContent,
+    46→  DropdownMenuItem,
+    47→  DropdownMenuLabel,
+    48→  DropdownMenuSeparator,
+    49→  DropdownMenuTrigger,
+    50→} from "@/components/ui/dropdown-menu";
+    51→import {
+    52→  Dialog,
+    53→  DialogContent,
+    54→  DialogDescription,
+    55→  DialogFooter,
+    56→  DialogHeader,
+    57→  DialogTitle,
+    58→} from "@/components/ui/dialog";
+    59→import {
+    60→  AlertDialog,
+    61→  AlertDialogAction,
+    62→  AlertDialogCancel,
+    63→  AlertDialogContent,
+    64→  AlertDialogDescription,
+    65→  AlertDialogFooter,
+    66→  AlertDialogHeader,
+    67→  AlertDialogTitle,
+    68→} from "@/components/ui/alert-dialog";
+    69→import { Label } from "@/components/ui/label";
+    70→import { toast } from "sonner";
+    71→import {
+    72→  ROLE_LABELS,
+    73→  USER_STATUS_LABELS,
+    74→  formatDateArabic,
+    75→} from "@/lib/constants";
+    76→import { cn } from "@/lib/utils";
+    77→import type { Role, UserStatus } from "@prisma/client";
+    78→
+    79→// ===================================================================
+    80→//  الأنواع
+    81→// ===================================================================
+    82→
+    83→export interface AdminUserRow {
+    84→  id: string;
+    85→  fullName: string;
+    86→  email: string;
+    87→  phone: string;
+    88→  role: Role;
+    89→  status: UserStatus;
+    90→  createdAt: string;
+    91→  district: { name: string } | null;
+    92→  family: { familyName: string } | null;
+    93→}
+    94→
+    95→interface UsersTableProps {
+    96→  users: AdminUserRow[];
+    97→  currentUserRole: Role;
+    98→}
+    99→
+   100→const PAGE_SIZE = 50;
+   101→
+   102→// ===================================================================
+   103→//  شارة الدور
+   104→// ===================================================================
+   105→
+   106→function RoleBadge({ role }: { role: Role }) {
+   107→  const isHighLevel =
+   108→    role === "SUPER_ADMIN" ||
+   109→    role === "TREASURER" ||
+   110→    role === "ETHICS_COMMITTEE";
+   111→  return (
+   112→    <Badge
+   113→      variant="outline"
+   114→      className={cn(
+   115→        "text-xs",
+   116→        isHighLevel
+   117→          ? "border-accent/30 bg-accent/10 text-accent"
+   118→          : "border-border bg-muted text-muted-foreground"
+   119→      )}
+   120→    >
+   121→      {ROLE_LABELS[role].label}
+   122→    </Badge>
+   123→  );
+   124→}
+   125→
+   126→// ===================================================================
+   127→//  شارة الحالة
+   128→// ===================================================================
+   129→
+   130→function StatusBadge({ status }: { status: UserStatus }) {
+   131→  const styles: Record<UserStatus, string> = {
+   132→    ACTIVE: "bg-emerald-100 text-emerald-700 border-emerald-200",
+   133→    PENDING: "bg-amber-100 text-amber-700 border-amber-200",
+   134→    SUSPENDED: "bg-rose-100 text-rose-700 border-rose-200",
+   135→    DISABLED: "bg-slate-100 text-slate-600 border-slate-200",
+   136→  };
+   137→  return (
+   138→    <Badge variant="outline" className={cn("text-xs", styles[status])}>
+   139→      {USER_STATUS_LABELS[status]}
+   140→    </Badge>
+   141→  );
+   142→}
+   143→
+   144→// ===================================================================
+   145→//  اختصار الـcuid لأغراض العرض
+   146→// ===================================================================
+   147→
+   148→function shortId(id: string): string {
+   149→  return id.length > 12 ? `${id.slice(0, 8)}…` : id;
+   150→}
+   151→
+   152→// ===================================================================
+   153→//  مكوّن فلاتر + بحث
+   154→// ===================================================================
+   155→
+   156→function UsersFilters({
+   157→  search,
+   158→  onSearch,
+   159→  role,
+   160→  onRoleChange,
+   161→  status,
+   162→  onStatusChange,
+   163→  resultCount,
+   164→}: {
+   165→  search: string;
+   166→  onSearch: (v: string) => void;
+   167→  role: string;
+   168→  onRoleChange: (v: string) => void;
+   169→  status: string;
+   170→  onStatusChange: (v: string) => void;
+   171→  resultCount: number;
+   172→}) {
+   173→  return (
+   174→    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+   175→      <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+   176→        {/* البحث */}
+   177→        <div className="relative flex-1 sm:max-w-xs">
+   178→          <Search
+   179→            className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+   180→            strokeWidth={1.5}
+   181→          />
+   182→          <Input
+   183→            type="text"
+   184→            value={search}
+   185→            onChange={(e) => onSearch(e.target.value)}
+   186→            placeholder="ابحث بالاسم أو البريد أو الهاتف"
+   187→            className="h-10 ps-9"
+   188→            aria-label="بحث عن مستخدم"
+   189→          />
+   190→        </div>
+   191→
+   192→        {/* فلتر الدور */}
+   193→        <Select value={role} onValueChange={onRoleChange}>
+   194→          <SelectTrigger className="h-10 w-full sm:w-44" aria-label="فلتر الدور">
+   195→            <SelectValue placeholder="كل الأدوار" />
+   196→          </SelectTrigger>
+   197→          <SelectContent>
+   198→            <SelectItem value="ALL">كل الأدوار</SelectItem>
+   199→            {Object.entries(ROLE_LABELS).map(([value, meta]) => (
+   200→              <SelectItem key={value} value={value}>
+   201→                {meta.label}
+   202→              </SelectItem>
+   203→            ))}
+   204→          </SelectContent>
+   205→        </Select>
+   206→
+   207→        {/* فلتر الحالة */}
+   208→        <Select value={status} onValueChange={onStatusChange}>
+   209→          <SelectTrigger className="h-10 w-full sm:w-44" aria-label="فلتر الحالة">
+   210→            <SelectValue placeholder="كل الحالات" />
+   211→          </SelectTrigger>
+   212→          <SelectContent>
+   213→            <SelectItem value="ALL">كل الحالات</SelectItem>
+   214→            {Object.entries(USER_STATUS_LABELS).map(([value, label]) => (
+   215→              <SelectItem key={value} value={value}>
+   216→                {label}
+   217→              </SelectItem>
+   218→            ))}
+   219→          </SelectContent>
+   220→        </Select>
+   221→      </div>
+   222→
+   223→      <p className="text-xs text-muted-foreground" aria-live="polite">
+   224→        {resultCount} مستخدم
+   225→      </p>
+   226→    </div>
+   227→  );
+   228→}
+   229→
+   230→// ===================================================================
+   231→//  نافذة عرض التفاصيل
+   232→// ===================================================================
+   233→
+   234→function ViewDialog({
+   235→  user,
+   236→  open,
+   237→  onOpenChange,
+   238→}: {
+   239→  user: AdminUserRow | null;
+   240→  open: boolean;
+   241→  onOpenChange: (v: boolean) => void;
+   242→}) {
+   243→  if (!user) return null;
+   244→
+   245→  return (
+   246→    <Dialog open={open} onOpenChange={onOpenChange}>
+   247→      <DialogContent className="sm:max-w-md">
+   248→        <DialogHeader>
+   249→          <DialogTitle>تفاصيل المستخدم</DialogTitle>
+   250→          <DialogDescription>عرض معلومات {user.fullName}</DialogDescription>
+   251→        </DialogHeader>
+   252→        <dl className="grid grid-cols-1 gap-3 text-sm">
+   253→          <div className="flex items-center justify-between gap-2">
+   254→            <dt className="text-muted-foreground">المعرّف</dt>
+   255→            <dd className="font-mono text-xs text-foreground">{user.id}</dd>
+   256→          </div>
+   257→          <div className="flex items-center justify-between gap-2">
+   258→            <dt className="text-muted-foreground">الاسم الكامل</dt>
+   259→            <dd className="text-foreground">{user.fullName}</dd>
+   260→          </div>
+   261→          <div className="flex items-center justify-between gap-2">
+   262→            <dt className="text-muted-foreground">البريد</dt>
+   263→            <dd className="text-foreground">{user.email}</dd>
+   264→          </div>
+   265→          <div className="flex items-center justify-between gap-2">
+   266→            <dt className="text-muted-foreground">الهاتف</dt>
+   267→            <dd className="font-mono text-xs text-foreground">{user.phone}</dd>
+   268→          </div>
+   269→          <div className="flex items-center justify-between gap-2">
+   270→            <dt className="text-muted-foreground">الحي</dt>
+   271→            <dd className="text-foreground">
+   272→              {user.district?.name ?? "—"}
+   273→            </dd>
+   274→          </div>
+   275→          <div className="flex items-center justify-between gap-2">
+   276→            <dt className="text-muted-foreground">العائلة</dt>
+   277→            <dd className="text-foreground">
+   278→              {user.family?.familyName ?? "غير مربوط"}
+   279→            </dd>
+   280→          </div>
+   281→          <div className="flex items-center justify-between gap-2">
+   282→            <dt className="text-muted-foreground">الدور</dt>
+   283→            <dd>
+   284→              <RoleBadge role={user.role} />
+   285→            </dd>
+   286→          </div>
+   287→          <div className="flex items-center justify-between gap-2">
+   288→            <dt className="text-muted-foreground">الحالة</dt>
+   289→            <dd>
+   290→              <StatusBadge status={user.status} />
+   291→            </dd>
+   292→          </div>
+   293→          <div className="flex items-center justify-between gap-2">
+   294→            <dt className="text-muted-foreground">تاريخ التسجيل</dt>
+   295→            <dd className="text-foreground">
+   296→              {formatDateArabic(user.createdAt)}
+   297→            </dd>
+   298→          </div>
+   299→        </dl>
+   300→        <DialogFooter>
+   301→          <Button variant="outline" onClick={() => onOpenChange(false)}>
+   302→            إغلاق
+   303→          </Button>
+   304→        </DialogFooter>
+   305→      </DialogContent>
+   306→    </Dialog>
+   307→  );
+   308→}
+   309→
+   310→// ===================================================================
+   311→//  نافذة تعديل (stub)
+   312→// ===================================================================
+   313→
+   314→function EditDialog({
+   315→  user,
+   316→  open,
+   317→  onOpenChange,
+   318→}: {
+   319→  user: AdminUserRow | null;
+   320→  open: boolean;
+   321→  onOpenChange: (v: boolean) => void;
+   322→}) {
+   323→  if (!user) return null;
+   324→  const [firstName, lastName] = user.fullName.split(" ", 2);
+   325→
+   326→  return (
+   327→    <Dialog open={open} onOpenChange={onOpenChange}>
+   328→      <DialogContent className="sm:max-w-md">
+   329→        <DialogHeader>
+   330→          <DialogTitle>تعديل بيانات المستخدم</DialogTitle>
+   331→          <DialogDescription>
+   332→            تعديل الاسم والمهنة لـ{user.fullName}
+   333→          </DialogDescription>
+   334→        </DialogHeader>
+   335→        <form
+   336→          className="grid grid-cols-2 gap-3"
+   337→          onSubmit={(e) => {
+   338→            e.preventDefault();
+   339→            toast.info("الميزة قيد التطوير — سيتم الحفظ تلقائياً في الإصدار القادم");
+   340→            onOpenChange(false);
+   341→          }}
+   342→        >
+   343→          <div className="col-span-1 space-y-1.5">
+   344→            <Label htmlFor="edit-first">الاسم الشخصي</Label>
+   345→            <Input id="edit-first" defaultValue={firstName} className="h-10" />
+   346→          </div>
+   347→          <div className="col-span-1 space-y-1.5">
+   348→            <Label htmlFor="edit-last">اسم العائلة</Label>
+   349→            <Input id="edit-last" defaultValue={lastName} className="h-10" />
+   350→          </div>
+   351→          <div className="col-span-2 space-y-1.5">
+   352→            <Label htmlFor="edit-phone">الهاتف</Label>
+   353→            <Input
+   354→              id="edit-phone"
+   355→              defaultValue={user.phone}
+   356→              className="h-10"
+   357→              dir="ltr"
+   358→            />
+   359→          </div>
+   360→          <div className="col-span-2 space-y-1.5">
+   361→            <Label htmlFor="edit-email">البريد</Label>
+   362→            <Input
+   363→              id="edit-email"
+   364→              type="email"
+   365→              defaultValue={user.email}
+   366→              className="h-10"
+   367→              dir="ltr"
+   368→            />
+   369→          </div>
+   370→          <DialogFooter className="col-span-2">
+   371→            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+   372→              إلغاء
+   373→            </Button>
+   374→            <Button type="submit">حفظ</Button>
+   375→          </DialogFooter>
+   376→        </form>
+   377→      </DialogContent>
+   378→    </Dialog>
+   379→  );
+   380→}
+   381→
+   382→// ===================================================================
+   383→//  نافذة تغيير الدور
+   384→// ===================================================================
+   385→
+   386→function ChangeRoleDialog({
+   387→  user,
+   388→  open,
+   389→  onOpenChange,
+   390→}: {
+   391→  user: AdminUserRow | null;
+   392→  open: boolean;
+   393→  onOpenChange: (v: boolean) => void;
+   394→}) {
+   395→  const [newRole, setNewRole] = React.useState<Role>(user?.role ?? "MEMBER");
+   396→
+   397→  React.useEffect(() => {
+   398→    if (user) setNewRole(user.role);
+   399→  }, [user]);
+   400→
+   401→  if (!user) return null;
+   402→
+   403→  return (
+   404→    <Dialog open={open} onOpenChange={onOpenChange}>
+   405→      <DialogContent className="sm:max-w-md">
+   406→        <DialogHeader>
+   407→          <DialogTitle>تغيير الدور</DialogTitle>
+   408→          <DialogDescription>
+   409→            تغيير دور {user.fullName} من {ROLE_LABELS[user.role].label}
+   410→          </DialogDescription>
+   411→        </DialogHeader>
+   412→        <div className="space-y-3">
+   413→          <Label>الدور الجديد</Label>
+   414→          <Select value={newRole} onValueChange={(v) => setNewRole(v as Role)}>
+   415→            <SelectTrigger className="h-10 w-full">
+   416→              <SelectValue />
+   417→            </SelectTrigger>
+   418→            <SelectContent>
+   419→              {Object.entries(ROLE_LABELS).map(([value, meta]) => (
+   420→                <SelectItem key={value} value={value}>
+   421→                  {meta.label} — {meta.description}
+   422→                </SelectItem>
+   423→              ))}
+   424→            </SelectContent>
+   425→          </Select>
+   426→          {newRole !== user.role && (
+   427→            <p className="text-xs text-amber-700">
+   428→              تنبيه: سيؤثر هذا على صلاحيات المستخدم في النظام.
+   429→            </p>
+   430→          )}
+   431→        </div>
+   432→        <DialogFooter>
+   433→          <Button variant="outline" onClick={() => onOpenChange(false)}>
+   434→            إلغاء
+   435→          </Button>
+   436→          <Button
+   437→            onClick={() => {
+   438→              toast.info(
+   439→                `تغيير دور ${user.fullName} إلى ${ROLE_LABELS[newRole].label}`
+   440→              );
+   441→              onOpenChange(false);
+   442→            }}
+   443→            disabled={newRole === user.role}
+   444→          >
+   445→            تطبيق
+   446→          </Button>
+   447→        </DialogFooter>
+   448→      </DialogContent>
+   449→    </Dialog>
+   450→  );
+   451→}
+   452→
+   453→// ===================================================================
+   454→//  الجدول الرئيسي
+   455→// ===================================================================
+   456→
+   457→export function UsersTable({ users, currentUserRole }: UsersTableProps) {
+   458→  // الفلاتر
+   459→  const [search, setSearch] = React.useState("");
+   460→  const [debouncedSearch, setDebouncedSearch] = React.useState("");
+   461→  const [role, setRole] = React.useState<string>("ALL");
+   462→  const [status, setStatus] = React.useState<string>("ALL");
+   463→
+   464→  // الترقيم
+   465→  const [page, setPage] = React.useState(1);
+   466→
+   467→  // النوافذ المنبثقة
+   468→  const [viewUser, setViewUser] = React.useState<AdminUserRow | null>(null);
+   469→  const [editUser, setEditUser] = React.useState<AdminUserRow | null>(null);
+   470→  const [roleUser, setRoleUser] = React.useState<AdminUserRow | null>(null);
+   471→  const [deleteUser, setDeleteUser] = React.useState<AdminUserRow | null>(null);
+   472→  const [toggleUser, setToggleUser] = React.useState<AdminUserRow | null>(null);
+   473→
+   474→  // Debounce البحث 300ms
+   475→  React.useEffect(() => {
+   476→    const t = setTimeout(() => {
+   477→      setDebouncedSearch(search.trim().toLowerCase());
+   478→      setPage(1);
+   479→    }, 300);
+   480→    return () => clearTimeout(t);
+   481→  }, [search]);
+   482→
+   483→  // إعادة التصفية عند تغيير الفلاتر
+   484→  React.useEffect(() => {
+   485→    setPage(1);
+   486→  }, [role, status]);
+   487→
+   488→  // تصفية البيانات في الذاكرة
+   489→  const filtered = React.useMemo(() => {
+   490→    return users.filter((u) => {
+   491→      // البحث
+   492→      if (debouncedSearch) {
+   493→        const q = debouncedSearch;
+   494→        const haystack = `${u.fullName} ${u.email} ${u.phone}`.toLowerCase();
+   495→        if (!haystack.includes(q)) return false;
+   496→      }
+   497→      // الدور
+   498→      if (role !== "ALL" && u.role !== role) return false;
+   499→      // الحالة
+   500→      if (status !== "ALL" && u.status !== status) return false;
+   501→      return true;
+   502→    });
+   503→  }, [users, debouncedSearch, role, status]);
+   504→
+   505→  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+   506→  const currentStart = (page - 1) * PAGE_SIZE;
+   507→  const currentRows = filtered.slice(currentStart, currentStart + PAGE_SIZE);
+   508→
+   509→  // هل المستخدم الحالي سوبر أدمن؟ (وحده يغيّر الأدوار ويحذف)
+   510→  const canManageRoles = currentUserRole === "SUPER_ADMIN";
+   511→
+   512→  // إجراء "تعطيل/تفعيل"
+   513→  function toggleStatus(u: AdminUserRow) {
+   514→    const newStatus = u.status === "ACTIVE" ? "DISABLED" : "ACTIVE";
+   515→    toast.info(
+   516→      `${newStatus === "ACTIVE" ? "تفعيل" : "تعطيل"} ${u.fullName}`,
+   517→      {
+   518→        description: `الحالة المستهدفة: ${USER_STATUS_LABELS[newStatus as UserStatus]}`,
+   519→      }
+   520→    );
+   521→    setToggleUser(null);
+   522→  }
+   523→
+   524→  // إجراء "حذف"
+   525→  function confirmDelete(u: AdminUserRow) {
+   526→    toast.info(`حذف ${u.fullName}`, {
+   527→      description: "هذا الإجراء غير معكوس — ",
+   528→    });
+   529→    setDeleteUser(null);
+   530→  }
+   531→
+   532→  return (
+   533→    <div className="space-y-4">
+   534→      {/* الفلاتر */}
+   535→      <UsersFilters
+   536→        search={search}
+   537→        onSearch={setSearch}
+   538→        role={role}
+   539→        onRoleChange={setRole}
+   540→        status={status}
+   541→        onStatusChange={setStatus}
+   542→        resultCount={filtered.length}
+   543→      />
+   544→
+   545→      {/* الجدول */}
+   546→      <div className="rounded-lg border border-border bg-card">
+   547→        <Table>
+   548→          <TableHeader>
+   549→            <TableRow className="bg-muted/40 hover:bg-muted/40">
+   550→              <TableHead className="text-start text-xs text-muted-foreground">
+   551→                المعرّف
+   552→              </TableHead>
+   553→              <TableHead className="text-start text-xs text-muted-foreground">
+   554→                الاسم الكامل
+   555→              </TableHead>
+   556→              <TableHead className="text-start text-xs text-muted-foreground">
+   557→                البريد
+   558→              </TableHead>
+   559→              <TableHead className="text-start text-xs text-muted-foreground">
+   560→                الهاتف
+   561→              </TableHead>
+   562→              <TableHead className="text-start text-xs text-muted-foreground">
+   563→                الحي
+   564→              </TableHead>
+   565→              <TableHead className="text-start text-xs text-muted-foreground">
+   566→                الدور
+   567→              </TableHead>
+   568→              <TableHead className="text-start text-xs text-muted-foreground">
+   569→                الحالة
+   570→              </TableHead>
+   571→              <TableHead className="text-start text-xs text-muted-foreground">
+   572→                التسجيل
+   573→              </TableHead>
+   574→              <TableHead className="text-start text-xs text-muted-foreground">
+   575→                إجراءات
+   576→              </TableHead>
+   577→            </TableRow>
+   578→          </TableHeader>
+   579→          <TableBody>
+   580→            {currentRows.length === 0 ? (
+   581→              <TableRow>
+   582→                <TableCell colSpan={9}>
+   583→                  <div className="flex flex-col items-center justify-center gap-2 py-12 text-center text-sm text-muted-foreground">
+   584→                    <UsersIcon className="size-6 text-muted-foreground/50" strokeWidth={1.5} />
+   585→                    <p>لا توجد مستخدمون مطابقون للفلاتر المحدّدة</p>
+   586→                  </div>
+   587→                </TableCell>
+   588→              </TableRow>
+   589→            ) : (
+   590→              currentRows.map((u) => (
+   591→                <TableRow key={u.id} className="text-sm">
+   592→                  <TableCell className="font-mono text-[10px] text-muted-foreground">
+   593→                    {shortId(u.id)}
+   594→                  </TableCell>
+   595→                  <TableCell className="font-medium text-foreground">
+   596→                    {u.fullName}
+   597→                  </TableCell>
+   598→                  <TableCell className="text-xs text-muted-foreground" dir="ltr">
+   599→                    {u.email}
+   600→                  </TableCell>
+   601→                  <TableCell className="font-mono text-xs text-muted-foreground" dir="ltr">
+   602→                    {u.phone}
+   603→                  </TableCell>
+   604→                  <TableCell className="text-xs text-foreground">
+   605→                    {u.district?.name ?? "—"}
+   606→                  </TableCell>
+   607→                  <TableCell>
+   608→                    <RoleBadge role={u.role} />
+   609→                  </TableCell>
+   610→                  <TableCell>
+   611→                    <StatusBadge status={u.status} />
+   612→                  </TableCell>
+   613→                  <TableCell className="text-xs text-muted-foreground">
+   614→                    {formatDateArabic(u.createdAt)}
+   615→                  </TableCell>
+   616→                  <TableCell>
+   617→                    <DropdownMenu>
+   618→                      <DropdownMenuTrigger asChild>
+   619→                        <Button
+   620→                          variant="ghost"
+   621→                          size="icon"
+   622→                          className="size-8"
+   623→                          aria-label={`إجراءات ${u.fullName}`}
+   624→                        >
+   625→                          <MoreVertical className="size-4" strokeWidth={1.5} />
+   626→                        </Button>
+   627→                      </DropdownMenuTrigger>
+   628→                      <DropdownMenuContent align="start" className="w-48">
+   629→                        <DropdownMenuLabel>إجراءات</DropdownMenuLabel>
+   630→                        <DropdownMenuItem onSelect={() => setViewUser(u)}>
+   631→                          <Eye className="size-4" strokeWidth={1.5} />
+   632→                          <span>عرض</span>
+   633→                        </DropdownMenuItem>
+   634→                        <DropdownMenuItem onSelect={() => setEditUser(u)}>
+   635→                          <Pencil className="size-4" strokeWidth={1.5} />
+   636→                          <span>تعديل</span>
+   637→                        </DropdownMenuItem>
+   638→                        {canManageRoles && (
+   639→                          <DropdownMenuItem onSelect={() => setRoleUser(u)}>
+   640→                            <ShieldQuestion className="size-4" strokeWidth={1.5} />
+   641→                            <span>تغيير الدور</span>
+   642→                          </DropdownMenuItem>
+   643→                        )}
+   644→                        <DropdownMenuSeparator />
+   645→                        <DropdownMenuItem onSelect={() => setToggleUser(u)}>
+   646→                          <Power className="size-4" strokeWidth={1.5} />
+   647→                          <span>
+   648→                            {u.status === "ACTIVE" ? "تعطيل" : "تفعيل"}
+   649→                          </span>
+   650→                        </DropdownMenuItem>
+   651→                        {canManageRoles && (
+   652→                          <DropdownMenuItem
+   653→                            onSelect={() => setDeleteUser(u)}
+   654→                            variant="destructive"
+   655→                          >
+   656→                            <Trash2 className="size-4" strokeWidth={1.5} />
+   657→                            <span>حذف</span>
+   658→                          </DropdownMenuItem>
+   659→                        )}
+   660→                      </DropdownMenuContent>
+   661→                    </DropdownMenu>
+   662→                  </TableCell>
+   663→                </TableRow>
+   664→              ))
+   665→            )}
+   666→          </TableBody>
+   667→        </Table>
+   668→      </div>
+   669→
+   670→      {/* الترقيم */}
+   671→      <div className="flex items-center justify-between">
+   672→        <p className="text-xs text-muted-foreground">
+   673→          صفحة {page} من {totalPages} · إجمالي {filtered.length}
+   674→        </p>
+   675→        <div className="flex items-center gap-1">
+   676→          <Button
+   677→            variant="outline"
+   678→            size="sm"
+   679→            className="h-9"
+   680→            onClick={() => setPage((p) => Math.max(1, p - 1))}
+   681→            disabled={page <= 1}
+   682→          >
+   683→            <ChevronRight className="size-4" strokeWidth={1.5} />
+   684→            <span>السابق</span>
+   685→          </Button>
+   686→          <Button
+   687→            variant="outline"
+   688→            size="sm"
+   689→            className="h-9"
+   690→            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+   691→            disabled={page >= totalPages}
+   692→          >
+   693→            <span>التالي</span>
+   694→            <ChevronLeft className="size-4" strokeWidth={1.5} />
+   695→          </Button>
+   696→        </div>
+   697→      </div>
+   698→
+   699→      {/* النوافذ المنبثقة */}
+   700→      <ViewDialog
+   701→        user={viewUser}
+   702→        open={!!viewUser}
+   703→        onOpenChange={(v) => !v && setViewUser(null)}
+   704→      />
+   705→      <EditDialog
+   706→        user={editUser}
+   707→        open={!!editUser}
+   708→        onOpenChange={(v) => !v && setEditUser(null)}
+   709→      />
+   710→      <ChangeRoleDialog
+   711→        user={roleUser}
+   712→        open={!!roleUser}
+   713→        onOpenChange={(v) => !v && setRoleUser(null)}
+   714→      />
+   715→
+   716→      {/* تأكيد التعطيل/التفعيل */}
+   717→      <AlertDialog
+   718→        open={!!toggleUser}
+   719→        onOpenChange={(v) => !v && setToggleUser(null)}
+   720→      >
+   721→        <AlertDialogContent>
+   722→          <AlertDialogHeader>
+   723→            <AlertDialogTitle>
+   724→              {toggleUser?.status === "ACTIVE" ? "تعطيل الحساب" : "تفعيل الحساب"}
+   725→            </AlertDialogTitle>
+   726→            <AlertDialogDescription>
+   727→              {toggleUser?.status === "ACTIVE"
+   728→                ? `سيتم تعطيل حساب ${toggleUser?.fullName}. لن يستطيع الدخول حتى يُفعّل مجدداً.`
+   729→                : `سيتم تفعيل حساب ${toggleUser?.fullName}.`}
+   730→            </AlertDialogDescription>
+   731→          </AlertDialogHeader>
+   732→          <AlertDialogFooter>
+   733→            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+   734→            <AlertDialogAction
+   735→              onClick={() => toggleUser && toggleStatus(toggleUser)}
+   736→            >
+   737→              تأكيد
+   738→            </AlertDialogAction>
+   739→          </AlertDialogFooter>
+   740→        </AlertDialogContent>
+   741→      </AlertDialog>
+   742→
+   743→      {/* تأكيد الحذف */}
+   744→      <AlertDialog
+   745→        open={!!deleteUser}
+   746→        onOpenChange={(v) => !v && setDeleteUser(null)}
+   747→      >
+   748→        <AlertDialogContent>
+   749→          <AlertDialogHeader>
+   750→            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+   751→            <AlertDialogDescription>
+   752→              هل أنت متأكد من حذف حساب {deleteUser?.fullName}؟ هذا الإجراء غير
+   753→              معكوس. 
+   754→            </AlertDialogDescription>
+   755→          </AlertDialogHeader>
+   756→          <AlertDialogFooter>
+   757→            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+   758→            <AlertDialogAction
+   759→              className="bg-destructive text-white hover:bg-destructive/90"
+   760→              onClick={() => deleteUser && confirmDelete(deleteUser)}
+   761→            >
+   762→              حذف
+   763→            </AlertDialogAction>
+   764→          </AlertDialogFooter>
+   765→        </AlertDialogContent>
+   766→      </AlertDialog>
+   767→    </div>
+   768→  );
+   769→}
+   770→
+   771→
