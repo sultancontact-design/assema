@@ -1,5 +1,5 @@
 // ===================================================================
-//  /admin/engagement — لوحة الإدمان والتفاعل
+//  /admin/engagement — لوحة الانتماء والتفاعل
 //  SUPER_ADMIN فقط
 //  KPIs + charts من EngagementMetric + UserActivity
 // ===================================================================
@@ -26,7 +26,7 @@ import { EngagementCharts } from "@/components/admin/engagement-charts";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "لوحة الإدمان",
+  title: "لوحة الانتماء",
 };
 
 export default async function EngagementDashboardPage() {
@@ -147,7 +147,7 @@ export default async function EngagementDashboardPage() {
         <div>
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
             <Activity className="size-3" />
-            لوحة الإدمان v3.0
+            لوحة الانتماء v3.0
           </Badge>
           <h1 className="mt-2 font-heading text-2xl font-bold text-foreground">
             هندسة التفاعل — مؤشّرات حيّة

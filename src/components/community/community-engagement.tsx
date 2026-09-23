@@ -29,12 +29,12 @@ interface CommunityEngagementProps {
 }
 
 /**
- * CommunityEngagement — مكوّن خادم غير متزامن يقوم بجمع بيانات نظام الإدمان
+ * CommunityEngagement — مكوّن خادم غير متزامن يقوم بجمع بيانات نظام الانتماء
  * (السلاسل، المكافآت، الدليل الاجتماعي، الخسارة) ويُعيد الواجهة.
  *
  * يُستدعى داخل <Suspense> في صفحة /community ليتدفّق هذا القسم بشكل منفصل،
  * فتُعرض البطاقات الأخرى (KPI، الشفافية، الفعاليات) فوراً بينما تُحمَّل
- * بيانات الإدمان في الخلفية.
+ * بيانات الانتماء في الخلفية.
  */
 export async function CommunityEngagement({
   userId,
@@ -182,7 +182,7 @@ export async function CommunityEngagement({
         </h2>
         <Button asChild variant="ghost" size="sm" className="h-11">
           <Link href="/community/hooks">
-            حلقة الإدمان
+            حلقة الانتماء
             <ArrowLeft className="size-4" />
           </Link>
         </Button>
@@ -225,7 +225,7 @@ export async function CommunityEngagement({
 }
 
 /**
- * EngagementSkeleton — الهيكل العظمي الذي يُعرض بينما تُحمَّل بيانات الإدمان
+ * EngagementSkeleton — الهيكل العظمي الذي يُعرض بينما تُحمَّل بيانات الانتماء
  */
 export function EngagementSkeleton() {
   return (

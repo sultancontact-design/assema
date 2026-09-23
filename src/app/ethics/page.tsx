@@ -1,6 +1,6 @@
 // ===================================================================
 //  /ethics — صفحة التصميم الأخلاقي
-//  صفحة عامة تشرح بصدق آليات الإدمان + روابط للاختيار للخروج
+//  صفحة عامة تشرح بصدق آليات الانتماء + روابط للاختيار للخروج
 //  + إحصائيات وقت الشاشة + 4 مبادئ
 // ===================================================================
 
@@ -116,7 +116,7 @@ const PRINCIPLES = [
     icon: Heart,
     title: "الصحة",
     description:
-      "نُصمّم لعادات إيجابية لا لإدمان. هدفنا 5 دقائق يومياً مفيدة، لا 5 ساعات تالفة.",
+      "نُصمّم لعادات إيجابية لا لاستغلال. هدفنا 5 دقائق يومياً مفيدة، لا 5 ساعات تالفة.",
   },
   {
     icon: Shield,
@@ -136,7 +136,7 @@ export default function EthicsPage() {
           التزام أخلاقي
         </Badge>
         <h1 className="font-heading text-3xl font-bold text-foreground sm:text-4xl">
-          تصميمنا الأخلاقي للإدمان
+          تصميمنا الأخلاقي للانتماء
         </h1>
         <p className="text-sm text-muted-foreground max-w-2xl mx-auto leading-relaxed">
           نُصمّم المنصة بآليات تحفيز قوية (السلاسل، الصناديق، الإشعارات) —
@@ -176,7 +176,7 @@ export default function EthicsPage() {
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div>
             <h2 className="font-heading text-xl font-bold text-foreground">
-              آليات الإدمان لدينا — شرح صريح
+              آليات الانتماء لدينا — شرح صريح
             </h2>
             <p className="text-sm text-muted-foreground">
               لكل آلية: لماذا نستعملها، ما المخاطر، وكيف تتوقّف عنها.
@@ -282,7 +282,7 @@ export default function EthicsPage() {
           </Button>
           <Button asChild size="default" variant="outline" className="h-11">
             <Link href="/community/hooks">
-              🔥 صفحة حلقة الإدمان (للأعضاء)
+              🔥 صفحة حلقة الانتماء (للأعضاء)
             </Link>
           </Button>
         </div>

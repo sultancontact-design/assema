@@ -197,7 +197,7 @@ export default async function CommunityDashboardPage() {
     },
   ];
 
-  // 9) نظام الإدمان — يُحمَّل الآن بشكل متدفّق عبر <Suspense>
+  // 9) نظام الانتماء — يُحمَّل الآن بشكل متدفّق عبر <Suspense>
   //    (CommunityEngagement في src/components/community/community-engagement.tsx)
   //    لذا لا نحتاج لجلب بياناته هنا — القسم يُعرض فوراً ويُكمَّل بالبيانات
   //    عند جاهزيتها.
@@ -235,7 +235,7 @@ export default async function CommunityDashboardPage() {
 
         <ZelligeDivider variant="diamond" />
 
-        {/* نظام الإدمان — يُحمَّل بشكل متدفّق عبر Suspense */}
+        {/* نظام الانتماء — يُحمَّل بشكل متدفّق عبر Suspense */}
         <EngagementSection
           userId={user.id}
           districtId={user.districtId}

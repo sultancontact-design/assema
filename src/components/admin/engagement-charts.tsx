@@ -1,7 +1,7 @@
 "use client";
 
 // ===================================================================
-//  EngagementCharts — مخطّطات لوحة الإدمان (recharts)
+//  EngagementCharts — مخطّطات لوحة الانتماء (recharts)
 //  - DAU/MAU over 7 days
 //  - Retention curve
 //  - Top activities (pie)

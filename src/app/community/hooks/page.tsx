@@ -1,5 +1,5 @@
 // ===================================================================
-//  /community/hooks — صفحة حلقة الإدمان (Hook Loop)
+//  /community/hooks — صفحة حلقة الانتماء (Hook Loop)
 //  تمثيل بصري: Trigger → Action → Variable Reward → Investment
 //  + إحصائيات المستخدم في كل مرحلة + اقتراحات للتحسين
 // ===================================================================
@@ -27,7 +27,7 @@ import { HookLoopVisual } from "@/components/community/hook-loop-visual";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "حلقة الإدمان",
+  title: "حلقة الانتماء",
 };
 
 export default async function HookLoopPage() {
@@ -140,13 +140,13 @@ export default async function HookLoopPage() {
       <header className="space-y-2">
         <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
           <Flame className="size-3" />
-          حلقة الإدمان (Hook Model)
+          حلقة الانتماء (Hook Model)
         </Badge>
         <h1 className="font-heading text-3xl font-bold text-foreground">
           كيف تجذبك المنصة — بشفافية
         </h1>
         <p className="text-sm text-muted-foreground max-w-2xl">
-          حلقة الإدمان (Hook Model من Nir Eyal) تصف العادات: كلّما مررت بهذه
+          حلقة الانتماء (Hook Model من Nir Eyal) تصف العادات: كلّما مررت بهذه
           المراحل الأربع، زاد ارتباطك بالمنصة. هذه الصفحة تُريك مكانك في كل
           مرحلة واقتراحات للتحسين — بصدق وشفافية.
         </p>
@@ -221,7 +221,7 @@ export default async function HookLoopPage() {
         <CardContent className="space-y-3 p-6 text-center">
           <Users className="mx-auto size-8 text-secondary" />
           <h2 className="font-heading text-lg font-bold text-foreground">
-            هذا ليس إدماناً — بل عادة إيجابية
+            هذا ليس استغلالاً — بل عادة إيجابية
           </h2>
           <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
             الهدف ليس أن تجلس ساعات أمام المنصة، بل أن تبني عادة يومية بسيطة:
