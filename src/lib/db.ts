@@ -1,13 +1,62 @@
 import { PrismaClient } from '@prisma/client'
+import { readFileSync } from 'fs'
+import { join } from 'path'
+
+// -----------------------------------------------------------------
+//  ت.override: لو كان DATABASE_URL في بيئة النظام غير صالح (sqlite بدل
+//  postgres)، نُجبر قراءته من ملف .env المحلي. يحدث هذا في بعض بيئات
+//  sandbox التي تضبط DATABASE_URL افتراضياً لـ sqlite.
+// -----------------------------------------------------------------
+function ensureCorrectDbUrl(): void {
+  const current = process.env.DATABASE_URL ?? ''
+  if (current.startsWith('postgres')) return
+  try {
+    const envPath = join(process.cwd(), '.env')
+    const content = readFileSync(envPath, 'utf-8')
+    for (const line of content.split('\n')) {
+      const trimmed = line.trim()
+      if (!trimmed || trimmed.startsWith('#')) continue
+      const eq = trimmed.indexOf('=')
+      if (eq === -1) continue
+      const key = trimmed.slice(0, eq).trim()
+      let value = trimmed.slice(eq + 1).trim()
+      if ((value.startsWith('"') && value.endsWith('"')) ||
+          (value.startsWith("'") && value.endsWith("'"))) {
+        value = value.slice(1, -1)
+      }
+      if (key === 'DATABASE_URL' || key === 'DIRECT_URL') {
+        if (value.startsWith('postgres')) {
+          process.env[key] = value
+        }
+      }
+    }
+  } catch {
+    // تجاهل
+  }
+}
+
+ensureCorrectDbUrl()
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
+  __prismaUrl?: string
 }
 
-// في وضع التطوير: أحياناً يُبقى Turbopack نسخة قديمة من PrismaClient في
-// الذاكرة بعد تعديل schema.prisma وتشغيل `bun run db:push`. لضمان عمل
-// الموديلات الجديدة (مثل AllowedIP)، نتحقّق من العميل الحالي قبل إعادة
-// استعماله من الكاش.
+// فحص: لو تغيّر DATABASE_URL (بعد ensureCorrectDbUrl)، نُلغي الكاش
+// ونتشئ PrismaClient جديد ليأخذ القيمة الصحيحة.
+const currentUrl = process.env.DATABASE_URL ?? ''
+const cachedUrl = globalForPrisma.__prismaUrl
+if (globalForPrisma.prisma && cachedUrl !== currentUrl) {
+  try {
+    void globalForPrisma.prisma.$disconnect()
+  } catch {
+    // تجاهل
+  }
+  globalForPrisma.prisma = undefined
+}
+globalForPrisma.__prismaUrl = currentUrl
+
+// فحص "العته": إن لم يكن لدى العميل موديل جديد، نُعيد التشكيل
 function isStalePrisma(p: PrismaClient | undefined): boolean {
   if (!p) return false
   try {
@@ -23,7 +72,7 @@ if (process.env.NODE_ENV !== 'production' && globalForPrisma.prisma) {
     try {
       void globalForPrisma.prisma.$disconnect()
     } catch {
-      // تجاهل الأخطاء الصامتة
+      // تجاهل
     }
     globalForPrisma.prisma = undefined
   }

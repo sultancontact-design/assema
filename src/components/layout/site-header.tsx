@@ -1,8 +1,15 @@
 "use client";
 
+// ===================================================================
+//  SiteHeader — ترويسة الموقع
+//  - Sticky top, RTL nav, sheet للجوال
+//  - 5 روابط + login (للزوّار) / streak + notifications + avatar (للأعضاء)
+// ===================================================================
+
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Menu, X, Heart, Users, CalendarDays, Home as HomeIcon, Newspaper } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -15,6 +22,8 @@ import {
 } from "@/components/ui/sheet";
 import { SiteLogo } from "@/components/shared/site-logo";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
+import { StreakWidget } from "@/components/community/streak-widget";
+import { SmartNotificationCenter } from "@/components/community/smart-notification-center";
 
 const NAV_LINKS = [
   { href: "/", label: "الرئيسية", icon: HomeIcon },
@@ -25,13 +34,68 @@ const NAV_LINKS = [
 ];
 
 export function SiteHeader() {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "/";
   const [open, setOpen] = React.useState(false);
+  const { data: session, status } = useSession();
+  const isAuthenticated = status === "authenticated" && !!session?.user;
+  const [streakData, setStreakData] = React.useState<{
+    currentStreak: number;
+    freezes: number;
+    atRisk: boolean;
+    checkedInToday: boolean;
+    longestStreak: number;
+    totalCheckIns: number;
+    hoursUntilBreak: number;
+  } | null>(null);
+  const [notifInitial, setNotifInitial] = React.useState<
+    Array<{
+      id: string;
+      type: string;
+      title: string;
+      body: string;
+      actionUrl: string | null;
+      icon: string | null;
+      sentAt: string;
+      openedAt: string | null;
+    }>
+  >([]);
+  const [notifUnread, setNotifUnread] = React.useState(0);
 
-  // أغلق القائمة الجانبية عند تغيّر المسار
   React.useEffect(() => {
     setOpen(false);
   }, [pathname]);
+
+  // جلب حالة السلسلة + الإشعارات للمستخدم الحالي
+  React.useEffect(() => {
+    if (!isAuthenticated) return;
+    void (async () => {
+      try {
+        const [streakRes, notifRes] = await Promise.all([
+          fetch("/api/community/streak/check-in", { cache: "no-store" }),
+          fetch("/api/community/notifications", { cache: "no-store" }),
+        ]);
+        if (streakRes.ok) {
+          const sd = await streakRes.json();
+          setStreakData({
+            currentStreak: sd.currentStreak ?? 0,
+            longestStreak: sd.longestStreak ?? 0,
+            freezes: sd.freezes ?? 0,
+            atRisk: sd.atRisk ?? false,
+            checkedInToday: sd.checkedInToday ?? false,
+            totalCheckIns: sd.totalCheckIns ?? 0,
+            hoursUntilBreak: sd.hoursUntilBreak ?? 48,
+          });
+        }
+        if (notifRes.ok) {
+          const nd = await notifRes.json();
+          setNotifInitial(nd.notifications ?? []);
+          setNotifUnread(nd.unreadCount ?? 0);
+        }
+      } catch {
+        // تجاهل
+      }
+    })();
+  }, [isAuthenticated]);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -67,12 +131,36 @@ export function SiteHeader() {
 
         {/* الإجراءات — جهة اليسار في RTL */}
         <div className="flex items-center gap-1.5">
-          <div className="hidden sm:block">
-            <Button asChild size="sm" variant="default">
-              <Link href="/login">تسجيل الدخول</Link>
-            </Button>
-          </div>
+          {isAuthenticated && streakData && (
+            <div className="hidden sm:block">
+              <StreakWidget variant="compact" initial={streakData} />
+            </div>
+          )}
+
+          {isAuthenticated && (
+            <SmartNotificationCenter
+              initialNotifications={notifInitial}
+              initialUnreadCount={notifUnread}
+            />
+          )}
+
           <ThemeToggle />
+
+          {!isAuthenticated && (
+            <div className="hidden sm:block">
+              <Button asChild size="sm" variant="default">
+                <Link href="/login">تسجيل الدخول</Link>
+              </Button>
+            </div>
+          )}
+
+          {isAuthenticated && (
+            <div className="hidden sm:block">
+              <Button asChild size="sm" variant="outline">
+                <Link href="/community">لوحتي</Link>
+              </Button>
+            </div>
+          )}
 
           {/* زر القائمة على الجوال */}
           <Sheet open={open} onOpenChange={setOpen}>
@@ -113,12 +201,25 @@ export function SiteHeader() {
                   );
                 })}
                 <div className="my-2 h-px bg-border" />
-                <Button asChild size="sm" className="w-full">
-                  <Link href="/login">تسجيل الدخول</Link>
-                </Button>
-                <Button asChild size="sm" variant="outline" className="w-full">
-                  <Link href="/register">حساب جديد</Link>
-                </Button>
+                {isAuthenticated ? (
+                  <>
+                    <Button asChild size="sm" className="w-full">
+                      <Link href="/community">لوحتي</Link>
+                    </Button>
+                    <Button asChild size="sm" variant="outline" className="w-full">
+                      <Link href="/ethics">تصميمنا الأخلاقي</Link>
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button asChild size="sm" className="w-full">
+                      <Link href="/login">تسجيل الدخول</Link>
+                    </Button>
+                    <Button asChild size="sm" variant="outline" className="w-full">
+                      <Link href="/register">حساب جديد</Link>
+                    </Button>
+                  </>
+                )}
               </nav>
             </SheetContent>
           </Sheet>

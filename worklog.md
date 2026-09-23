@@ -2468,3 +2468,93 @@ Stage Summary:
 الفجوات المتبقية بصراحة:
 - Supabase project موقوف — يحتاج استئناف يدوي من Dashboard
 - بعد الاستئناف: شغّل POST /api/setup/seed مع SETUP_KEY (المفتاح في .env.secrets محلياً)
+
+---
+Task ID: v3-engagement
+Agent: Main (Z.ai Code)
+Task: نظام الإدمان والتفاعل v3.0 — Octalysis + Hook Model + Prospect Theory
+
+Work Log:
+
+### المكتبات (3)
+- `src/lib/streak-engine.ts` (319 سطر):
+  * `checkInStreak(userId)` — منطق check-in يومي مع 24h/48h thresholds
+  * `getStreakStatus(userId)` — حالة + وقت حتى الكسر + atRisk (>20h)
+  * `useFreeze(userId)` — شراء freeze بـ50 نقطة (أقصى 4 freezes: 2 مجانية + 2 مشتراة)
+  * 5 محطات: 7/14/30/50/100 يوم مع مكافآت (50/100/250/500/1000 نقطة)
+  * `formatStreakUrgency()` — تنسيق عربي للوقت المتبقّي
+- `src/lib/rewards-engine.ts` (378 سطر):
+  * Mystery Box: 50% → 10-50 نقطة، 30% → 100 نقطة، 15% → freeze، 5% → شارة نادرة
+  * Spin Wheel: 8 مقاطع بأوزان (5×2، 10×2، 25×1، 50×1، 100×1، Badge×1)
+  * Lucky Draw: 1 مُدخل لكل مساهمة ≥ 100 درهم
+  * `getRewardHistory()` — آخر 20 مكافأة (مع badge relation)
+- `src/lib/notification-engine.ts` (198 سطر):
+  * `sendSmartNotification()` — يحترم التفضيلات + ساعات الهدوء + الحدّ اليومي
+  * 10 أنواع: STREAK, MYSTERY_BOX, SOCIAL, URGENCY, REWARD, CHALLENGE, LOSS, ACHIEVEMENT, RECOMMENDATION, WELCOME_BACK
+  * `isQuietHours()` — يدعم التقاطع عبر منتصف الليل (22→7)
+  * الإشعارات الحرجة (URGENCY, LOSS) تتجاوز ساعات الهدوء
+
+### API Routes (8)
+- `POST /api/community/streak/check-in` (128 سطر) — تسجيل دخول + UserActivity + 3 إشعارات ذكية للمحطات
+- `GET|POST /api/community/rewards/mystery-box` (80 سطر) — فحص + فتح
+- `GET|POST /api/community/rewards/spin-wheel` (84 سطر) — فحص + دوران
+- `GET /api/community/rewards/history` (31 سطر) — آخر 20
+- `GET|POST /api/community/notifications` (78 سطر) — قائمة + mark read
+- `GET|PUT /api/community/notifications/preferences` (119 سطر) — تفضيلات
+- `GET /api/community/social-proof` (100 سطر) — نشطون الآن + مساهمات الأسبوع + feed
+- `GET /api/community/loss-aversion` (101 سطر) — سلسلة + نقاط معلّقة + شارات + اتجاه
+
+### المكونات (9)
+- `streak-widget.tsx` (247 سطر) — compact + large، framer-motion للهب، auto check-in
+- `mystery-box.tsx` (215 سطر) — اهتزاز + confetti (24 قطعة ملوّنة)، Progress للمساهمات
+- `spin-wheel.tsx` (232 سطر) — SVG wheel مع 8 مقاطع ملوّنة، دوران 3s بـspring easing
+- `social-proof-widget.tsx` (188 سطر) — 3 إحصائيات + feed (5 أنشطة)، تحديث كل 60s
+- `loss-aversion-widget.tsx` (202 سطر) — 4 عناصر ديناميكية، empty state إيجابي
+- `smart-notification-center.tsx` (260 سطر) — Popover + ScrollArea + عدّاد + Mark all
+- `notification-settings-form.tsx` (404 سطر) — 10 toggles + ساعات + حدّ + "خذ استراحة"
+- `hook-loop-visual.tsx` (86 سطر) — 4 بطاقات دائرية مع نبض + أسهم + حلقة أسفل
+- `engagement-charts.tsx` (220 سطر) — 4 charts: Area (DAU/MAU)، Line (Retention)، Pie (Activities)، Bar (Notifications)
+
+### الصفحات (4)
+- `/community/hooks` (256 سطر) — Hook Model: Trigger→Action→Reward→Investment + 4 بطاقات بـstats + اقتراحات
+- `/community/notifications/settings` (46 سطر + form) — 10 toggles + quiet hours + limit + "خذ استراحة"
+- `/admin/engagement` (278 سطر) — SUPER_ADMIN فقط، 8 KPIs + 4 charts من بيانات حقيقية
+- `/ethics` (301 سطر) — صفحة عامة، 4 مبادئ (الشفافية، التحكم، الصحة، الفائدة) + شرح 5 آليات
+
+### تعديلات
+- `src/app/community/page.tsx` — قسم "نظام التفاعل اليومي" (Streak + Social + Loss + Mystery + Spin)
+- `src/components/layout/site-header.tsx` — 🔥 compact + 🔔 SmartNotificationCenter للأعضاء، login للأزوّار
+- `src/components/admin/admin-shell.tsx` — رابط "الإدمان والتفاعل" + SECTION_TITLES.engagement
+- `src/lib/db.ts` — إصلاح بيئة sandbox: لو DATABASE_URL=sqlite في النظام، يقرأ postgres من .env
+  (المشكلة: env النظام يحوي DATABASE_URL=file:/home/z/my-project/db/custom.db، يُغطّي .env)
+- `prisma/schema.prisma` — إضافة علاقة VariableReward.badge (Badge?, onDelete: SetNull) + Badge.rewards
+- `prisma/seed-engagement.ts` (261 سطر) — 10 شارات + 4 تحديات (founder, ramadan, eid, streaks, etc.)
+- `package.json` — إضافة `db:seed-engagement` script
+
+### نتائج الفحص
+- ✅ `bun run db:push` — نجح، Prisma Client regenerated
+- ✅ `bun run db:seed-engagement` — نجح: 10 شارات + 4 تحديات مزروعة في Supabase
+- ✅ `bun run lint` — 0 أخطاء
+- ✅ `bunx tsc --noEmit` — 0 أخطاء في الملفات الجديدة (pre-existing في examples/skills فقط)
+- ✅ Dev server متّصل بـSupabase — `/api/health` status=connected، 200 مستخدم + 50 أسرة + 301 مساهمة
+- ✅ كل المسارات الجديدة 200 OK: /community, /ethics, /community/hooks, /community/notifications/settings, /admin/engagement
+- ✅ كل APIs الجديدة تعمل (401 للزوّار — متوقّع)
+
+Stage Summary:
+- ✅ نظام الإدمان v3.0 كامل: 5 محاور (Streaks، Variable Rewards، Social Proof، Loss Aversion، Smart Notifications)
+- ✅ Hook Loop page + Admin Engagement Dashboard + Ethics page
+- ✅ 10 شارات + 4 تحديات موسمية مزروعة
+- ✅ كل APIs تستعمل relative URLs، تحترم Authentication
+- ✅ كل النصوص بالعربية، RTL مع logical properties (ps-/pe-/ms-/me-)
+- ✅ framer-motion لكل الأنيميشن (flame، shake، confetti، wheel spin، bell pulse)
+- ✅ recharts للوحة الإدمان
+- ✅ التصميم الأخلاقي: زر "خذ استراحة" + تفضيلات + شفافية كاملة
+
+الإحصاء النهائي:
+- ملفات جديدة: 19
+- ملفات معدّلة: 5 (+ 1 prisma schema، 1 package.json)
+- إجمالي الأسطر: 6564 (في الملفات الجديدة)
+- Lint: 0 أخطاء
+- TypeScript: 0 أخطاء (في الكود الجديد)
+- Dev server: 200 OK على كل المسارات
+- DB: متّصل بـSupabase PostgreSQL + 14 سجلّ مزروع

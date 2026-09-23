@@ -249,6 +249,17 @@ model User {
   complaintsHandled Complaint[]  @relation("ComplaintHandledBy")
   auditLogs         AuditLog[]
   adsManaged        Ad[]         @relation("AdManager")
+  
+  // ─────────── علاقات هندسة الإدمان (v3.0) ───────────
+  streak            UserStreak?
+  variableRewards   VariableReward[]
+  userChallenges    UserChallenge[]
+  userBadges        UserBadge[]
+  activities        UserActivity[]
+  following         UserRelationship[] @relation("Follower")
+  followers         UserRelationship[] @relation("Following")
+  smartNotifications SmartNotification[]
+  notificationPref  NotificationPreference?
 
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -652,4 +663,230 @@ model AllowedIP {
   updatedAt DateTime @updatedAt
 
   @@index([isActive])
+}
+
+// ===================================================================
+//  هندسة الإدمان (Engagement Engineering) — v3.0
+//  مستوحاة من Octalysis Framework + Hook Model + Prospect Theory
+// ===================================================================
+
+// ─────────── المحور 1: السلاسل (Streaks) ───────────
+model UserStreak {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  currentStreak Int       @default(0)
+  longestStreak Int       @default(0)
+  lastActivity  DateTime?
+  freezes       Int       @default(2)  // 2 freezes مجانية
+  freezeUsedAt  DateTime?
+  lastCheckIn   DateTime? // آخر تسجيل دخول يومي
+  totalCheckIns Int       @default(0)
+  
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([userId])
+}
+
+// ─────────── المحور 2: المكافآت المتغيرة ───────────
+model VariableReward {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String   // MYSTERY_BOX, SPIN_WHEEL, LUCKY_DRAW
+  reward      String   // POINTS, FREEZE, BADGE, DISCOUNT
+  value       Int      // عدد النقاط أو قيمة المكافأة
+  badgeId     String?  // معرّف الشارة إن كانت المكافأة شارة
+  drawnAt     DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge       Badge?   @relation(fields: [badgeId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([type])
+  @@index([drawnAt])
+}
+
+// ─────────── المحور 3: الندرة (Scarcity) ───────────
+model Challenge {
+  id          String    @id @default(cuid())
+  title       String
+  description String
+  type        String    // SEASONAL, DAILY, WEEKLY, LIMITED
+  status      String    @default("active") // active, expired, completed
+  pointsReward Int      @default(0)
+  requiredCount Int     @default(1) // عدد المهام المطلوبة
+  startDate   DateTime
+  endDate     DateTime
+  badgeId     String?
+  
+  participants UserChallenge[]
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@index([status])
+  @@index([endDate])
+}
+
+model UserChallenge {
+  id          String    @id @default(cuid())
+  userId      String
+  challengeId String
+  progress    Int       @default(0)
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@unique([userId, challengeId])
+  @@index([userId])
+  @@index([challengeId])
+}
+
+// ─────────── الشارات ───────────
+model Badge {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  description String
+  icon        String    // emoji أو SVG name
+  rarity      String    @default("common") // common, rare, epic, legendary
+  isLimited   Boolean   @default(false)
+  availableFrom DateTime?
+  availableUntil DateTime?
+  maxRecipients Int?     // أقصى عدد مستفيدين (للندرة)
+  currentRecipients Int  @default(0)
+  
+  userBadges  UserBadge[]
+  rewards     VariableReward[]
+
+  createdAt   DateTime  @default(now())
+
+  @@index([rarity])
+  @@index([isLimited])
+}
+
+model UserBadge {
+  id          String    @id @default(cuid())
+  userId      String
+  badgeId     String
+  earnedAt    DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge       Badge     @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+  @@index([badgeId])
+}
+
+// ─────────── المحور 4: الدليل الاجتماعي ───────────
+model UserActivity {
+  id          String    @id @default(cuid())
+  userId      String
+  type        String    // LOGIN, CONTRIBUTION, FUND_REQUEST, EVENT_REGISTER, GROUP_JOIN, BADGE_EARNED, STREAK_MILESTONE
+  description String
+  metadata    String?   // JSON
+  isPublic    Boolean   @default(true)
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime  @default(now())
+  
+  @@index([userId, isPublic])
+  @@index([createdAt])
+  @@index([type])
+}
+
+// ─────────── المحور 7: الاستثمار — العلاقات ───────────
+model UserRelationship {
+  id          String    @id @default(cuid())
+  followerId  String    // من يتابع
+  followingId String   // من يُتابَع
+  status      String    @default("active") // active, blocked
+  createdAt   DateTime  @default(now())
+  
+  follower    User      @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User      @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+  
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+// ─────────── المحور 6: الإشعارات الذكية ───────────
+model SmartNotification {
+  id          String    @id @default(cuid())
+  userId      String
+  type        String    // STREAK, MYSTERY_BOX, SOCIAL, URGENCY, REWARD, CHALLENGE, LOSS, ACHIEVEMENT, RECOMMENDATION, WELCOME_BACK
+  title       String
+  body        String
+  actionUrl   String?
+  icon        String?   // emoji
+  sentAt      DateTime  @default(now())
+  openedAt    DateTime?
+  expiresAt   DateTime?
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime  @default(now())
+  
+  @@index([userId, openedAt])
+  @@index([type])
+  @@index([sentAt])
+}
+
+// ─────────── إعدادات الإشعارات (opt-in/opt-out) ───────────
+model NotificationPreference {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  streakAlerts Boolean  @default(true)
+  mysteryBoxAlerts Boolean @default(true)
+  socialAlerts Boolean @default(true)
+  urgencyAlerts Boolean @default(true)
+  rewardAlerts Boolean @default(true)
+  challengeAlerts Boolean @default(true)
+  lossAlerts Boolean   @default(true)
+  achievementAlerts Boolean @default(true)
+  recommendationAlerts Boolean @default(true)
+  welcomeBackAlerts Boolean @default(true)
+  quietHoursStart Int  @default(22) // 10م — لا إشعارات
+  quietHoursEnd Int    @default(7)  // 7ص
+  dailyLimit Int       @default(5)  // أقصى 5/يوم
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// ─────────── المحور 9: لوحة الإدمان ───────────
+model EngagementMetric {
+  id          String    @id @default(cuid())
+  date        DateTime  @default(now())
+  dau         Int       @default(0)   // Daily Active Users
+  mau         Int       @default(0)   // Monthly Active Users
+  newUsers    Int       @default(0)
+  retentionD1 Float     @default(0)  // Retention Day 1
+  retentionD7 Float     @default(0)  // Retention Day 7
+  retentionD30 Float    @default(0)  // Retention Day 30
+  avgSessionTime Int   @default(0)  // seconds
+  avgSessionsPerUser Float @default(0)
+  avgStreak   Float    @default(0)
+  mysteryBoxesOpened Int @default(0)
+  spinWheelsUsed Int   @default(0)
+  challengesCompleted Int @default(0)
+  notificationsSent Int @default(0)
+  notificationsOpened Int @default(0)
+  notificationOpenRate Float @default(0)
+  
+  createdAt   DateTime  @default(now())
+  
+  @@index([date])
 }
