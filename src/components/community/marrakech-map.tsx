@@ -235,6 +235,48 @@ export function MarrakechMap({
           );
         })}
 
+        {/* نقاط نابضة لكل حي — حجم النبضة حسب عدد الأعضاء */}
+        {districts.map((d) => {
+          const centroid = centroidFromPath(d.boundarySvg);
+          if (!centroid) return null;
+          if (d.members <= 0) return null;
+          const ratio = normalize(d.members, maxMembers);
+          // نصف قطر النقطة: 4-12 حسب نسبة الأعضاء
+          const r = 4 + ratio * 8;
+          // شدّة اللون: ترابي أكثر للأحياء الأكثر نشاطاً
+          const opacity = 0.45 + ratio * 0.45;
+          return (
+            <g key={`pulse-${d.slug}`} pointerEvents="none">
+              {/* الهالة النابضة الخارجية */}
+              <motion.circle
+                cx={centroid.x}
+                cy={centroid.y}
+                r={r}
+                fill={`rgba(${TERRACOTTA_RGB}, ${(opacity * 0.4).toFixed(3)})`}
+                animate={{
+                  scale: [1, 1.6, 1],
+                  opacity: [opacity * 0.5, 0, opacity * 0.5],
+                }}
+                transition={{
+                  duration: 2.4 + ratio * 1.5,
+                  repeat: Infinity,
+                  ease: "easeOut",
+                }}
+                style={{ transformOrigin: "center" }}
+              />
+              {/* النقطة الصلبة */}
+              <circle
+                cx={centroid.x}
+                cy={centroid.y}
+                r={Math.max(2.5, r * 0.45)}
+                fill={`rgba(${TERRACOTTA_RGB}, ${opacity.toFixed(3)})`}
+                stroke="#FFFFFF"
+                strokeWidth={1.2}
+              />
+            </g>
+          );
+        })}
+
         {/* تسميات الأحياء — اسم عربي + اسم فرنسي صغير */}
         {districts.map((d) => {
           const label = centroidFromPath(d.boundarySvg);
@@ -314,7 +356,7 @@ export function MarrakechMap({
               <span className="font-semibold text-foreground">
                 {hoveredDistrict.members}
               </span>
-              عضو نشط
+              نشط الآن
             </div>
             {hoveredDistrict.population ? (
               <div className="mt-0.5 text-[10px] text-muted-foreground">

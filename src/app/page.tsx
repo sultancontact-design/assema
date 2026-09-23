@@ -1,16 +1,23 @@
+// ===================================================================
+//  HomePage — الصفحة الرئيسية الحيّة (v10-revive)
+//  - Server component مع Suspense boundaries لتدفّق البيانات
+//  - تجلب بيانات حقيقية: آخر 3 مساهمات، آخر 3 فعاليات، آخر 5 مدوّنات،
+//    آخر 5 نقاشات + إحصاءات حيّة من getFundStats
+//  - يعمل لكل من الزوار والمستخدمين المسجّلين
+//  - لا توجد try/catch تخفي البيانات كاملة: fallback صريح
+// ===================================================================
+
 import Link from "next/link";
 import { Suspense } from "react";
 import {
   ArrowLeft,
-  Heart,
   Users,
-  Scale,
   HandCoins,
-  ShieldCheck,
-  Sparkles,
   CalendarDays,
-  TrendingUp,
   MapPin,
+  MessageSquare,
+  Quote,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,117 +25,31 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ZelligeDivider } from "@/components/shared/zellige-divider";
 import { getFundStats } from "@/lib/fund-stats";
-import { formatNumber } from "@/lib/constants";
+import { formatNumber, formatDateArabic } from "@/lib/constants";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { VisitorWelcome } from "@/components/community/visitor-welcome";
+import { HomeHero } from "@/components/community/home-hero";
+import {
+  HomeLiveStats,
+  HomeLiveStatsSkeleton,
+} from "@/components/community/home-live-stats";
+import { HomePrinciples } from "@/components/community/home-principles";
+import { ActivityTicker } from "@/components/community/activity-ticker";
+import { FomoBanner } from "@/components/community/fomo-banner";
+import {
+  StoriesCarousel,
+  type StoryCard,
+} from "@/components/community/stories-carousel";
+import { LiveToasts } from "@/components/community/live-toasts";
 
-// Force dynamic — لا نُريد prerender أثناء الـbuild (DB قد لا يكون متاحاً)
-export const dynamic = "force-dynamic";
-// السماح بالـ ISR لمدّة 60 ثانية على الإحصاءات (آمنة للقراءة)
+// السماح بالـ ISR لمدّة 60 ثانية (آمنة للقراءة العامة)
 export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 // ===================================================================
-//  المكوّن المتدفّق (streamed) — الإحصاءات الحيّة مُغلّفة بـ Suspense
-//  parent يُعيد shell ثابت فوراً، والإحصاءات تتدفّق عند جاهزيتها.
+//  المبادئ الخمسة + باقات الإعلانات
 // ===================================================================
-
-async function HomeLiveStats() {
-  let fundStats = {
-    totalContributions: 0,
-    balance: 0,
-  } as { totalContributions: number; balance: number };
-  let familyCount = 0;
-  try {
-    const [fund, family, user] = await Promise.all([
-      getFundStats(),
-      db.family.count({ where: { isActive: true, deletedAt: null } }),
-      db.user.count({ where: { deletedAt: null, status: "ACTIVE" } }),
-    ]);
-    fundStats = fund;
-    familyCount = family;
-    // user موجود لضمان توليد الـ query لكن لم يُعرض هنا
-    void user;
-  } catch {
-    // DB غير متاح — استخدم قيم افتراضية
-  }
-
-  const LIVE_STATS = [
-    { label: "أسرة مسجّلة", value: formatNumber(familyCount), icon: Users, color: "text-secondary" },
-    { label: "درهم مساهم", value: formatNumber(fundStats.totalContributions), icon: HandCoins, color: "text-primary" },
-    { label: "درهم الرصيد", value: formatNumber(fundStats.balance), icon: Scale, color: "text-accent" },
-  ];
-
-  return (
-    <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
-      {LIVE_STATS.map((stat) => {
-        const Icon = stat.icon;
-        return (
-          <Card key={stat.label} className="text-center warm-shadow border-border">
-            <CardContent className="pt-6 pb-6">
-              <Icon className={`size-7 mx-auto mb-2 ${stat.color}`} />
-              <div className="font-heading text-3xl font-extrabold text-foreground">
-                {stat.value}
-              </div>
-              <div className="text-sm text-muted-foreground mt-1">
-                {stat.label}
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
-    </div>
-  );
-}
-
-function HomeLiveStatsSkeleton() {
-  return (
-    <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto" aria-hidden>
-      {[0, 1, 2].map((i) => (
-        <Card key={i} className="text-center warm-shadow border-border">
-          <CardContent className="pt-6 pb-6">
-            <Skeleton className="size-7 mx-auto mb-2 rounded-full" />
-            <Skeleton className="h-9 w-2/3 mx-auto mb-2" />
-            <Skeleton className="h-4 w-1/2 mx-auto" />
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
-const PRINCIPLES = [
-  {
-    icon: Heart,
-    title: "الكرامة أولاً",
-    description:
-      "لا نكشف أسماء المستفيدين في العلن. كل طلب يُعالج بحفظ الكرامة والسرية.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "الشفافية الكاملة",
-    description:
-      "لوحة عامة تُظهر إجمالي المساهمات والصرف والرصيد. كل درهم له إيصال رقمي.",
-  },
-  {
-    icon: TrendingUp,
-    title: "الاستدامة",
-    description:
-      "نبدأ مجاناً 100%، نُثبت الفكرة، ثم ننتقل للمدفوع بعد تحقيق مؤشرات النجاح.",
-  },
-  {
-    icon: MapPin,
-    title: "من حي إلى عاصمة",
-    description:
-      "نبدأ بسيدي يوسف بن علي، ثم نتوسّع لأحياء مراكش أخرى، ثم لمدن المغرب.",
-  },
-  {
-    icon: Sparkles,
-    title: "المعروف المغربي",
-    description:
-      "رقمنة صندوق الأفراح والأتراح التقليدي بروح الجماعة والدّين المتين.",
-  },
-];
 
 const AD_PACKAGES = [
   {
@@ -161,133 +82,675 @@ const AD_PACKAGES = [
   },
 ];
 
+// ===================================================================
+//  Async data fetchers — كلها مع try/catch + fallback لضمان SSR
+// ===================================================================
+
+interface LiveStats {
+  families: number;
+  contributions: number;
+  contributionsTotal: number;
+  events: number;
+}
+
+async function fetchLiveStats(): Promise<LiveStats> {
+  try {
+    const [fund, family, event] = await Promise.all([
+      getFundStats(),
+      db.family.count({ where: { isActive: true, deletedAt: null } }),
+      db.event.count({
+        where: {
+          status: "PUBLISHED",
+          startDate: { gte: new Date() },
+          deletedAt: null,
+        },
+      }),
+    ]);
+    return {
+      families: family,
+      contributions: fund.confirmedContributionsCount,
+      contributionsTotal: fund.totalContributions,
+      events: event,
+    };
+  } catch {
+    return { families: 0, contributions: 0, contributionsTotal: 0, events: 0 };
+  }
+}
+
+// ─────────── آخر 3 مساهمات مؤكّدة (أرقام مجهولة + المبلغ) ───────────
+interface ContributionPreview {
+  id: string;
+  amount: number;
+  month: string;
+  receiptCode: string;
+  method: string;
+  confirmedAt: string | null;
+  createdAt: string;
+}
+
+async function fetchRecentContributions(): Promise<ContributionPreview[]> {
+  try {
+    const rows = await db.contribution.findMany({
+      where: { status: "CONFIRMED" },
+      orderBy: [{ confirmedAt: "desc" }, { createdAt: "desc" }],
+      take: 3,
+      select: {
+        id: true,
+        amount: true,
+        month: true,
+        digitalReceipt: true,
+        method: true,
+        confirmedAt: true,
+        createdAt: true,
+      },
+    });
+    return rows.map((r) => ({
+      id: r.id,
+      amount: r.amount,
+      month: r.month,
+      // رمز مجهول: SY-XXXX (آخر 4 رموز من الإيصال الرقمي أو معرّف المساهمة)
+      receiptCode: `SY-${(r.digitalReceipt ?? r.id).slice(-4).toUpperCase()}`,
+      method: r.method,
+      confirmedAt: r.confirmedAt ? r.confirmedAt.toISOString() : null,
+      createdAt: r.createdAt.toISOString(),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+// ─────────── آخر 3 فعاليات قادمة ───────────
+interface EventPreview {
+  id: string;
+  title: string;
+  slug: string;
+  type: string;
+  startDate: string;
+  location: string;
+}
+
+async function fetchUpcomingEvents(): Promise<EventPreview[]> {
+  try {
+    const rows = await db.event.findMany({
+      where: {
+        status: "PUBLISHED",
+        startDate: { gte: new Date() },
+        deletedAt: null,
+      },
+      orderBy: { startDate: "asc" },
+      take: 3,
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        type: true,
+        startDate: true,
+        location: true,
+      },
+    });
+    return rows.map((r) => ({
+      id: r.id,
+      title: r.title,
+      slug: r.slug,
+      type: r.type,
+      startDate: r.startDate.toISOString(),
+      location: r.location,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+// ─────────── آخر 5 مقالات منشورة للقصص ───────────
+async function fetchBlogStories(): Promise<StoryCard[]> {
+  try {
+    const rows = await db.blogPost.findMany({
+      where: { status: "published" },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      select: {
+        id: true,
+        title: true,
+        excerpt: true,
+        slug: true,
+        category: true,
+        author: {
+          select: { firstName: true, lastName: true },
+        },
+      },
+    });
+    if (rows.length === 0) return PLACEHOLDER_STORIES;
+    return rows.map((r) => {
+      const first = r.author?.firstName?.trim() ?? "هيئة التحرير";
+      const lastInitial = r.author?.lastName?.trim().charAt(0);
+      const author = lastInitial ? `${first} ${lastInitial}.` : first;
+      return {
+        id: r.id,
+        title: r.title,
+        excerpt: r.excerpt,
+        author,
+        category: r.category,
+        href: `/blog/${r.slug}`,
+        emoji: "📝",
+      } as StoryCard;
+    });
+  } catch {
+    return PLACEHOLDER_STORIES;
+  }
+}
+
+// ─────────── آخر 5 نقاشات (مع عدد الردود) ───────────
+interface DiscussionPreview {
+  id: string;
+  title: string;
+  views: number;
+  replies: number;
+  category: string;
+  authorMasked: string;
+  createdAt: string;
+}
+
+async function fetchRecentDiscussions(): Promise<DiscussionPreview[]> {
+  try {
+    const rows = await db.discussion.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      select: {
+        id: true,
+        title: true,
+        views: true,
+        category: true,
+        createdAt: true,
+        author: {
+          select: { firstName: true, lastName: true },
+        },
+        replies: { select: { id: true } },
+      },
+    });
+    return rows.map((r) => {
+      const first = r.author?.firstName?.trim() ?? "جار";
+      const lastInitial = r.author?.lastName?.trim().charAt(0);
+      const authorMasked = lastInitial ? `${first} ${lastInitial}.` : first;
+      return {
+        id: r.id,
+        title: r.title,
+        views: r.views,
+        replies: r.replies.length,
+        category: r.category,
+        authorMasked,
+        createdAt: r.createdAt.toISOString(),
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+// ─────────── قصص افتراضية (عند فراغ المدوّنة) ───────────
+const PLACEHOLDER_STORIES: StoryCard[] = [
+  {
+    id: "p1",
+    title: "كيف تبدأ بمساهمة رمزية وتُحدث فرقاً؟",
+    excerpt:
+      "الخطوة الأولى نحو المعروف تبدأ بـ10 دراهم. اقرأ قصص من ساهموا بقدر ما يقدرون.",
+    author: "هيئة التحرير",
+    category: "مالية",
+    href: "/blog",
+    emoji: "🤲",
+  },
+  {
+    id: "p2",
+    title: "دور المسجد في تجميع كلمة الحي",
+    excerpt:
+      "من منبر المسجد تتجمّع الأفراح والأتراح. تعرّف على six functions التي يلعبها المسجد.",
+    author: "هيئة التحرير",
+    category: "دينية",
+    href: "/blog",
+    emoji: "🕌",
+  },
+  {
+    id: "p3",
+    title: "تربية الأبناء على العطاء: دليل عملي",
+    excerpt:
+      "في كل عمر مرحلة عطاء. كيف نُنشئ جيلاً يعرف معنى \"المعروف المغربي\".",
+    author: "هيئة التحرير",
+    category: "تربية",
+    href: "/blog",
+    emoji: "🌱",
+  },
+  {
+    id: "p4",
+    title: "صحة الطفل: علامات تستدعي الاستشفاء",
+    excerpt:
+      "ثلاث مراحل عمرية، وتطعيمات أساسية، وعلامات خطر يجب على كل أم معرفتها.",
+    author: "هيئة التحرير",
+    category: "صحة",
+    href: "/blog",
+    emoji: "🩺",
+  },
+  {
+    id: "p5",
+    title: "التطوع: طريق إلى السعادة",
+    excerpt:
+      "دراسات هارفارد، آيات قرآنية، وخبرات من حيّنا. المعروف يصنع السعادة بطريقتين.",
+    author: "هيئة التحرير",
+    category: "مجتمع",
+    href: "/blog",
+    emoji: "💚",
+  },
+];
+
+// ===================================================================
+//  Suspense-wrapped async sections
+// ===================================================================
+
+async function LiveStatsSection() {
+  const stats = await fetchLiveStats();
+  return (
+    <HomeLiveStats
+      families={stats.families}
+      contributions={stats.contributions}
+      contributionsTotal={stats.contributionsTotal}
+      events={stats.events}
+    />
+  );
+}
+
+async function ContributionsSection({ isVisitor }: { isVisitor: boolean }) {
+  const items = await fetchRecentContributions();
+  if (items.length === 0) {
+    return (
+      <Card className="border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">
+        <HandCoins className="size-6 mx-auto mb-2 text-primary opacity-60" />
+        لا توجد مساهمات مؤكّدة بعد — كن أوّل من يدعم الصندوق.
+      </Card>
+    );
+  }
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {items.map((c) => (
+        <Card
+          key={c.id}
+          className="relative overflow-hidden border-border warm-shadow card-glow lift-on-hover"
+        >
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <Badge variant="secondary" className="font-mono bg-muted">
+                {c.receiptCode}
+              </Badge>
+              <span className="text-xs text-muted-foreground">
+                {c.confirmedAt
+                  ? formatDateArabic(new Date(c.confirmedAt))
+                  : formatDateArabic(new Date(c.createdAt))}
+              </span>
+            </div>
+            <div className="mt-3 text-2xl font-heading font-extrabold text-primary">
+              {formatNumber(c.amount)}{" "}
+              <span className="text-sm font-normal text-muted-foreground">د.م</span>
+            </div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              مساهمة شهر {c.month} — مؤكّدة
+            </div>
+          </CardContent>
+          {/* تدرّج إخفاء في الأسفل عند الزوار */}
+          {isVisitor && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent">
+              <div className="absolute inset-x-0 bottom-1 flex items-center justify-center">
+                <span className="rounded-full bg-primary text-primary-foreground px-3 py-0.5 text-[10px] font-medium shadow">
+                  سجّل لرؤية المزيد
+                </span>
+              </div>
+            </div>
+          )}
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+async function EventsSection({ isVisitor }: { isVisitor: boolean }) {
+  const items = await fetchUpcomingEvents();
+  if (items.length === 0) {
+    return (
+      <Card className="border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">
+        <CalendarDays className="size-6 mx-auto mb-2 text-secondary opacity-60" />
+        لا توجد فعاليات قادمة بعد — ترقّبوها قريباً.
+      </Card>
+    );
+  }
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {items.map((e) => (
+        <Card
+          key={e.id}
+          className="relative overflow-hidden border-border warm-shadow card-glow lift-on-hover"
+        >
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between gap-2">
+              <Badge variant="outline" className="text-accent border-accent/30">
+                {e.type}
+              </Badge>
+              <span className="text-xs text-muted-foreground">
+                {formatDateArabic(new Date(e.startDate))}
+              </span>
+            </div>
+            <h3 className="mt-2 font-heading font-bold text-base text-foreground line-clamp-2 leading-snug">
+              <Link href={`/community/events/${e.slug}`} className="underline-animate">
+                {e.title}
+              </Link>
+            </h3>
+            <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
+              <MapPin className="size-3.5 text-primary" />
+              <span className="truncate">{e.location}</span>
+            </div>
+          </CardContent>
+          {isVisitor && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent">
+              <div className="absolute inset-x-0 bottom-1 flex items-center justify-center">
+                <span className="rounded-full bg-secondary text-secondary-foreground px-3 py-0.5 text-[10px] font-medium shadow">
+                  سجّل لرؤية المزيد
+                </span>
+              </div>
+            </div>
+          )}
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+async function StoriesSection({ isVisitor }: { isVisitor: boolean }) {
+  const stories = await fetchBlogStories();
+  return (
+    <StoriesCarousel
+      stories={stories}
+      isVisitor={isVisitor}
+    />
+  );
+}
+
+async function DiscussionsSection({ isVisitor }: { isVisitor: boolean }) {
+  const items = await fetchRecentDiscussions();
+  if (items.length === 0) {
+    return (
+      <Card className="border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">
+        <MessageSquare className="size-6 mx-auto mb-2 text-secondary opacity-60" />
+        لا توجد نقاشات في الحي بعد — ابدأ أوّل نقاش.
+      </Card>
+    );
+  }
+  return (
+    <div className="relative">
+      <ul className="divide-y divide-border rounded-lg border border-border bg-card overflow-hidden warm-shadow">
+        {items.map((d) => (
+          <li key={d.id}>
+            <Link
+              href={`/community/discussions/${d.id}`}
+              className="flex items-start gap-3 p-4 hover:bg-muted/40 transition-colors"
+            >
+              <span className="grid size-9 place-items-center rounded-full bg-secondary/10 text-secondary text-xs font-bold shrink-0">
+                {d.authorMasked.slice(0, 1)}
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-[10px] py-0">
+                    {d.category}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {formatDateArabic(new Date(d.createdAt))}
+                  </span>
+                </div>
+                <p className="mt-1 font-heading font-bold text-foreground line-clamp-1">
+                  {d.title}
+                </p>
+                <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1">
+                    <MessageSquare className="size-3" />
+                    {formatNumber(d.replies)} ردّ
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <Users className="size-3" />
+                    {formatNumber(d.views)} مشاهدة
+                  </span>
+                  <span>· {d.authorMasked}</span>
+                </div>
+              </div>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      {isVisitor && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-card to-transparent">
+          <div className="absolute inset-x-0 bottom-1 flex items-center justify-center">
+            <span className="rounded-full bg-accent text-accent-foreground px-3 py-0.5 text-[10px] font-medium shadow">
+              سجّل لرؤية المزيد
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ===================================================================
+//  Skeleton fallbacks
+// ===================================================================
+function CardGridSkeleton({ count = 3 }: { count?: number }) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-hidden>
+      {Array.from({ length: count }).map((_, i) => (
+        <Card key={i} className="border-border">
+          <CardContent className="p-4">
+            <div className="flex justify-between">
+              <Skeleton className="h-5 w-20" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+            <Skeleton className="mt-3 h-8 w-2/3" />
+            <Skeleton className="mt-2 h-3 w-1/2" />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function DiscussionsSkeleton() {
+  return (
+    <div className="rounded-lg border border-border bg-card divide-y divide-border overflow-hidden" aria-hidden>
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="flex items-start gap-3 p-4">
+          <Skeleton className="size-9 rounded-full shrink-0" />
+          <div className="flex-1">
+            <div className="flex gap-2">
+              <Skeleton className="h-4 w-12" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+            <Skeleton className="mt-2 h-4 w-3/4" />
+            <Skeleton className="mt-1 h-3 w-1/2" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function StoriesSkeleton() {
+  return (
+    <div className="overflow-hidden" aria-hidden>
+      <div className="flex gap-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Card key={i} className="shrink-0 basis-full sm:basis-[calc(50%-0.5rem)] lg:basis-[calc(33.333%-0.667rem)] border-0 warm-shadow">
+            <Skeleton className="h-40 w-full rounded-t-lg" />
+            <CardContent className="p-4">
+              <Skeleton className="h-5 w-3/4 mb-2" />
+              <Skeleton className="h-3 w-full mb-1" />
+              <Skeleton className="h-3 w-2/3" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ===================================================================
+//  الصفحة الرئيسية
+// ===================================================================
 export default async function HomePage() {
   const user = await getCurrentUser();
+  const isVisitor = !user;
+
   return (
     <div className="flex flex-col">
-      {/* ─────────── قسم البطل (Hero) ─────────── */}
-      <section className="relative overflow-hidden border-b border-border">
-        {/* خلفية زخرفية خفيفة */}
-        <div
-          className="absolute inset-0 -z-10 opacity-[0.03] pointer-events-none"
-          aria-hidden="true"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 1px 1px, #B8492B 1px, transparent 0)",
-            backgroundSize: "24px 24px",
-          }}
-        />
+      {/* ─────────── 1. قسم البطل المتحرّك ─────────── */}
+      <HomeHero />
 
-        <div className="container mx-auto px-4 py-16 md:py-24">
-          <div className="max-w-3xl mx-auto text-center">
-            <Badge
-              variant="secondary"
-              className="mb-6 bg-primary/10 text-primary border-primary/20 hover:bg-primary/15"
-            >
-              <Sparkles className="size-3 ms-1.5" />
-              <span>منصة المعروف الرقمي</span>
+      {/* ─────────── 2. الأرقام الحيّة (4 بطاقات) ─────────── */}
+      <section
+        className="container mx-auto px-4 py-10 md:py-12"
+        aria-labelledby="stats-heading"
+      >
+        <h2 id="stats-heading" className="sr-only">
+          إحصاءات حيّة
+        </h2>
+        <Suspense fallback={<HomeLiveStatsSkeleton />}>
+          <LiveStatsSection />
+        </Suspense>
+      </section>
+
+      {/* ─────────── 3. شريط النشاطات الحيّة ─────────── */}
+      <section
+        className="container mx-auto px-4 pb-4"
+        aria-label="آخر نشاطات الحي"
+      >
+        <ActivityTicker />
+      </section>
+
+      {/* ─────────── 4. بانر الإلحاح الأخلاقي ─────────── */}
+      <section className="container mx-auto px-4 pb-8">
+        <FomoBanner />
+      </section>
+
+      {/* ─────────── 5. معاينة المحتوى العمومي ─────────── */}
+      <section
+        className="container mx-auto px-4 py-12 md:py-16"
+        aria-labelledby="preview-heading"
+      >
+        <div className="mb-8 text-center">
+          <Badge
+            variant="outline"
+            className="mb-3 text-accent border-accent/30"
+          >
+            نافذة على الحي
+          </Badge>
+          <h2
+            id="preview-heading"
+            className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-2"
+          >
+            ماذا يحدث في الحي؟
+          </h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            نظرة شفّافة على آخر المساهمات والفعاليات والنقاشات. سجّل دخولك
+            لرؤية التفاصيل الكاملة والمشاركة.
+          </p>
+        </div>
+
+        {/* مساهمات */}
+        <div className="mb-12">
+          <div className="mb-3 flex items-center gap-2">
+            <HandCoins className="size-5 text-primary" />
+            <h3 className="font-heading font-bold text-lg text-foreground">
+              آخر المساهمات
+            </h3>
+            <Badge variant="secondary" className="ms-1">
+              مؤكّدة
             </Badge>
-
-            <h1 className="font-heading text-4xl sm:text-5xl md:text-6xl font-extrabold text-foreground leading-tight mb-4">
-              من حي إلى عاصمة...
-              <br />
-              <span className="text-primary">المعروف الرقمي</span>
-            </h1>
-
-            <p className="text-lg md:text-xl text-muted-foreground mb-8 leading-relaxed max-w-2xl mx-auto">
-              منصة اجتماعية تضامنية لرقمنة «المعروف المغربي» في حي سيدي يوسف بن
-              علي بمراكش. صندوق الأفراح والأتراح، الفعاليات، المجموعات — كلها في
-              مكان واحد، بشفافية كاملة وكرامة محفوظة.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-3 justify-center mb-12">
-              <Button asChild size="lg" className="h-12 px-8 text-base">
-                <Link href="/register">
-                  <span>انضمّ إلى الحي</span>
-                  <ArrowLeft className="size-4" />
-                </Link>
-              </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="h-12 px-8 text-base"
-              >
-                <Link href="/community/fund">
-                  <Heart className="size-4" />
-                  <span>تعرّف على الصندوق</span>
-                </Link>
-              </Button>
-            </div>
-
-            <ZelligeDivider variant="diamond" className="opacity-70" />
           </div>
+          <Suspense fallback={<CardGridSkeleton />}>
+            <ContributionsSection isVisitor={isVisitor} />
+          </Suspense>
+        </div>
 
-          {/* الأرقام الحيّة — متدفّقة عبر Suspense */}
-          <Suspense fallback={<HomeLiveStatsSkeleton />}>
-            <HomeLiveStats />
+        {/* فعاليات */}
+        <div className="mb-12">
+          <div className="mb-3 flex items-center gap-2">
+            <CalendarDays className="size-5 text-secondary" />
+            <h3 className="font-heading font-bold text-lg text-foreground">
+              فعاليات قادمة
+            </h3>
+          </div>
+          <Suspense fallback={<CardGridSkeleton />}>
+            <EventsSection isVisitor={isVisitor} />
+          </Suspense>
+        </div>
+
+        {/* قصص المدوّنة */}
+        <div className="mb-12">
+          <div className="mb-3 flex items-center gap-2">
+            <Quote className="size-5 text-accent" />
+            <h3 className="font-heading font-bold text-lg text-foreground">
+              من المدوّنة
+            </h3>
+          </div>
+          <Suspense fallback={<StoriesSkeleton />}>
+            <StoriesSection isVisitor={isVisitor} />
+          </Suspense>
+        </div>
+
+        {/* نقاشات */}
+        <div>
+          <div className="mb-3 flex items-center gap-2">
+            <MessageSquare className="size-5 text-secondary" />
+            <h3 className="font-heading font-bold text-lg text-foreground">
+              نقاشات الحي
+            </h3>
+          </div>
+          <Suspense fallback={<DiscussionsSkeleton />}>
+            <DiscussionsSection isVisitor={isVisitor} />
           </Suspense>
         </div>
       </section>
 
       {/* ─────────── بانر ترحيب للزائر (فقط لغير المسجّلين) ─────────── */}
       {!user && (
-        <div className="container mx-auto py-8">
+        <div className="container mx-auto py-4">
           <VisitorWelcome />
         </div>
       )}
 
-      {/* ─────────── المبادئ ─────────── */}
-      <section className="container mx-auto px-4 py-16 md:py-20">
+      {/* ─────────── 6. المبادئ مع أنميشن الدخول ─────────── */}
+      <section
+        className="container mx-auto px-4 py-16 md:py-20"
+        aria-labelledby="principles-heading"
+      >
         <div className="text-center mb-12">
           <Badge variant="outline" className="mb-3 text-secondary border-secondary/30">
             مبادئنا الخمسة
           </Badge>
-          <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-3">
+          <h2
+            id="principles-heading"
+            className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-3"
+          >
             على ماذا نقف؟
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             خمس ركائز بُنيت عليها المنصة، لا نتنازل عنها في أي مرحلة.
           </p>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {PRINCIPLES.map((principle, idx) => {
-            const Icon = principle.icon;
-            return (
-              <Card
-                key={principle.title}
-                className={`warm-shadow ${
-                  idx === 0 ? "md:col-span-2 lg:col-span-1" : ""
-                }`}
-              >
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-3 mb-3">
-                    <span className="grid place-items-center size-10 rounded-lg bg-primary/10 text-primary shrink-0">
-                      <Icon className="size-5" />
-                    </span>
-                    <h3 className="font-heading font-bold text-lg text-foreground leading-tight mt-1">
-                      {principle.title}
-                    </h3>
-                  </div>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {principle.description}
-                  </p>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+        <HomePrinciples />
       </section>
 
-      {/* ─────────── باقات الإعلانات ─────────── */}
-      <section className="bg-muted/30 border-y border-border">
+      {/* ─────────── 7. باقات الإعلانات ─────────── */}
+      <section className="bg-muted/30 border-y border-border" aria-labelledby="ads-heading">
         <div className="container mx-auto px-4 py-16 md:py-20">
           <div className="text-center mb-12">
             <Badge variant="outline" className="mb-3 text-accent border-accent/30">
               للراعين والمعلنين
             </Badge>
-            <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-3">
+            <h2
+              id="ads-heading"
+              className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-3"
+            >
               باقات الإعلانات
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
@@ -300,7 +763,7 @@ export default async function HomePage() {
             {AD_PACKAGES.map((pkg) => (
               <Card
                 key={pkg.name}
-                className={`relative warm-shadow ${
+                className={`relative warm-shadow card-glow lift-on-hover ${
                   pkg.popular ? "border-primary ring-2 ring-primary/20" : ""
                 }`}
               >
@@ -339,7 +802,7 @@ export default async function HomePage() {
                     asChild
                     variant={pkg.popular ? "default" : "outline"}
                     size="sm"
-                    className="w-full mt-4"
+                    className="w-full mt-4 h-11 press-on-active"
                   >
                     <Link href="/contact">اطلب الباقة</Link>
                   </Button>
@@ -350,32 +813,65 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ─────────── دعوة للانضمام ─────────── */}
+      {/* ─────────── 8. دعوة للانضمام (CTA نهائي) ─────────── */}
       <section className="container mx-auto px-4 py-16 md:py-24">
         <Card className="overflow-hidden border-0 maarouf-gradient-soft text-primary-foreground">
-          <CardContent className="p-8 md:p-12 text-center">
-            <CalendarDays className="size-10 mx-auto mb-4 opacity-90" />
-            <h2 className="font-heading text-3xl md:text-4xl font-bold mb-3">
-              انضمّ إلى حيّك اليوم
-            </h2>
-            <p className="opacity-90 max-w-2xl mx-auto mb-6 leading-relaxed">
-              إن كنتَ تسكن في حي سيدي يوسف بن علي بمراكش، سجّل حساباً وانضمّ إلى
-              مجتمعك الرقمي. مجاناً، بشفافية، وبكرامة.
-            </p>
-            <Button
-              asChild
-              size="lg"
-              variant="secondary"
-              className="bg-background text-primary hover:bg-background/90"
-            >
-              <Link href="/register">
-                <span>التسجيل المجاني</span>
-                <ArrowLeft className="size-4" />
-              </Link>
-            </Button>
+          <CardContent className="relative p-8 md:p-12 text-center">
+            {/* أنميشن الخلفية: نمط زخرفي شفّاف */}
+            <div
+              className="pointer-events-none absolute inset-0 opacity-10"
+              aria-hidden="true"
+              style={{
+                backgroundImage:
+                  "radial-gradient(circle at 1px 1px, #FBF6EE 1px, transparent 0)",
+                backgroundSize: "20px 20px",
+              }}
+            />
+            <div className="relative">
+              <span
+                className="mx-auto mb-4 grid size-14 place-items-center rounded-full bg-background/20 text-primary-foreground animate-pulse-glow"
+                aria-hidden="true"
+              >
+                <CalendarDays className="size-7" />
+              </span>
+              <h2 className="font-heading text-3xl md:text-4xl font-bold mb-3">
+                انضمّ إلى حيّك اليوم
+              </h2>
+              <p className="opacity-95 max-w-2xl mx-auto mb-6 leading-relaxed">
+                إن كنتَ تسكن في حي سيدي يوسف بن علي بمراكش، سجّل حساباً وانضمّ
+                إلى مجتمعك الرقمي. مجاناً، بشفافية، وبكرامة.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button
+                  asChild
+                  size="lg"
+                  variant="secondary"
+                  className="bg-background text-primary hover:bg-background/90 press-on-active"
+                >
+                  <Link href="/register">
+                    <span>التسجيل المجاني</span>
+                    <ArrowLeft className="size-4" />
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="border-background/40 text-primary-foreground hover:bg-background/10 hover:text-primary-foreground press-on-active"
+                >
+                  <Link href="/login">
+                    <Lock className="size-4" />
+                    <span>تسجيل الدخول</span>
+                  </Link>
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </section>
+
+      {/* ─────────── إشعارات حيّة للزوار ─────────── */}
+      <LiveToasts />
     </div>
   );
 }

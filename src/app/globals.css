@@ -266,4 +266,173 @@
     border-top-left-radius: 50% 30%;
     border-top-right-radius: 50% 30%;
   }
+
+  /* ─────────── تدرّجات حيّة (v10) ─────────── */
+
+  /* تدرّج البطل: ترابي→ذهبي→أخضر صنوبر بزخرفة زليج */
+  .hero-gradient {
+    background:
+      radial-gradient(1200px 600px at 70% -10%, rgba(200, 132, 42, 0.18), transparent 60%),
+      radial-gradient(900px 500px at 10% 110%, rgba(45, 90, 61, 0.16), transparent 60%),
+      linear-gradient(135deg, var(--background) 0%, var(--background) 60%, rgba(184, 73, 43, 0.06) 100%);
+  }
+
+  .dark .hero-gradient {
+    background:
+      radial-gradient(1200px 600px at 70% -10%, rgba(224, 168, 71, 0.14), transparent 60%),
+      radial-gradient(900px 500px at 10% 110%, rgba(74, 122, 93, 0.16), transparent 60%),
+      linear-gradient(135deg, var(--background) 0%, var(--background) 60%, rgba(212, 98, 62, 0.10) 100%);
+  }
+
+  /* توهّج البطاقة عند الـhover — هالة ناعمة */
+  .card-glow {
+    transition: box-shadow 0.35s ease, transform 0.35s ease, border-color 0.35s ease;
+  }
+  .card-glow:hover {
+    box-shadow:
+      0 10px 30px -8px rgb(184 73 43 / 0.22),
+      0 4px 14px -6px rgb(200 132 42 / 0.18);
+    border-color: rgb(200 132 42 / 0.45);
+  }
+  .dark .card-glow:hover {
+    box-shadow:
+      0 10px 30px -8px rgb(212 98 62 / 0.28),
+      0 4px 14px -6px rgb(224 168 71 / 0.22);
+    border-color: rgb(224 168 71 / 0.45);
+  }
+
+  /* نصّ متدرّج بألوان زليج */
+  .text-gradient-zellige {
+    background: linear-gradient(120deg, var(--primary) 0%, var(--accent) 50%, var(--secondary) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* ─────────── التفاعلات الدقيقة (Micro-interactions) ─────────── */
+
+  /* بطاقة ترتفع عند الـhover */
+  .lift-on-hover {
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .lift-on-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px -8px rgb(31 26 23 / 0.18);
+  }
+
+  /* زر يتقلّص عند الضغط */
+  .press-on-active {
+    transition: transform 0.15s ease;
+  }
+  .press-on-active:active {
+    transform: scale(0.95);
+  }
+
+  /* شارة تكبر عند الـhover */
+  .scale-on-hover {
+    transition: transform 0.18s ease;
+  }
+  .scale-on-hover:hover {
+    transform: scale(1.1);
+  }
+
+  /* رابط بـunderline متحرّك */
+  .underline-animate {
+    position: relative;
+  }
+  .underline-animate::after {
+    content: "";
+    position: absolute;
+    inset-inline-start: 0;
+    inset-block-end: -2px;
+    height: 2px;
+    width: 0;
+    background: var(--primary);
+    transition: width 0.25s ease;
+  }
+  .underline-animate:hover::after {
+    width: 100%;
+  }
+
+  /* هيكل التحميل (skeleton) مع وميض */
+  .shimmer-skeleton {
+    background: linear-gradient(
+      100deg,
+      var(--muted) 30%,
+      rgba(200, 132, 42, 0.10) 50%,
+      var(--muted) 70%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s linear infinite;
+  }
+}
+
+/* ─────────── Keyframes (الرسوم المتحرّكة) — خارج @layer ─────────── */
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(184, 73, 43, 0.55);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(184, 73, 43, 0);
+    transform: scale(1.08);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes marquee-rtl {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2.2s ease-out infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 1.6s linear infinite;
+}
+
+.animate-float {
+  animation: float 3.5s ease-in-out infinite;
+}
+
+/* شريط التمرير الأفقي للنشاطات */
+.animate-marquee {
+  animation: marquee-rtl 28s linear infinite;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* احترام تفضيل المستخدم لتقليل الحركة */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse-glow,
+  .animate-shimmer,
+  .animate-float,
+  .animate-marquee {
+    animation: none;
+  }
 }

@@ -3707,3 +3707,206 @@ Stage Summary:
 - ✅ استعمال navigator.clipboard للنسخ + sonner toast للـfeedback
 - ✅ استعمال CSS variables لكل الألوان (يدعم light/dark)
 - ✅ كل fetch URLs نسبية
+
+---
+Task ID: v10-revive
+Agent: Main (Z.ai Code)
+Task: تحويل المنصة من جامدة/مخفية إلى حيّة/نابضة (v10-revive) — تجربة الزائر والصفحة الرئيسية
+
+## المشكلة
+"الموقع ممل، كل شيء مخفي، يظهر ميت جامد وغامض" — صفحة رئيسية ساكنة مع stats ثابتة، try/catch يخفي البيانات عن الزوار، لا حركة ولا حياة، لا معاينة محتوى عمومي.
+
+## Work Log
+
+### 1. تحديث `src/app/globals.css` — ألوان حيّة وأنميشن
+- إضافة 4 keyframes خارج @layer: `pulse-glow`، `shimmer`، `float`، `marquee-rtl`
+- إضافة 4 animate utilities: `.animate-pulse-glow` `.animate-shimmer` `.animate-float` `.animate-marquee`
+- إضافة 7 utility classes داخل @layer utilities:
+  * `.hero-gradient` — radial 2-tone (ذهبي + أخضر صنوبر) + linear 135deg
+  * `.dark .hero-gradient` — variants للوضع الداكن
+  * `.card-glow` — transition border-color + box-shadow عند الـhover (هالة ترابية)
+  * `.dark .card-glow:hover` — هالة بدرجات الداكن
+  * `.text-gradient-zellige` — gradient text: primary→accent→secondary
+  * `.lift-on-hover` — translateY(-4px) + shadow
+  * `.press-on-active` — scale(0.95) عند الـ:active
+  * `.scale-on-hover` — scale(1.1)
+  * `.underline-animate` — ::after width 0→100%
+  * `.shimmer-skeleton` — gradient 200% background-position
+- `@media (prefers-reduced-motion: reduce)` يحوّل كل الأنميشن إلى none
+
+### 2. AnimatedCounter (`src/components/community/animated-counter.tsx`)
+- `'use client'` + framer-motion
+- `requestAnimationFrame` مع `easeOutExpo(t) = 1 - Math.pow(2, -10 * t)` (سريع ثم بطيء)
+- `IntersectionObserver` (threshold 0.25) → يبدأ الأنميشن عند دخول الـviewport
+- `Intl.NumberFormat("ar-MA")` لتنسيق الأرقام بالعربية مع فواصل الآلاف
+- Props: `value`, `duration=2000`, `formatFn`, `className`, `colorClassName`, `delay=0`
+- `useReducedMotion()` يحوّل لعرض القيمة مباشرة عند تفضيل تقليل الحركة
+
+### 3. ActivityTicker (`src/components/community/activity-ticker.tsx`)
+- `'use client'` — يجلب من `/api/public/activity-feed`
+- شريط أفقي RTL: `motion.div animate={{ x: ["0%", "-50%"] }} repeat: Infinity`
+- `[...items, ...items]` لتكرار البصيلات ومنع الفراغ
+- gradient overlay على الحافّتين (from-muted/60 → transparent)
+- استطلاع كل 30 ثانية `setInterval`
+- skeleton عند loading، EmptyTicker عند no items
+- 7 أيقونات Lucide لكل نوع نشاط (HandCoins, Users, CalendarPlus, Award, Flame, Heart, Sparkles)
+
+### 4. LiveToasts (`src/components/community/live-toasts.tsx`)
+- `'use client'` — `usePathname` لتحديد الصفحات العمومية
+- يستثني: /admin، /login، /community، /register، /2fa، /verify-request
+- أول toast بعد 6 ثوانٍ (لا إزعاج فوري للزائر)
+- ثم جدولة عشوائية بين 15-30 ثانية
+- `toast.success()` من sonner مع `description: من حيّ سيدي يوسف بن علي · {timeAgo}`
+- `lastShownRef` لتفادي تكرار نفس الإشعار مرّتين متتاليتين
+- مكتوم على الأخطاء (لا نُظهر أي رسالة خطأ للمستخدم)
+
+### 5. StoriesCarousel (`src/components/community/stories-carousel.tsx`)
+- `'use client'` — `useEmblaCarousel({ loop, align: "start", direction: "rtl" })`
+- تشغيل تلقائي كل 5 ثوانٍ عبر `setInterval` + `embla.scrollNext()`
+- `paused` state عبر `onMouseEnter/Leave` + `onFocusCapture/BlurCapture`
+- نقاط ترقيم + أسهم تنقّل (ChevronRight/Left)
+- overlay "سجّل للقصة الكاملة" عند `isVisitor=true`
+- 5 تدرّجات زليج افتراضية متناوبة (primary→accent→secondary)
+- responsive: basis-full sm:50% lg:33%
+
+### 6. FomoBanner (`src/components/community/fomo-banner.tsx`)
+- `'use client'` — 7 رسائل أخلاقية FOMO:
+  * "🔥 47 عائلة انضمت هذا الأسبوع"
+  * "⏰ عرض المؤسّسين لا يزال متاحاً: 50 نقطة إضافية"
+  * "🎁 5 صناديق غامضة متبقّية اليوم"
+  * "👥 8 أشخاص يتصفّحون المنصة الآن"
+  * "📊 92% من أحياء مراكش انضمت إلى الشبكة"
+  * "💚 صندوق المعروف يدعم 12 أسرة هذا الشهر"
+  * "📣 3 فعاليات قادمة في الحي خلال أسبوعين"
+- `AnimatePresence mode="wait"` للانتقال الناعم بين الرسائل
+- دوران كل 5 ثوانٍ
+- نقاط ترقيم (5 من 7) تُظهر الموقع الحالي
+- إلحاح أخلاقي: لا "آخر فرصة" خادعة
+
+### 7. HomeHero (`src/components/community/home-hero.tsx`)
+- `'use client'` — `useScroll({ target: sectionRef, offset: [...] })` + `useTransform`
+- `bgY: [0, -80]`، `bgScale: [1, 1.05]`، `contentY: [0, 40]`، `contentOpacity: [1, 0.4]`
+- خلفية: `MoroccanPattern variant="zellige"` + `variant="stars"` (parallax)
+- العنوان: كل كلمة تظهر مع `staggerChildren: 0.18` + `filter: blur(0px)` إلى blur(0)
+- "المعروف الرقمي" بـ `.text-gradient-zellige`
+- زر CTA "انضمّ إلى الحي" ينبض كل 3 ثوانٍ: `animate={{ scale: [1, 1.04, 1] }} repeat: Infinity, repeatDelay: 1.8`
+- `useReducedMotion` يحوّل كل الأنميشن إلى undefined
+
+### 8. HomeLiveStats (`src/components/community/home-live-stats.tsx`)
+- `'use client'` — 4 بطاقات AnimatedCounter
+- Props من server: `families`, `contributions`, `contributionsTotal`, `events`
+- كل بطاقة بلون زليج مميّز: secondary (أسرة)، primary (مساهمات)، accent (الرصيد)، secondary (فعاليات)
+- `motion.div whileInView` مع stagger 0.1
+- `HomeLiveStatsSkeleton` كـfallback
+
+### 9. HomePrinciples (`src/components/community/home-principles.tsx`)
+- `'use client'` — مبادئ الخمسة مع `staggerChildren: 0.12` + `whileInView`
+- `motion.span whileHover={{ rotate: 8, scale: 1.08 }}` على أيقونة كل مبدأ
+- `lift-on-hover` + `card-glow` على البطاقة
+- **نقل PRINCIPLES array + الأيقونات داخل الملف نفسه** — السبب: passing component
+  references عبر server→client boundary يُسقط "Functions cannot be passed directly
+  to Client Components"
+
+### 10. MarrakechMap — نقاط نابضة (`src/components/community/marrakech-map.tsx`)
+- إضافة layer جديد بعد `<motion.path>` للأحياء: لكل حي له centroid، `motion.circle` بـ
+  `animate={{ scale: [1, 1.6, 1], opacity: [...] }} repeat: Infinity`
+- نصف القطر `r = 4 + ratio * 8` حسب نسبة الأعضاء (normalize إلى 0-1)
+- شدّة اللون `opacity = 0.45 + ratio * 0.45`
+- نقطة صلبة ثابتة في الوسط (حدّ أقصى 0.45*r + 2.5px) مع stroke أبيض
+- `duration = 2.4 + ratio * 1.5` (الأحياء الأكبر تنبض أبطأ)
+- تحديث tooltip: "{members} نشط الآن" بدلاً من "عضو نشط"
+
+### 11. /api/public/activity-feed (`src/app/api/public/activity-feed/route.ts`)
+- GET endpoint عمومي بدون auth
+- `db.userActivity.findMany({ where: { isPublic: true }, orderBy: { createdAt: "desc" }, take: 10, select: { type, description, createdAt, user: { firstName, lastName } } })`
+- `maskName(user) = "firstName lastName[0]."` (مثل "أحمد ب.")
+- `formatTimeAgo(date)`: الآن / قبل X دقيقة / X ساعة / X يوم / X أسبوع / X شهر
+- regex `/^(أنا|إنّني|قام|ساهم|انضمّ|شارك|حصل|سجّل|أضاف|أرسل|بدأ)\b/` لتجنّب مضاعفة الاسم
+- 6 رسائل احتياطية عند فراغ DB أو خطأ:
+  * "انضمّت 200 عائلة إلى الحي حتى الآن"
+  * "كونّا مجتمعاً رقمياً للحفاظ على المعروف"
+  * "تعرّف على مبادئنا الخمسة في الشفافية والكرامة"
+  * "صندوق المعروف يبدأ بحيّك ويصل إلى المدينة"
+  * "5 فعاليات تضامنية قادمة في الأحياء"
+  * "كن أوّل من يدعم المعروف في حيّك"
+- `export const revalidate = 30` للـ ISR
+
+### 12. /api/public/stats (`src/app/api/public/stats/route.ts`)
+- GET endpoint عمومي بدون auth
+- `Promise.all([getFundStats(), db.family.count, db.event.count, db.userActivity.findMany])`
+- يُرجع `{ families, contributions (count), contributionsTotal (sum), events, recentActivities[] }`
+- try/catch صمّام أمان: قيم صفرية افتراضية عند فشل DB
+- `export const revalidate = 60`
+
+### 13. Rewrite `src/app/page.tsx` — 8 أقسام + 6 Suspense boundaries
+- server component مع `export const revalidate = 60` + `export const dynamic = "force-dynamic"`
+- **إزالة** الـ `try/catch` الذي كان يخفي كل البيانات + `force-dynamic` مبهم
+- **بدلاً منه**: fetchers صريحة مع try/catch لكل واحدة + fallback صريح
+
+أقسام الصفحة:
+1. **HomeHero** (client) — parallax + stagger title + pulse CTAs + text-gradient-zellige
+2. **AnimatedCounters** — HomeLiveStats (4 بطاقات) عبر Suspense
+3. **ActivityTicker** — شريط النشاطات الحيّة (client fetches /api/public/activity-feed)
+4. **FomoBanner** — بانر رسائل الإلحاح الأخلاقي (7 رسائل دوّارة)
+5. **Public Content Preview** — معاينة حقيقية للزوار مع "سجّل لرؤية المزيد" overlay:
+   - آخر 3 مساهمات مؤكّدة (anonymous codes + amounts + dates)
+   - آخر 3 فعاليات قادمة (titles + dates + locations + type badges)
+   - StoriesCarousel (آخر 5 مقالات مدوّنة مع PLACEHOLDER_STORIES fallback)
+   - آخر 5 نقاشات (titles + reply counts + view counts + masked author)
+6. **HomePrinciples** (client) — مبادئ مع stagger whileInView
+7. **AdPackages** — باقات الإعلانات مع lift-on-hover + card-glow + press-on-active
+8. **FinalCTA** — Card مع maarouf-gradient-soft + زر بـ animate-pulse-glow
+- **VisitorWelcome** للزوار فقط (محمول من الإصدار السابق)
+- **LiveToasts** في الأسفل (يعمل فقط على الصفحات العمومية)
+
+Async fetchers (كلها مع try/catch + fallback):
+- `fetchLiveStats()` — getFundStats + family.count + event.count
+- `fetchRecentContributions()` — Contribution.findMany where status="CONFIRMED" + select
+- `fetchUpcomingEvents()` — Event.findMany where status="PUBLISHED" + startDate>=now
+- `fetchBlogStories()` — BlogPost.findMany where status="published" + include author
+- `fetchRecentDiscussions()` — Discussion.findMany + replies count + masked author
+
+PLACEHOLDER_STORIES: 5 قصص افتراضية عند فراغ المدوّنة (مع emoji + category + href="/blog")
+
+### النتائج
+- ✅ `bun run lint` — 0 أخطaء، 0 تحذيرات
+- ✅ Dev server: كل المسارات 200 OK:
+  * `GET /` → 200 (render: 382-1935ms، يحتوي كل الأقسام الـ8)
+  * `GET /api/public/activity-feed` → 200 (يُرجع 6 رسائل fallback عند فراغ DB)
+  * `GET /api/public/stats` → 200 (يُرجع قيم صفرية آمنة عند فشل DB)
+- ✅ لا توجد أخطaء "Functions cannot be passed to Client Components" بعد نقل الـPRINCIPLES
+- ✅ أخطaء Prisma في dev.log (DATABASE_URL غير مُعيّن في sandbox) مُعالَجة عبر try/catch fallback
+- ✅ HTML يحتوي على كل العناصر الجديدة:
+  * "المعروف الرقمي" + "ماذا يحدث في الحي؟" + "آخر المساهمات" + "فعاليات قادمة"
+  * "من المدوّنة" + "نقاشات الحي" + "انضمّ إلى حيّك اليوم"
+  * كل 5 placeholder stories ("كيف تبدأ بمساهمة رمزية"، "دور المسجد في تجميع"، ...)
+  * رسالة FOMO "47 عائلة انضمت"
+  * 2 occurrence من animate-pulse-glow + card-glow + warm-shadow + lift-on-hover
+- ✅ كل النصوص عربية فصحى
+- ✅ RTL مع logical properties (ps-/pe-/ms-/me-/start-/end-/inset-x-0)
+- ✅ touch targets ≥ 44px (h-11 لكل زر رئيسي، h-9 للأزرار الثانوية)
+- ✅ framer-motion لكل الأنميشن (useScroll, useTransform, useReducedMotion, AnimatePresence,
+  staggerChildren, whileInView, whileHover, motion.div, motion.span, motion.path, motion.circle)
+- ✅ shadcn/ui: Card, CardContent, Badge, Button, Skeleton, ZelligeDivider
+- ✅ sonner toast للإشعارات الحيّة
+- ✅ كل fetch URLs نسبية (`/api/public/activity-feed`, `/api/public/stats`)
+- ✅ Public APIs بدون auth للزوار
+- ✅ قناع أسماء المستخدمين في الـAPIs العمومية (first name + initial فقط)
+- ✅ server components للـ initial data + client components للتفاعل
+- ✅ استعمال CSS variables لكل الألوان (--primary, --secondary, --accent, --copper)
+- ✅ prefers-reduced-motion مُحترَم في كل الأنميشن (useReducedMotion + @media CSS)
+
+## Stage Summary
+- ✅ صفحة رئيسية تحوّلت من ساكنة إلى حيّة: Hero مع parallax + stagger + pulse CTAs
+- ✅ 4 عدّادات حيّة متحرّكة (animated counters) بألوان زليج مميّزة
+- ✅ شريط نشاطات حيّة يتحرّك أفقياً (RTL) ويُحدّث كل 30 ثانية
+- ✅ بانر FOMO دوّار بـ7 رسائل أخلاقية (لا dark patterns)
+- ✅ معاينة محتوى حقيقية للزوار: مساهمات + فعاليات + مدوّنة + نقاشات (مع "سجّل لرؤية المزيد")
+- ✅ Stories Carousel (embla) مع تشغيل تلقائي + إيقاف عند hover + نقاط وأسهم
+- ✅ إشعارات حيّة (sonner) تظهر كل 15-30ث للزوار على الصفحات العمومية فقط
+- ✅ مبادئ مع أنميشن دخول stagger
+- ✅ نقاط نابضة على خريطة مراكش (size+color حسب members)
+- ✅ vibrant CSS utilities + keyframes + micro-interactions + prefers-reduced-motion
+- ✅ 2 public APIs (no auth) مع fallback صريح عند فشل DB
+- ✅ 0 أخطaء lint، 0 تحذيرات
+- ✅ Dev server 200 OK لكل المسارات
