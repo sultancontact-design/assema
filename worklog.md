@@ -2558,3 +2558,91 @@ Stage Summary:
 - TypeScript: 0 أخطاء (في الكود الجديد)
 - Dev server: 200 OK على كل المسارات
 - DB: متّصل بـSupabase PostgreSQL + 14 سجلّ مزروع
+
+---
+Task ID: v3-engagement
+Agent: Main (Z.ai Code) + subagent
+Task: هندسة الإدمان (v3.0) — 10 محاور (Octalysis + Hook Model + Prospect Theory)
+
+Work Log:
+- إضافة 10 نماذج Prisma جديدة:
+  * UserStreak (currentStreak, longestStreak, freezes, lastCheckIn, totalCheckIns)
+  * VariableReward (MYSTERY_BOX, SPIN_WHEEL, LUCKY_DRAW)
+  * Challenge + UserChallenge (تحديات موسمية + تقدّم المستخدم)
+  * Badge + UserBadge (شارات بندرة: common/rare/epic/legendary)
+  * UserActivity (دليل اجتماعي: سجل النشاط العام)
+  * UserRelationship (أصدقاء + متابعون)
+  * SmartNotification (10 أنواع + expiresAt + openedAt)
+  * NotificationPreference (opt-in/opt-out لكل نوع + quiet hours + daily limit)
+  * EngagementMetric (DAU/MAU + Retention D1/D7/D30 + feature usage)
+- دفع الـschema لـSupabase: نجح (10 جداول جديدة)
+- إنشاء 3 مكتبات:
+  * src/lib/streak-engine.ts (319 سطر): checkInStreak, getStreakStatus, useFreeze
+  * src/lib/rewards-engine.ts (378 سطر): canOpenMysteryBox, openMysteryBox, canSpinWheel, spinWheel, getLuckyDrawEntries
+  * src/lib/notification-engine.ts (198 سطر): sendSmartNotification (مع quiet hours + daily limit), getSmartNotifications, markAsRead
+- إنشاء 8 API routes:
+  * POST /api/community/streak/check-in
+  * POST /api/community/rewards/mystery-box
+  * POST /api/community/rewards/spin-wheel
+  * GET /api/community/rewards/history
+  * GET+POST /api/community/notifications
+  * POST /api/community/notifications/preferences
+  * GET /api/community/social-proof
+  * GET /api/community/loss-aversion
+- إنشاء 9 مكوّنات:
+  * streak-widget.tsx (🔥 flame animation + urgency warning)
+  * mystery-box.tsx (🎁 shake + open + confetti)
+  * spin-wheel.tsx (SVG wheel + framer-motion spin)
+  * social-proof-widget.tsx (live activity + counters)
+  * loss-aversion-widget.tsx (streak warning + pending points)
+  * smart-notification-center.tsx (bell + dropdown + unread badge)
+  * notification-settings-form.tsx (10 toggles + quiet hours + daily limit)
+  * hook-loop-visual.tsx (animated circular diagram)
+  * engagement-charts.tsx (recharts for admin dashboard)
+- إنشاء 4 صفحات:
+  * /community/hooks (Hook Model visualization: Trigger→Action→Reward→Investment)
+  * /community/notifications/settings (opt-in/opt-out لكل نوع)
+  * /admin/engagement (8 KPIs + 4 charts)
+  * /ethics (صفحة عامة: شفافية + تحكم + صحة + فائدة)
+- إنشاء prisma/seed-engagement.ts:
+  * 10 شارات (مؤسس، رمضان، العيد، نشط، داعم، محترف، أسطورة، سلسلة 7/30/100)
+  * 4 تحديات (رمضان 30 يوم، العيد 3 مساهمات، الصيف 5 فعاليات، المؤسس أول 100)
+- تحديث 5 ملفات موجودة:
+  * src/app/community/page.tsx (إضافة قسم "نظام التفاعل اليومي" مع streak + mystery + social)
+  * src/components/layout/site-header.tsx (🔥 compact + 🔔 bell)
+  * src/components/admin/admin-shell.tsx (رابط قسم الإدمان)
+  * src/lib/db.ts (إصلاح بيئة sandbox)
+  * prisma/schema.prisma (علاقة VariableReward↔Badge)
+- النشر على Vercel: نجح
+  * Production: https://my-project-eta-drab.vercel.app (alias)
+  * Build: نجح
+  * DB: متصل (200 users, 301 contributions, 8 events)
+- اختبار المسارات الجديدة (كلها 200 OK):
+  * /ethics → 200 ✅
+  * /community/hooks → 200 ✅
+  * /community/notifications/settings → 200 ✅
+  * /admin/engagement → 200 ✅
+- ESLint: 0 أخطاء
+- إجمالي الأسطر الجديدة: ~6,564
+
+Stage Summary:
+- ✅ المحور 1 (السلاسل): streak-engine + widget + check-in API + 🔥 animation
+- ✅ المحور 2 (المكافآت المتغيرة): mystery box + spin wheel + lucky draw + animations
+- ✅ المحور 3 (الندرة): badges (limited + seasonal) + challenges + countdown
+- ✅ المحور 4 (الدليل الاجتماعي): live activity feed + counters + peer comparison
+- ✅ المحور 5 (الخسارة): streak warning + pending points + threatened badges + declining balance
+- ✅ المحور 6 (الإشعارات): 10 types + push + opt-in/out + quiet hours + daily limit
+- ✅ المحور 7 (الاستثمار): profile completeness + relationships + content + achievements
+- ✅ المحور 8 (الحلقة): /community/hooks visualization
+- ✅ المحور 9 (لوحة الإدمان): /admin/engagement with 8 KPIs + 4 charts
+- ✅ المحور 10 (الأخلاق): /ethics page + 4 principles
+- ✅ النشر على Vercel: نجح — المنصة v3.0 منشورة رسمياً
+
+الإحصاء النهائي للمشروع:
+- إجمالي نماذج Prisma: 28 (17 الأصلية + 11 الإدمان)
+- إجمالي API Routes: 70+
+- إجمالي المسارات (page.tsx): 45+
+- إجمالي أسطر الكود: ~50,000+
+- النشر: https://my-project-eta-drab.vercel.app
+- GitHub: github.com/sultancontact-design/assema
+- Supabase: uigwfpddaawiwvsxmggj (eu-west-2, Frankfurt)
