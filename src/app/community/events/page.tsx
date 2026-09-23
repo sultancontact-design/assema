@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ZelligeDivider } from "@/components/shared/zellige-divider";
 import { EventsFilterBar } from "@/components/community/events-filter-bar";
+import { AdPlacement } from "@/components/ads/ad-placement";
 import type { EventType, EventStatus } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -137,6 +138,14 @@ export default async function EventsPage({ searchParams }: PageProps) {
         <EventsFilterBar total={total} filteredCount={events.length} />
       </Suspense>
 
+      {/* بانر إعلاني علوي — sidebar-top فوق شبكة الفعاليات */}
+      <aside className="flex justify-center" aria-label="مساحة إعلانية">
+        <AdPlacement
+          placement="sidebar-top"
+          className="w-full max-w-[300px] md:max-w-[728px]"
+        />
+      </aside>
+
       {/* شبكة الفعاليات */}
       {events.length === 0 ? (
         <Card className="border-dashed warm-shadow">
@@ -158,7 +167,7 @@ export default async function EventsPage({ searchParams }: PageProps) {
         </Card>
       ) : (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {events.map((ev) => {
+          {events.flatMap((ev, idx) => {
             const typeMeta = EVENT_TYPE_LABELS[ev.type as EventType];
             const statusMeta =
               EVENT_STATUS_LABELS[ev.status as EventStatus];
@@ -174,7 +183,7 @@ export default async function EventsPage({ searchParams }: PageProps) {
             // لمسجّلات الحضور
             const registeredCount = 0; // placeholder
 
-            return (
+            const eventCard = (
               <Link
                 key={ev.id}
                 href={`/community/events/${ev.id}`}
@@ -308,6 +317,22 @@ export default async function EventsPage({ searchParams }: PageProps) {
                 </Card>
               </Link>
             );
+
+            // إعلان داخل التغذية بعد الفعالية الثالثة (in-feed placement)
+            const inFeedAd =
+              idx === 2 ? (
+                <div
+                  key={`in-feed-ad-${idx}`}
+                  className="sm:col-span-2 lg:col-span-3 flex justify-center"
+                >
+                  <AdPlacement
+                    placement="in-feed"
+                    className="w-full max-w-[600px]"
+                  />
+                </div>
+              ) : null;
+
+            return [eventCard, inFeedAd];
           })}
         </div>
       )}

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="شارة العضو النشط">
+  <defs>
+    <linearGradient id="bg-active" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#B8492B"/>
+      <stop offset="1" stop-color="#C8842A"/>
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="30" fill="url(#bg-active)" stroke="#FBF6EE" stroke-width="2"/>
+  <!-- برق -->
+  <path d="M34 12 L22 34 L30 34 L26 52 L42 28 L34 28 Z" fill="#FBF6EE"/>
+  <path d="M34 12 L22 34 L30 34 L26 52 L42 28 L34 28 Z" fill="none" stroke="#2D5A3D" stroke-width="0.5" stroke-linejoin="round"/>
+</svg>

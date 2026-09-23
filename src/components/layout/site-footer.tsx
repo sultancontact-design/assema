@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Heart, Mail, MapPin, Phone, Shield } from "lucide-react";
 import { ZelligeDivider } from "@/components/shared/zellige-divider";
 import { SiteLogo } from "@/components/shared/site-logo";
+import { AdPlacement } from "@/components/ads/ad-placement";
 
 const FOOTER_LINKS = {
   community: {
@@ -91,6 +92,14 @@ export function SiteFooter() {
         </div>
 
         <ZelligeDivider variant="minimal" className="mb-6 opacity-50" />
+
+        {/* بانر إعلاني سفلي — footer-banner */}
+        <div className="mb-6 flex justify-center">
+          <AdPlacement
+            placement="footer-banner"
+            className="mx-auto w-full max-w-[728px]"
+          />
+        </div>
 
         {/* إشارة CNDP */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-6">

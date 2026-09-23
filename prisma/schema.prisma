@@ -171,6 +171,7 @@ model District {
   events      Event[]
   ads         Ad[]
   complaints  Complaint[]
+  guideItems  GuideItem[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -273,6 +274,11 @@ model User {
   pointsLedger      PointsLedger[]
   storeOrders       StoreOrder[]
 
+  // ─────────── الإحالة والمرجع (v7.0) ───────────
+  referrals         Referral[]
+  blogPosts         BlogPost[]
+  guideItems        GuideItem[]
+
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   deletedAt         DateTime?
@@ -282,6 +288,78 @@ model User {
   @@index([role])
   @@index([status])
   @@index([phone])
+}
+
+// ===================================================================
+//  نظام الإحالة (Referral) — v7.0
+//  - يولّد كل مستخدم رمزاً فريداً 8 حروف/أرقام
+//  - يربح 50 نقطة لكل إحالة تُكمَل (refereeId يُسجّل دخوله)
+// ===================================================================
+
+model Referral {
+  id          String   @id @default(cuid())
+  referrerId  String
+  refereeId   String?
+  code        String   @unique
+  status      String   @default("PENDING") // PENDING, SIGNED_UP, ACTIVE
+  reward      Int      @default(50)
+  createdAt   DateTime @default(now())
+  completedAt DateTime?
+  user        User     @relation(fields: [referrerId], references: [id], onDelete: Cascade)
+
+  @@index([referrerId])
+}
+
+// ===================================================================
+//  المدوّنة (BlogPost) — v7.0
+//  - مقالات ومحتوى توعوي: صحة، تربية، مالية، دينية، مجتمع، تعليم
+// ===================================================================
+
+model BlogPost {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  excerpt     String
+  content     String
+  category    String   // HEALTH, EDUCATION, FINANCE, PARENTING, RELIGIOUS, COMMUNITY
+  authorId    String?
+  imageUrl    String?
+  tags        String?
+  status      String   @default("published") // draft, published, archived
+  views       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  author      User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([slug])
+  @@index([category])
+  @@index([status])
+}
+
+// ===================================================================
+//  دليل الحي (GuideItem) — v7.0
+//  - أماكن مفيدة في الحي: مقاهي، مطاعم، محلات، مدارس، مراكز صحية،
+//    مساجد، خدمات، جمعيات
+// ===================================================================
+
+model GuideItem {
+  id          String   @id @default(cuid())
+  name        String
+  category    String   // CAFE, RESTAURANT, SHOP, SCHOOL, HEALTH, MOSQUE, SERVICE, ASSOCIATION
+  address     String?
+  phone       String?
+  description String?
+  districtId  String?
+  latitude    Float?
+  longitude   Float?
+  rating      Float    @default(0)
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  creator     User?    @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  district    District? @relation(fields: [districtId], references: [id], onDelete: SetNull)
+
+  @@index([category])
+  @@index([districtId])
 }
 
 // ===================================================================

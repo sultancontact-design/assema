@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="معرض الحرف">
+  <defs>
+    <linearGradient id="bg-craft" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2D5A3D"/>
+      <stop offset="1" stop-color="#C8842A"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="12" fill="url(#bg-craft)"/>
+  <!-- يد + أداة -->
+  <path d="M14 38 L 14 50 L 30 50 L 30 38 L 26 34 L 22 38 L 22 30 L 18 30 L 18 38 Z" fill="#FBF6EE"/>
+  <path d="M30 50 L 30 38 L 26 34 L 22 38 L 22 30 L 18 30 L 18 38 L 14 38 L 14 50" fill="none" stroke="#2D5A3D" stroke-width="0.5"/>
+  <!-- إناء (فخار) -->
+  <path d="M38 18 L 50 18 L 48 24 Q 52 28 50 36 Q 48 46 44 46 Q 40 46 38 36 Q 36 28 40 24 Z" fill="#FBF6EE"/>
+  <ellipse cx="44" cy="18" rx="6" ry="1.5" fill="#2D5A3D"/>
+  <path d="M40 28 Q 44 30 48 28" stroke="#B8492B" stroke-width="1" fill="none"/>
+</svg>

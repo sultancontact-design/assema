@@ -40,6 +40,7 @@ import { Badge } from "@/components/ui/badge";
 import { ZelligeDivider } from "@/components/shared/zellige-divider";
 import { DashboardMotion } from "@/components/community/dashboard-motion";
 import { EngagementSection } from "@/components/community/community-engagement";
+import { AdPlacement } from "@/components/ads/ad-placement";
 import type {
   ContributionStatus,
   FundRequestStatus,
@@ -234,6 +235,14 @@ export default async function CommunityDashboardPage() {
         </section>
 
         <ZelligeDivider variant="diamond" />
+
+        {/* بانر إعلاني علوي — sidebar-top placement على صفحات المجتمع */}
+        <aside className="flex justify-center" aria-label="مساحة إعلانية">
+          <AdPlacement
+            placement="sidebar-top"
+            className="w-full max-w-[300px] md:max-w-[728px]"
+          />
+        </aside>
 
         {/* نظام الانتماء — يُحمَّل بشكل متدفّق عبر Suspense */}
         <EngagementSection

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="شارة سلسلة 100 يوم">
+  <defs>
+    <linearGradient id="bg-s100" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#B8492B"/>
+      <stop offset="0.5" stop-color="#2D5A3D"/>
+      <stop offset="1" stop-color="#C8842A"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FBF6EE" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#FBF6EE" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="32" cy="32" r="30" fill="url(#bg-s100)" stroke="#FBF6EE" stroke-width="2"/>
+  <circle cx="32" cy="32" r="28" fill="url(#halo)"/>
+  <!-- نجمة كبيرة (أسطورة) -->
+  <path d="M32 6 L36 18 L48 14 L44 26 L56 30 L44 34 L48 46 L36 42 L32 54 L28 42 L16 46 L20 34 L8 30 L20 26 L16 14 L28 18 Z" fill="#FBF6EE"/>
+  <path d="M32 6 L36 18 L48 14 L44 26 L56 30 L44 34 L48 46 L36 42 L32 54 L28 42 L16 46 L20 34 L8 30 L20 26 L16 14 L28 18 Z" fill="none" stroke="#C8842A" stroke-width="0.7"/>
+  <!-- رقم 100 -->
+  <text x="32" y="35" font-family="Arial, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#2D5A3D">100</text>
+</svg>

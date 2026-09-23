@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="سوق خيري">
+  <defs>
+    <linearGradient id="bg-market" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#B8492B"/>
+      <stop offset="1" stop-color="#C8842A"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="12" fill="url(#bg-market)"/>
+  <!-- سلة -->
+  <path d="M14 26 L 50 26 L 46 54 L 18 54 Z" fill="#FBF6EE"/>
+  <path d="M14 26 L 50 26 L 46 54 L 18 54 Z" fill="none" stroke="#2D5A3D" stroke-width="0.5"/>
+  <!-- شبكة السلة -->
+  <line x1="22" y1="32" x2="22" y2="54" stroke="#2D5A3D" stroke-width="0.5"/>
+  <line x1="32" y1="32" x2="32" y2="54" stroke="#2D5A3D" stroke-width="0.5"/>
+  <line x1="42" y1="32" x2="42" y2="54" stroke="#2D5A3D" stroke-width="0.5"/>
+  <line x1="14" y1="36" x2="50" y2="36" stroke="#2D5A3D" stroke-width="0.5"/>
+  <line x1="16" y1="44" x2="48" y2="44" stroke="#2D5A3D" stroke-width="0.5"/>
+  <!-- مقبض السلة -->
+  <path d="M20 26 Q 20 14 32 14 Q 44 14 44 26" stroke="#FBF6EE" stroke-width="3" fill="none"/>
+  <path d="M20 26 Q 20 14 32 14 Q 44 14 44 26" stroke="#2D5A3D" stroke-width="0.5" fill="none"/>
+  <!-- قلب خيري صغير -->
+  <path d="M32 40 C 30 38 28 39 29 41 C 30 43 32 45 32 45 C 32 45 34 43 35 41 C 36 39 34 38 32 40 Z" fill="#B8492B"/>
+</svg>

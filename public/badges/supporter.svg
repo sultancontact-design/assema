@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="شارة الداعم">
+  <defs>
+    <linearGradient id="bg-supporter" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2D5A3D"/>
+      <stop offset="1" stop-color="#B8492B"/>
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="30" fill="url(#bg-supporter)" stroke="#FBF6EE" stroke-width="2"/>
+  <!-- قلب -->
+  <path d="M32 50 C 18 38 14 28 22 22 C 27 19 30 22 32 25 C 34 22 37 19 42 22 C 50 28 46 38 32 50 Z" fill="#FBF6EE"/>
+  <!-- يد поддержки صغيرة -->
+  <path d="M16 42 Q 22 38 28 40 Q 32 42 36 42 L 36 46 Q 30 46 24 46 Q 18 46 16 44 Z" fill="#FBF6EE" opacity="0.8"/>
+  <path d="M16 42 Q 22 38 28 40 Q 32 42 36 42 L 36 46 Q 30 46 24 46 Q 18 46 16 44 Z" fill="none" stroke="#2D5A3D" stroke-width="0.5" opacity="0.8"/>
+</svg>

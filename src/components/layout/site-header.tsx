@@ -24,6 +24,7 @@ import { SiteLogo } from "@/components/shared/site-logo";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { StreakWidget } from "@/components/community/streak-widget";
 import { SmartNotificationCenter } from "@/components/community/smart-notification-center";
+import { AdPlacement } from "@/components/ads/ad-placement";
 
 const NAV_LINKS = [
   { href: "/", label: "الرئيسية", icon: HomeIcon },
@@ -98,133 +99,145 @@ export function SiteHeader() {
   }, [isAuthenticated]);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="container mx-auto flex h-16 items-center justify-between gap-2 px-4">
-        {/* الشعار — جهة اليمين في RTL */}
-        <SiteLogo size="md" />
+    <>
+      <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="container mx-auto flex h-16 items-center justify-between gap-2 px-4">
+          {/* الشعار — جهة اليمين في RTL */}
+          <SiteLogo size="md" />
 
-        {/* قائمة سطح المكتب */}
-        <nav className="hidden md:flex items-center gap-1" aria-label="القائمة الرئيسية">
-          {NAV_LINKS.map((link) => {
-            const Icon = link.icon;
-            const active =
-              pathname === link.href ||
-              (link.href !== "/" && pathname.startsWith(link.href));
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                  active
-                    ? "bg-primary/10 text-primary"
-                    : "text-foreground/70 hover:bg-accent/40 hover:text-accent-foreground"
-                )}
-                aria-current={active ? "page" : undefined}
-              >
-                <Icon className="size-4" />
-                <span>{link.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
+          {/* قائمة سطح المكتب */}
+          <nav className="hidden md:flex items-center gap-1" aria-label="القائمة الرئيسية">
+            {NAV_LINKS.map((link) => {
+              const Icon = link.icon;
+              const active =
+                pathname === link.href ||
+                (link.href !== "/" && pathname.startsWith(link.href));
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                    active
+                      ? "bg-primary/10 text-primary"
+                      : "text-foreground/70 hover:bg-accent/40 hover:text-accent-foreground"
+                  )}
+                  aria-current={active ? "page" : undefined}
+                >
+                  <Icon className="size-4" />
+                  <span>{link.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
 
-        {/* الإجراءات — جهة اليسار في RTL */}
-        <div className="flex items-center gap-1.5">
-          {isAuthenticated && streakData && (
-            <div className="hidden sm:block">
-              <StreakWidget variant="compact" initial={streakData} />
-            </div>
-          )}
+          {/* الإجراءات — جهة اليسار في RTL */}
+          <div className="flex items-center gap-1.5">
+            {isAuthenticated && streakData && (
+              <div className="hidden sm:block">
+                <StreakWidget variant="compact" initial={streakData} />
+              </div>
+            )}
 
-          {isAuthenticated && (
-            <SmartNotificationCenter
-              initialNotifications={notifInitial}
-              initialUnreadCount={notifUnread}
-            />
-          )}
+            {isAuthenticated && (
+              <SmartNotificationCenter
+                initialNotifications={notifInitial}
+                initialUnreadCount={notifUnread}
+              />
+            )}
 
-          <ThemeToggle />
+            <ThemeToggle />
 
-          {!isAuthenticated && (
-            <div className="hidden sm:block">
-              <Button asChild size="sm" variant="default">
-                <Link href="/login">تسجيل الدخول</Link>
-              </Button>
-            </div>
-          )}
+            {!isAuthenticated && (
+              <div className="hidden sm:block">
+                <Button asChild size="sm" variant="default">
+                  <Link href="/login">تسجيل الدخول</Link>
+                </Button>
+              </div>
+            )}
 
-          {isAuthenticated && (
-            <div className="hidden sm:block">
-              <Button asChild size="sm" variant="outline">
-                <Link href="/community">لوحتي</Link>
-              </Button>
-            </div>
-          )}
+            {isAuthenticated && (
+              <div className="hidden sm:block">
+                <Button asChild size="sm" variant="outline">
+                  <Link href="/community">لوحتي</Link>
+                </Button>
+              </div>
+            )}
 
-          {/* زر القائمة على الجوال */}
-          <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="md:hidden"
-                aria-label="فتح القائمة"
-              >
-                {open ? <X className="size-5" /> : <Menu className="size-5" />}
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-72">
-              <SheetHeader>
-                <SheetTitle className="text-start">القائمة</SheetTitle>
-              </SheetHeader>
-              <nav className="flex flex-col gap-1 px-2 mt-4">
-                {NAV_LINKS.map((link) => {
-                  const Icon = link.icon;
-                  const active =
-                    pathname === link.href ||
-                    (link.href !== "/" && pathname.startsWith(link.href));
-                  return (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      className={cn(
-                        "flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
-                        active
-                          ? "bg-primary/10 text-primary"
-                          : "text-foreground/70 hover:bg-accent/40"
-                      )}
-                    >
-                      <Icon className="size-4" />
-                      <span>{link.label}</span>
-                    </Link>
-                  );
-                })}
-                <div className="my-2 h-px bg-border" />
-                {isAuthenticated ? (
-                  <>
-                    <Button asChild size="sm" className="w-full">
-                      <Link href="/community">لوحتي</Link>
-                    </Button>
-                    <Button asChild size="sm" variant="outline" className="w-full">
-                      <Link href="/ethics">تصميمنا الأخلاقي</Link>
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button asChild size="sm" className="w-full">
-                      <Link href="/login">تسجيل الدخول</Link>
-                    </Button>
-                    <Button asChild size="sm" variant="outline" className="w-full">
-                      <Link href="/register">حساب جديد</Link>
-                    </Button>
-                  </>
-                )}
-              </nav>
-            </SheetContent>
-          </Sheet>
+            {/* زر القائمة على الجوال */}
+            <Sheet open={open} onOpenChange={setOpen}>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="md:hidden"
+                  aria-label="فتح القائمة"
+                >
+                  {open ? <X className="size-5" /> : <Menu className="size-5" />}
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-72">
+                <SheetHeader>
+                  <SheetTitle className="text-start">القائمة</SheetTitle>
+                </SheetHeader>
+                <nav className="flex flex-col gap-1 px-2 mt-4">
+                  {NAV_LINKS.map((link) => {
+                    const Icon = link.icon;
+                    const active =
+                      pathname === link.href ||
+                      (link.href !== "/" && pathname.startsWith(link.href));
+                    return (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className={cn(
+                          "flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                          active
+                            ? "bg-primary/10 text-primary"
+                            : "text-foreground/70 hover:bg-accent/40"
+                        )}
+                      >
+                        <Icon className="size-4" />
+                        <span>{link.label}</span>
+                      </Link>
+                    );
+                  })}
+                  <div className="my-2 h-px bg-border" />
+                  {isAuthenticated ? (
+                    <>
+                      <Button asChild size="sm" className="w-full">
+                        <Link href="/community">لوحتي</Link>
+                      </Button>
+                      <Button asChild size="sm" variant="outline" className="w-full">
+                        <Link href="/ethics">تصميمنا الأخلاقي</Link>
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button asChild size="sm" className="w-full">
+                        <Link href="/login">تسجيل الدخول</Link>
+                      </Button>
+                      <Button asChild size="sm" variant="outline" className="w-full">
+                        <Link href="/register">حساب جديد</Link>
+                      </Button>
+                    </>
+                  )}
+                </nav>
+              </SheetContent>
+            </Sheet>
+          </div>
+        </div>
+      </header>
+
+      {/* بانر إعلاني علوي — header-leaderboard، تحت الترويسة مباشرة */}
+      <div className="border-b border-border bg-muted/20">
+        <div className="container mx-auto px-4 py-2">
+          <AdPlacement
+            placement="header-leaderboard"
+            className="mx-auto w-full max-w-[728px]"
+          />
         </div>
       </div>
-    </header>
+    </>
   );
 }

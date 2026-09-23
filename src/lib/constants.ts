@@ -328,6 +328,53 @@ export const PRINCIPLES = [
 ] as const;
 
 // ===================================================================
+//  فئات دليل الحي (GuideItem) — v7.0
+// ===================================================================
+
+export const GUIDE_CATEGORIES = [
+  { value: "CAFE", label: "مقاهي", icon: "☕" },
+  { value: "RESTAURANT", label: "مطاعم", icon: "🍽️" },
+  { value: "SHOP", label: "محلات", icon: "🛒" },
+  { value: "SCHOOL", label: "مدارس", icon: "🏫" },
+  { value: "HEALTH", label: "مراكز صحية", icon: "🏥" },
+  { value: "MOSQUE", label: "مساجد", icon: "🕌" },
+  { value: "SERVICE", label: "خدمات", icon: "🛠️" },
+  { value: "ASSOCIATION", label: "جمعيات", icon: "🤝" },
+] as const;
+
+export const GUIDE_CATEGORY_LABELS: Record<string, string> = Object.fromEntries(
+  GUIDE_CATEGORIES.map((c) => [c.value, c.label])
+);
+
+// ===================================================================
+//  فئات المدوّنة (BlogPost) — v7.0
+// ===================================================================
+
+export const BLOG_CATEGORIES = [
+  { value: "HEALTH", label: "صحة", icon: "💊" },
+  { value: "EDUCATION", label: "تربية", icon: "📚" },
+  { value: "FINANCE", label: "مالية", icon: "💰" },
+  { value: "PARENTING", label: "تربية الأبناء", icon: "👨‍👩‍👧" },
+  { value: "RELIGIOUS", label: "دينية", icon: "☪️" },
+  { value: "COMMUNITY", label: "مجتمع", icon: "🏘️" },
+] as const;
+
+export const BLOG_CATEGORY_LABELS: Record<string, string> = Object.fromEntries(
+  BLOG_CATEGORIES.map((c) => [c.value, c.label])
+);
+
+// ===================================================================
+//  فئات قصص النجاح — v7.0
+// ===================================================================
+
+export const STORY_CATEGORIES = [
+  { value: "PROFESSIONAL", label: "نجاح مهني", icon: "💼" },
+  { value: "RESILIENCE", label: "تجاوز أزمة", icon: "🌱" },
+  { value: "SOLIDARITY", label: "تضامن", icon: "🤲" },
+  { value: "EDUCATION", label: "تعليم", icon: "🎓" },
+] as const;
+
+// ===================================================================
 //  معلومات الحي الرئيسي
 // ===================================================================
 

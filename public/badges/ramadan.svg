@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="شارة رمضان">
+  <defs>
+    <linearGradient id="bg-ramadan" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2D5A3D"/>
+      <stop offset="1" stop-color="#C8842A"/>
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="30" fill="url(#bg-ramadan)" stroke="#FBF6EE" stroke-width="2"/>
+  <!-- هلال -->
+  <path d="M44 22 A14 14 0 1 0 44 42 A11 11 0 1 1 44 22 Z" fill="#FBF6EE"/>
+  <!-- نجمة -->
+  <path d="M22 32 L23.5 35.5 L27 34 L25 37 L28 38.5 L24.5 39 L25 42.5 L22 40.5 L19 42.5 L19.5 39 L16 38.5 L19 37 L17 34 L20.5 35.5 Z" fill="#FBF6EE" opacity="0.9"/>
+</svg>

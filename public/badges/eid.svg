@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="شارة العيد">
+  <defs>
+    <linearGradient id="bg-eid" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#C8842A"/>
+      <stop offset="1" stop-color="#B8492B"/>
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="30" fill="url(#bg-eid)" stroke="#FBF6EE" stroke-width="2"/>
+  <!-- علبة هدية -->
+  <rect x="18" y="26" width="28" height="22" rx="2" fill="#FBF6EE"/>
+  <rect x="30" y="26" width="4" height="22" fill="#2D5A3D"/>
+  <path d="M32 26 C 28 22 24 24 26 26 L 32 26 Z M 32 26 C 36 22 40 24 38 26 L 32 26 Z" fill="#2D5A3D"/>
+  <ellipse cx="32" cy="26" rx="3" ry="2" fill="#2D5A3D"/>
+  <!-- شرائط -->
+  <rect x="14" y="32" width="36" height="3" fill="#B8492B" opacity="0.8" rx="1"/>
+</svg>

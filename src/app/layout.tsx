@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import "./globals.css";
 
 /* استيراد الخطوط العربية محلياً (Turbopack يعالج JS imports للـCSS) */
@@ -15,6 +16,90 @@ import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/layout/theme-provider";
 import { SessionProvider } from "@/components/providers/session-provider";
 import { AppChrome } from "@/components/layout/app-chrome";
+import { AdsProvider, type AdPlacementType } from "@/components/ads/ads-provider";
+import { db } from "@/lib/db";
+
+// ===================================================================
+//  جلب إعدادات Google AdSense من جدول Setting (server-side)
+//  - يُقرأ مرة واحدة عند كل طلب صفحة
+//  - لو active=true و publisherId غير فارغ: يُحقن سكربت AdSense
+//  - يُمرَّر القيم إلى AdsProvider (client) ليستهلكه AdPlacement
+// ===================================================================
+
+const ADSENSE_SETTING_KEYS = [
+  "ads.adsense.publisherId",
+  "ads.adsense.active",
+  "ads.adsense.testMode",
+  // slot IDs اختيارية لكل موضع
+  "ads.adsense.slot.header-leaderboard",
+  "ads.adsense.slot.sidebar-top",
+  "ads.adsense.slot.sidebar-bottom",
+  "ads.adsense.slot.in-feed",
+  "ads.adsense.slot.in-article",
+  "ads.adsense.slot.footer-banner",
+] as const;
+
+const SLOT_PLACEMENT_KEYS: ReadonlyArray<{
+  setting: string;
+  placement: AdPlacementType;
+}> = [
+  {
+    setting: "ads.adsense.slot.header-leaderboard",
+    placement: "header-leaderboard",
+  },
+  {
+    setting: "ads.adsense.slot.sidebar-top",
+    placement: "sidebar-top",
+  },
+  {
+    setting: "ads.adsense.slot.sidebar-bottom",
+    placement: "sidebar-bottom",
+  },
+  {
+    setting: "ads.adsense.slot.in-feed",
+    placement: "in-feed",
+  },
+  {
+    setting: "ads.adsense.slot.in-article",
+    placement: "in-article",
+  },
+  {
+    setting: "ads.adsense.slot.footer-banner",
+    placement: "footer-banner",
+  },
+];
+
+async function getAdsenseSettings(): Promise<{
+  active: boolean;
+  publisherId: string;
+  testMode: boolean;
+  slots: Partial<Record<AdPlacementType, string>>;
+}> {
+  try {
+    const settings = await db.setting.findMany({
+      where: { key: { in: [...ADSENSE_SETTING_KEYS] } },
+      select: { key: true, value: true },
+    });
+    const map = new Map(settings.map((s) => [s.key, s.value]));
+    const publisherId = (map.get("ads.adsense.publisherId") ?? "").trim();
+    const active =
+      map.get("ads.adsense.active") === "true" && publisherId.length > 0;
+    const testMode = map.get("ads.adsense.testMode") === "true";
+
+    const slots: Partial<Record<AdPlacementType, string>> = {};
+    for (const { setting, placement } of SLOT_PLACEMENT_KEYS) {
+      const value = map.get(setting);
+      if (value && value.trim()) {
+        slots[placement] = value.trim();
+      }
+    }
+
+    return { active, publisherId, testMode, slots };
+  } catch {
+    // في حال تعذّر الاتصال بقاعدة البيانات، نُظهر placeholders فقط
+    return { active: false, publisherId: "", testMode: false, slots: {} };
+  }
+}
 
 export const metadata: Metadata = {
   title: {
@@ -77,11 +162,14 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // جلب إعدادات AdSense من جدول Setting (server-side, ديناميكي)
+  const adsense = await getAdsenseSettings();
+
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <body className="font-sans antialiased bg-background text-foreground min-h-screen flex flex-col">
@@ -92,11 +180,28 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <SessionProvider>
-            <AppChrome>{children}</AppChrome>
-            <Toaster />
-            <SonnerToaster position="top-center" />
+            <AdsProvider
+              active={adsense.active}
+              publisherId={adsense.publisherId}
+              testMode={adsense.testMode}
+              slots={adsense.slots}
+            >
+              <AppChrome>{children}</AppChrome>
+              <Toaster />
+              <SonnerToaster position="top-center" />
+            </AdsProvider>
           </SessionProvider>
         </ThemeProvider>
+
+        {/* سكربت Google AdSense — يُحقن فقط عند ضبط publisherId و active=true */}
+        {adsense.active && adsense.publisherId ? (
+          <Script
+            id="adsense-script"
+            strategy="afterInteractive"
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsense.publisherId}`}
+            crossOrigin="anonymous"
+          />
+        ) : null}
       </body>
     </html>
   );

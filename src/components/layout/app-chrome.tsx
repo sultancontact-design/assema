@@ -7,6 +7,7 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { PwaInstallPrompt } from "@/components/community/pwa-install-prompt";
 import { CookieConsent } from "@/components/layout/cookie-consent";
+import { OnboardingFlow } from "@/components/community/onboarding-flow";
 
 /**
  * غلاف كروم التطبيق — يقرّر متى يُظهر كروم الموقع العام (ترويسة/تذييل/شريط سفلي)
@@ -19,6 +20,8 @@ import { CookieConsent } from "@/components/layout/cookie-consent";
 export function AppChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? "/";
   const isAdmin = pathname.startsWith("/admin");
+  // الترحيب يظهر فقط لأعضاء المجتمع (ليس للأدمن أو الصفحات العامة بدون دخول)
+  const isCommunity = pathname.startsWith("/community");
 
   if (isAdmin) {
     return <main className="flex-1 flex flex-col">{children}</main>;
@@ -32,6 +35,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
       <BottomNav />
       <PwaInstallPrompt />
       <CookieConsent />
+      {isCommunity && <OnboardingFlow />}
     </>
   );
 }

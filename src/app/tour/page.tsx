@@ -18,6 +18,8 @@ import {
   Sparkles,
   PlayCircle,
   Info,
+  Compass,
+  BookOpen,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,13 +30,13 @@ import { SiteLogo } from "@/components/shared/site-logo";
 import { cn } from "@/lib/utils";
 
 // ===================================================================
-//  Interactive Tour — جولة تفاعلية في 8 خطوات
+//  Interactive Tour — جولة تفاعلية في 10 خطوات
 //  - تخطيط بشريط جانبي (يمين) + محتوى الخطوة الحالية (يسار)
 //  - framer-motion لانتقالات بين الخطوات
 //  - زر "ابدأ الجولة" يبدأ من الخطوة 1
 //  - شريط تقدّم علوي + شارات الترقيم
 //  - "جرّب الآن" → رابط + "التالي" + "السابق"
-//  - بعد الخطوة 8: "اكتملت الجولة!" + "سجّل حساباً" CTA
+//  - بعد الخطوة 10: "اكتملت الجولة!" + "سجّل حساباً" CTA
 // ===================================================================
 
 interface TourStep {
@@ -161,6 +163,34 @@ const STEPS: TourStep[] = [
     ],
     adminOnly: true,
   },
+  {
+    id: 9,
+    title: "دليل الحي",
+    route: "/guide",
+    icon: Compass,
+    description:
+      "دليل شامل لأماكن الحي المفيدة: مقاهي، مطاعم، محلات، مدارس، مراكز صحية، مساجد، خدمات، وجمعيات. ابحث بالاسم، صفّ حسب الفئة، وأضف أماكن تعرفها ليستفيد منها كل أهل الحي. كل عنصر يحتوي اسمه، فئته، عنوانه، هاتفه، وتقييمه.",
+    highlights: [
+      "8 فئات: مقاهي، مطاعم، محلات، مدارس، مراكز صحية، مساجد، خدمات، جمعيات",
+      "بحث بالاسم والوصف والعنوان",
+      "بطاقات سريعة لفلترة الفئة بنقرة",
+      "زر «أضف مكاناً» — مساهمتك تثري الدليل",
+    ],
+  },
+  {
+    id: 10,
+    title: "قصص نجاح",
+    route: "/stories",
+    icon: BookOpen,
+    description:
+      "حكايات حقيقية لأهل الحي: نجاحات مهنية، تجاوز أزمات، تضامن جماعي، ومسارات تعليمية ملهمة. 10 قصص مرتّبة زمنياً، قابلة للفلترة حسب الفئة. كل قصة فجر جديد لمن يحتاجها — شارك قصتك لتلهم غيرك.",
+    highlights: [
+      "10 قصص نجاح ملهمة من الحي",
+      "4 فئات: نجاح مهني، تجاوز أزمة، تضامن، تعليم",
+      "كل قصة: عنوان، مقتطف، كاتب، تاريخ",
+      "زر «شارك قصتك» — قصتك تستحق أن تُروى",
+    ],
+  },
 ];
 
 export default function TourPage() {
@@ -235,7 +265,7 @@ export default function TourPage() {
                 </Badge>
 
                 <h1 className="font-heading text-4xl sm:text-5xl font-extrabold text-foreground leading-tight mb-4">
-                  جولة في 8 خطوات
+                  جولة في 10 خطوات
                 </h1>
 
                 <p className="text-lg md:text-xl text-muted-foreground mb-6 leading-relaxed">
@@ -264,7 +294,7 @@ export default function TourPage() {
             </div>
 
             {/* شبكة مصغّرة لكل الخطوات */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-12 max-w-4xl mx-auto">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-12 max-w-5xl mx-auto">
               {STEPS.map((s, idx) => {
                 const Icon = s.icon;
                 return (
@@ -573,7 +603,7 @@ function StepCard({ step }: { step: TourStep }) {
 }
 
 // ===================================================================
-//  بطاقة الإكمال — بعد الخطوة 8
+//  بطاقة الإكمال — بعد الخطوة 10
 // ===================================================================
 
 function CompletionCard() {
@@ -597,9 +627,10 @@ function CompletionCard() {
 
       <CardContent className="p-6 space-y-5">
         <p className="text-base text-foreground leading-relaxed">
-          أحسنت! لقد أكملت جولة في 8 خطوات على منصة «سيدي يوسف بن علي
-          العاصمة». الآن أنت تعرف أهم الأقسام والوظائف. الخطوة التالية
-          الطبيعية هي:
+          أحسنت! لقد أكملت جولة في 10 خطوات على منصة «سيدي يوسف بن علي
+          العاصمة». الآن أنت تعرف أهم الأقسام والوظائف، من الصفحة
+          الرئيسية إلى لوحة الإدارة، ومن دليل الحي إلى قصص النجاح. الخطوة
+          التالية الطبيعية هي:
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="ورشة عمل">
+  <defs>
+    <linearGradient id="bg-workshop" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#C8842A"/>
+      <stop offset="1" stop-color="#B8492B"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="12" fill="url(#bg-workshop)"/>
+  <!-- مفكّ + ترس -->
+  <circle cx="32" cy="32" r="14" fill="none" stroke="#FBF6EE" stroke-width="2"/>
+  <!-- أسنان الترس -->
+  <g fill="#FBF6EE">
+    <rect x="30" y="14" width="4" height="6" rx="1"/>
+    <rect x="30" y="44" width="4" height="6" rx="1"/>
+    <rect x="14" y="30" width="6" height="4" rx="1"/>
+    <rect x="44" y="30" width="6" height="4" rx="1"/>
+    <rect x="19" y="19" width="4" height="6" rx="1" transform="rotate(-45 21 22)"/>
+    <rect x="41" y="19" width="4" height="6" rx="1" transform="rotate(45 43 22)"/>
+    <rect x="19" y="39" width="4" height="6" rx="1" transform="rotate(45 21 42)"/>
+    <rect x="41" y="39" width="4" height="6" rx="1" transform="rotate(-45 43 42)"/>
+  </g>
+  <!-- ثقب الترس -->
+  <circle cx="32" cy="32" r="4" fill="#2D5A3D"/>
+  <!-- مفتاح ربط قطري -->
+  <path d="M14 50 L 22 42 L 26 46 L 18 54 Z" fill="#FBF6EE"/>
+  <path d="M22 42 L 26 46" stroke="#2D5A3D" stroke-width="0.7"/>
+</svg>

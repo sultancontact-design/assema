@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="شارة الأسطورة">
+  <defs>
+    <linearGradient id="bg-legend" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#B8492B"/>
+      <stop offset="0.5" stop-color="#C8842A"/>
+      <stop offset="1" stop-color="#2D5A3D"/>
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="30" fill="url(#bg-legend)" stroke="#FBF6EE" stroke-width="2"/>
+  <!-- تاج -->
+  <path d="M14 40 L 16 22 L 24 30 L 32 18 L 40 30 L 48 22 L 50 40 Z" fill="#FBF6EE"/>
+  <rect x="14" y="40" width="36" height="6" fill="#C8842A"/>
+  <rect x="14" y="40" width="36" height="6" fill="none" stroke="#2D5A3D" stroke-width="0.5"/>
+  <!-- جواهر -->
+  <circle cx="24" cy="30" r="2" fill="#2D5A3D"/>
+  <circle cx="32" cy="24" r="2.5" fill="#B8492B"/>
+  <circle cx="40" cy="30" r="2" fill="#2D5A3D"/>
+  <circle cx="32" cy="44" r="1.5" fill="#FBF6EE"/>
+</svg>

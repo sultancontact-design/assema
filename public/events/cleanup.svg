@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="حملة نظافة">
+  <defs>
+    <linearGradient id="bg-clean" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2D5A3D"/>
+      <stop offset="1" stop-color="#B8492B"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="12" fill="url(#bg-clean)"/>
+  <!-- مكنسة -->
+  <path d="M14 50 L 28 36 L 32 40 L 18 54 Z" fill="#FBF6EE"/>
+  <path d="M14 50 L 28 36 L 32 40 L 18 54 Z" fill="none" stroke="#2D5A3D" stroke-width="0.5"/>
+  <!-- شعيرات المكنسة -->
+  <line x1="14" y1="50" x2="18" y2="54" stroke="#C8842A" stroke-width="0.7"/>
+  <line x1="16" y1="50" x2="20" y2="54" stroke="#C8842A" stroke-width="0.7"/>
+  <line x1="18" y1="50" x2="22" y2="54" stroke="#C8842A" stroke-width="0.7"/>
+  <!-- عصا المكنسة -->
+  <line x1="28" y1="36" x2="44" y2="14" stroke="#FBF6EE" stroke-width="3" stroke-linecap="round"/>
+  <line x1="28" y1="36" x2="44" y2="14" stroke="#2D5A3D" stroke-width="0.5"/>
+  <!-- ورقة خضراء (طبيعة) -->
+  <path d="M44 16 Q 52 12 56 18 Q 52 22 44 20 Z" fill="#FBF6EE"/>
+  <path d="M44 16 L 56 18" stroke="#2D5A3D" stroke-width="0.5"/>
+</svg>

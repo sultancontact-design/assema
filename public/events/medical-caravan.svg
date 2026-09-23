@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="قافلة طبية">
+  <defs>
+    <linearGradient id="bg-med" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2D5A3D"/>
+      <stop offset="1" stop-color="#C8842A"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="12" fill="url(#bg-med)"/>
+  <!-- صليب طبي -->
+  <rect x="26" y="12" width="12" height="40" rx="2" fill="#FBF6EE"/>
+  <rect x="12" y="26" width="40" height="12" rx="2" fill="#FBF6EE"/>
+  <rect x="26" y="12" width="12" height="40" rx="2" fill="none" stroke="#2D5A3D" stroke-width="0.5"/>
+  <rect x="12" y="26" width="40" height="12" rx="2" fill="none" stroke="#2D5A3D" stroke-width="0.5"/>
+  <!-- قلب في الوسط -->
+  <path d="M32 32 C 28 28 26 30 28 32 C 30 34 32 36 32 36 C 32 36 34 34 36 32 C 38 30 36 28 32 32 Z" fill="#B8492B"/>
+  <!-- عجلات القافلة (أسفل) -->
+  <circle cx="20" cy="52" r="3" fill="#FBF6EE"/>
+  <circle cx="20" cy="52" r="1.5" fill="#2D5A3D"/>
+  <circle cx="44" cy="52" r="3" fill="#FBF6EE"/>
+  <circle cx="44" cy="52" r="1.5" fill="#2D5A3D"/>
+</svg>
