@@ -1,0 +1,33 @@
+{
+  "home": {
+    "error": "goto: Timeout 60000ms exceeded.\nCall log:\n  - navigating to \"https://my-project-"
+  },
+  "login": {
+    "ttfb": 6.799999998882413,
+    "fcp": 684,
+    "cls": 0,
+    "loadTime": 746.2999999988824,
+    "transferSize": 9792
+  },
+  "community-fund": {
+    "ttfb": 7.199999999254942,
+    "fcp": 776,
+    "cls": 0,
+    "loadTime": 1637.5,
+    "transferSize": 15611
+  },
+  "ethics": {
+    "ttfb": 7.099999999627471,
+    "fcp": 692,
+    "cls": 0,
+    "loadTime": 770.9000000003725,
+    "transferSize": 16845
+  },
+  "blog": {
+    "ttfb": 7.200000001117587,
+    "fcp": 1040,
+    "cls": 0,
+    "loadTime": 1218.5,
+    "transferSize": 16186
+  }
+}
