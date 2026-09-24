@@ -1216,3 +1216,89 @@ model DownloadLog {
   @@index([status])
   @@index([downloadedAt])
 }
+
+// ===================================================================
+//  v14.1 — قسم الخدمات الشامل + النصائح
+// ===================================================================
+
+model Service {
+  id           String   @id @default(cuid())
+  title        String
+  titleAr      String
+  description  String
+  category     String   // PROFESSION, CRAFT, ADVICE, HEALTH, EDUCATION
+  subcategory  String?
+  providerId   String?
+  districtId  String?
+  phone        String?
+  whatsapp     String?
+  address      String?
+  price        String?
+  availability String?
+  rating       Float    @default(0)
+  reviews      Int      @default(0)
+  images       String?
+  isVerified   Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  serviceReviews ServiceReview[]
+  
+  @@index([category, isActive])
+  @@index([districtId])
+  @@index([isActive])
+}
+
+model ServiceReview {
+  id        String   @id @default(cuid())
+  serviceId String
+  userId    String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  
+  service   Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  
+  @@unique([serviceId, userId])
+  @@index([serviceId])
+}
+
+model Advice {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  category    String   // HEALTH, EDUCATION, FINANCE, RELIGION, FAMILY
+  authorId    String?
+  isPublic    Boolean  @default(true)
+  likes       Int      @default(0)
+  views       Int      @default(0)
+  createdAt   DateTime @default(now())
+  
+  @@index([category, isPublic])
+  @@index([createdAt])
+}
+
+// ===================================================================
+//  v14.1 — أسعار السوق (Market Prices)
+// ===================================================================
+
+model MarketPrice {
+  id          String   @id @default(cuid())
+  productName String
+  productNameAr String
+  category    String   // VEGETABLE, FRUIT, MEAT, GRAIN, DAIRY, OTHER
+  price       Float    // درهم/كغ
+  unit        String   @default("درهم/كغ")
+  market      String?  // اسم السوق
+  districtId  String?
+  source      String   @default("user") // user, admin, official
+  reportedBy  String?
+  reportedAt  DateTime @default(now())
+  validUntil  DateTime?
+  isActive    Boolean  @default(true)
+  
+  @@index([category, isActive])
+  @@index([productName])
+  @@index([reportedAt])
+}
