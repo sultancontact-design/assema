@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { PricesBoard } from "@/components/community/prices-board";
+import { getLatestPrices, getFetchLogs } from "@/lib/price-fetcher";
+import { MarketPricesBoard } from "@/components/community/market-prices-board";
 
 export const dynamic = "force-dynamic";
 
@@ -11,30 +11,36 @@ const CATEGORIES = [
   { value: "MEAT", label: "لحوم" },
   { value: "GRAIN", label: "حبوب" },
   { value: "DAIRY", label: "ألبان" },
-  { value: "OTHER", label: "أخرى" },
 ];
 
 export default async function PricesPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login?callbackUrl=/community/prices");
 
-  const prices = await db.marketPrice.findMany({
-    where: { isActive: true },
-    orderBy: { reportedAt: "desc" },
-    take: 50,
-  });
+  const [prices, logs] = await Promise.all([
+    getLatestPrices(),
+    getFetchLogs(5),
+  ]);
 
-  const serialized = prices.map(p => ({
-    id: p.id, productName: p.productName, productNameAr: p.productNameAr,
-    category: p.category, price: p.price, unit: p.unit, market: p.market,
-    source: p.source, reportedAt: p.reportedAt.toISOString(),
+  const serializedPrices = prices.map(p => ({
+    id: p.id, name: p.name, nameAr: p.nameAr, category: p.category,
+    unit: p.unit, icon: p.icon, latestPrice: p.latestPrice,
+    minPrice: p.minPrice, maxPrice: p.maxPrice, source: p.source,
+    recordedAt: p.recordedAt,
+  }));
+
+  const serializedLogs = logs.map(l => ({
+    source: l.source, status: l.status, productsCount: l.productsCount,
+    errorMessage: l.errorMessage, fetchedAt: l.fetchedAt.toISOString(),
   }));
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="font-heading text-2xl font-bold mb-2">أسعار السوق</h1>
-      <p className="text-sm text-muted-foreground mb-6">أسعار الخضر والفواكه في أسواق مراكش — يُحدّثها المستخدمون</p>
-      <PricesBoard prices={serialized} categories={CATEGORIES} />
+      <div className="mb-6">
+        <h1 className="font-heading text-2xl font-bold mb-1">📊 أسعار السوق الحية</h1>
+        <p className="text-sm text-muted-foreground">أسعار تلقائية للخضر والفواكه واللحوم — تُحدّث يومياً</p>
+      </div>
+      <MarketPricesBoard prices={serializedPrices} categories={CATEGORIES} logs={serializedLogs} />
     </div>
   );
 }

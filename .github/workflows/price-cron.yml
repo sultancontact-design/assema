@@ -1,0 +1,17 @@
+name: Daily Price Fetch
+on:
+  schedule:
+    - cron: '0 6 * * *'  # يومياً الساعة 6 صباحاً (UTC = 7 صباحاً بتوقيت المغرب)
+  workflow_dispatch:
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch market prices
+        run: |
+          echo "Fetching prices from official sources..."
+          curl -s -X POST https://my-project-beta-ochre.vercel.app/api/cron/prices \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            --max-time 50 || echo "Fetch completed with errors"

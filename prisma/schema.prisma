@@ -1302,3 +1302,68 @@ model MarketPrice {
   @@index([productName])
   @@index([reportedAt])
 }
+
+// ===================================================================
+//  v14.2 — أسعار السوق التلقائية (Auto Market Prices)
+// ===================================================================
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  nameAr      String
+  category    String   // VEGETABLE, FRUIT, GRAIN, MEAT, DAIRY
+  unit        String   @default("KG")
+  icon        String?
+  isActive    Boolean  @default(true)
+  prices      Price[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([category, isActive])
+}
+
+model Price {
+  id          String   @id @default(cuid())
+  productId   String
+  districtId  String?
+  marketName  String?
+  minPrice    Float
+  maxPrice    Float
+  avgPrice    Float?
+  unit        String   @default("KG")
+  source      String   // PRIXAGRICULTURE, DATA_GOV, HCP, FAOSTAT, SEASONAL_FALLBACK, USER
+  sourceUrl   String?
+  reportedBy  String?
+  verified    Boolean  @default(false)
+  recordedAt  DateTime @default(now())
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  @@index([productId, recordedAt])
+  @@index([source])
+  @@index([recordedAt])
+}
+
+model PriceReport {
+  id          String   @id @default(cuid())
+  userId      String
+  productId   String
+  districtId  String?
+  price       Float
+  marketName  String?
+  notes       String?
+  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  adminNote   String?
+  createdAt   DateTime @default(now())
+  @@index([userId])
+  @@index([status])
+}
+
+model PriceFetchLog {
+  id            String   @id @default(cuid())
+  source        String
+  status        String   // SUCCESS, FAILED, PARTIAL, FALLBACK
+  productsCount Int      @default(0)
+  errorMessage  String?
+  durationMs    Int?
+  fetchedAt     DateTime @default(now())
+  @@index([source, fetchedAt])
+  @@index([fetchedAt])
+}
