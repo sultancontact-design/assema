@@ -1,0 +1,40 @@
+name: Test Real Price Sources
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test prixagriculture.org
+        run: |
+          echo "=== Testing prixagriculture.org ==="
+          curl -sL -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" \
+            "https://www.prixagriculture.org/prix-des-produits" \
+            -o response1.html -w "HTTP: %{http_code} | Size: %{size_download}\n" --max-time 15
+          if [ -s response1.html ]; then
+            echo "Content sample:"
+            head -c 500 response1.html
+            echo ""
+            grep -ciP "tomate|oignon|carotte|prix|price" response1.html || true
+          fi
+
+      - name: Test FAOSTAT API
+        run: |
+          echo "=== Testing FAOSTAT ==="
+          curl -sL "https://fenixservices.fao.org/faostat/api/v1/en/data/PP?area=143&item=..&element=..&year=2023" \
+            -w "\nHTTP: %{http_code} | Size: %{size_download}\n" --max-time 15 | head -c 500
+
+      - name: Test data.gov.ma
+        run: |
+          echo "=== Testing data.gov.ma ==="
+          curl -sL "https://data.gov.ma/api/3/action/package_search?q=prix" \
+            -w "\nHTTP: %{http_code}\n" --max-time 15 | head -c 500
+
+      - name: Trigger price fetch
+        run: |
+          echo "=== Triggering price fetch on Vercel ==="
+          curl -s -X POST https://my-project-beta-ochre.vercel.app/api/cron/prices \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            --max-time 50

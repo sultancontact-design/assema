@@ -1,17 +1,23 @@
 name: Daily Price Fetch
 on:
   schedule:
-    - cron: '0 6 * * *'  # يومياً الساعة 6 صباحاً (UTC = 7 صباحاً بتوقيت المغرب)
+    - cron: '0 6 * * *'
   workflow_dispatch:
 
 jobs:
   fetch:
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch market prices
+      - name: Fetch real prices from official sources
         run: |
-          echo "Fetching prices from official sources..."
-          curl -s -X POST https://my-project-beta-ochre.vercel.app/api/cron/prices \
+          echo "Fetching real prices from official Moroccan sources..."
+          RESPONSE=$(curl -s -X POST https://my-project-beta-ochre.vercel.app/api/cron/prices \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json" \
-            --max-time 50 || echo "Fetch completed with errors"
+            --max-time 50)
+          echo "Response: $RESPONSE"
+          if echo "$RESPONSE" | grep -q '"status":"SUCCESS"'; then
+            echo "✅ Prices fetched successfully"
+          else
+            echo "⚠️ Fetch failed or no data — no fake prices generated"
+          fi
