@@ -1,0 +1,17 @@
+name: Live Activity Cron
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # كل 6 ساعات (GitHub Free limit)
+  workflow_dispatch:
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger live activity
+        run: |
+          curl -s -X POST https://my-project-beta-ochre.vercel.app/api/cron/live-activity \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -d '{"count": 3}' \
+            --max-time 30 || true
