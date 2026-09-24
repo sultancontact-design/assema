@@ -1,11 +1,13 @@
 "use client";
 
 // ===================================================================
-//  ActivityTicker — شريط النشاطات الحيّة
+//  ActivityTicker — شريط النشاطات الحيّة (RTL)
 //  - يجلب من /api/public/activity-feed (بدون مصادقة)
-//  - شريط أفقي متحرّك (RTL: يتحرّك من اليمين إلى اليسار)
-//  - يُظهر 5-8 نشاطات حديثة كبصيلات: "🔥 أحمد ساهم بـ50 د.م"
-//  - framer-motion للحركة الناعمة
+//  - شريط أفقي متحرّك RTL: يبدأ من اليمين ويتّجه نحو اليسار
+//  - يُظهر 5-8 نشاطات حديثة كبصيلات: "🤲 أحمد ساهم بـ50 د.م"
+//  - إيموجي لكل نوع نشاط (🔥 👥 🎉 🤲 🏆 🎉 💝 ✨)
+//  - تدرّج إخفاء على الحافّتين (يمين/يسار)
+//  - framer-motion للحركة الناعمة (ease linear، repeat Infinity)
 //  - استطلاع كل 30 ثانية لجلب النشاطات الجديدة
 //  - skeleton أثناء التحميل
 // ===================================================================
@@ -21,6 +23,7 @@ export interface ActivityItem {
   timeAgo: string;
 }
 
+// خريطة أيقونات Lucide لكل نوع
 const ACTIVITY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   CONTRIBUTION: HandCoins,
   LOGIN: Users,
@@ -32,10 +35,11 @@ const ACTIVITY_ICONS: Record<string, React.ComponentType<{ className?: string }>
   default: Sparkles,
 };
 
+// خريطة إيموجي لكل نوع — لإضفاء الحيوية على البصيلات
 const ACTIVITY_EMOJI: Record<string, string> = {
   CONTRIBUTION: "🤲",
   LOGIN: "👋",
-  EVENT_REGISTER: "📅",
+  EVENT_REGISTER: "🎉",
   GROUP_JOIN: "👥",
   BADGE_EARNED: "🏆",
   STREAK_MILESTONE: "🔥",
@@ -45,8 +49,14 @@ const ACTIVITY_EMOJI: Record<string, string> = {
 
 function ActivityPill({ item }: { item: ActivityItem }) {
   const Icon = ACTIVITY_ICONS[item.type] ?? ACTIVITY_ICONS.default;
+  const emoji = ACTIVITY_EMOJI[item.type] ?? ACTIVITY_EMOJI.default;
   return (
     <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-card/90 ps-3 pe-4 py-1.5 text-sm shadow-sm backdrop-blur">
+      {/* إيموجي حيوي بارز */}
+      <span className="text-base shrink-0" aria-hidden="true">
+        {emoji}
+      </span>
+      {/* أيقونة Lucide داخل دائرة زليج */}
       <span
         className="grid size-6 place-items-center rounded-full bg-primary/10 text-primary shrink-0"
         aria-hidden="true"
@@ -134,17 +144,20 @@ export function ActivityTicker() {
       aria-label="آخر نشاطات الحي"
       aria-live="polite"
     >
-      {/* تدرّج للإخفاء عند الحافّتين */}
+      {/* تدرّج للإخفاء عند الحافّتين — حافّة اليمين (start في RTL) */}
       <div
-        className="pointer-events-none absolute inset-y-0 start-0 z-10 w-12 bg-gradient-to-r from-muted/60 to-transparent"
+        className="pointer-events-none absolute inset-y-0 start-0 z-10 w-16 bg-gradient-to-l from-muted/80 via-muted/40 to-transparent"
         aria-hidden="true"
       />
+      {/* تدرّج للإخفاء عند الحافّتين — حافّة اليسار (end في RTL) */}
       <div
-        className="pointer-events-none absolute inset-y-0 end-0 z-10 w-12 bg-gradient-to-l from-muted/60 to-transparent"
+        className="pointer-events-none absolute inset-y-0 end-0 z-10 w-16 bg-gradient-to-r from-muted/80 via-muted/40 to-transparent"
         aria-hidden="true"
       />
       <motion.div
         className="flex w-max items-center gap-2 px-2"
+        // RTL: المحتوى يبدأ من اليمين ويتّجه يساراً
+        // x من 0 إلى -50% يُحرّك القائمة بأكملها (المُكرَّرة) نحو اليسار
         animate={{ x: ["0%", "-50%"] }}
         transition={{
           duration: Math.max(20, items.length * 4),
@@ -168,4 +181,4 @@ export function ActivityTicker() {
 }
 
 // نصدّر الثوابت الثانوية لإعادة الاستعمال (اختياري)
-export { ACTIVITY_EMOJI };
+export { ACTIVITY_EMOJI, ACTIVITY_ICONS };

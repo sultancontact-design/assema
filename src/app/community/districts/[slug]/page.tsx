@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import { maskPhone, shouldMaskPhone } from "@/lib/privacy";
 import { getFundStats } from "@/lib/fund-stats";
 import {
   Card,
@@ -156,8 +157,12 @@ export default async function DistrictDetailPage({ params }: PageProps) {
       points: true,
       level: true,
       profession: true,
+      phone: true,
     },
   });
+
+  // تحديد سياسة إخفاء الهاتف بناءً على دور المستخدم الحالي
+  const hidePhone = shouldMaskPhone(currentUser?.role);
 
   // 6) كل أحياء مراكش للخريطة المصغّرة (نُبرز هذا الحيّ)
   const allDistricts = await db.district.findMany({
@@ -399,7 +404,17 @@ export default async function DistrictDetailPage({ params }: PageProps) {
                       <p className="font-heading text-sm font-bold text-accent">
                         {formatNumber(m.points)}
                       </p>
-                      <p className="text-[10px] text-muted-foreground">نقطة</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        نقطة
+                      </p>
+                      {m.phone && (
+                        <p
+                          className="mt-1 text-[10px] text-muted-foreground font-mono"
+                          dir="ltr"
+                        >
+                          {hidePhone ? maskPhone(m.phone) : m.phone}
+                        </p>
+                      )}
                     </div>
                   </li>
                 ))}
@@ -407,6 +422,9 @@ export default async function DistrictDetailPage({ params }: PageProps) {
             )}
             <p className="mt-3 text-[10px] text-muted-foreground">
               تُعرض الأسماء العامّة فقط — لا بيانات حسّاسة.
+              {hidePhone
+                ? " أرقام الهواتف مُخفاة (06XX-XX-XX-XX) للمشرفين فقط."
+                : " أنت مشرف — تُظهر الأرقام كاملة."}
             </p>
           </CardContent>
         </Card>

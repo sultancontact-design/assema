@@ -17,6 +17,8 @@ import {
   ChevronLeft,
 } from "lucide-react";
 import { db } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
+import { maskPhone, shouldMaskPhone } from "@/lib/privacy";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -53,6 +55,10 @@ export default async function GuidePage({ searchParams }: PageProps) {
   const search = typeof params.q === "string" ? params.q.trim() : "";
   const categoryFilter =
     typeof params.category === "string" ? params.category : "ALL";
+
+  // المستخدم الحالي (لتحديد سياسة إخفاء رقم الهاتف)
+  const currentUser = await getCurrentUser();
+  const hidePhone = shouldMaskPhone(currentUser?.role);
 
   // بناء شرط البحث
   const whereClause = {
@@ -180,12 +186,19 @@ export default async function GuidePage({ searchParams }: PageProps) {
                     )}
                     {item.phone && (
                       <a
-                        href={`tel:${item.phone}`}
+                        href={hidePhone ? undefined : `tel:${item.phone}`}
                         dir="ltr"
                         className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
+                        aria-label={
+                          hidePhone
+                            ? "رقم الهاتف مُخفى — الأرقام الكاملة متاحة للمشرفين فقط"
+                            : `اتصل على ${item.phone}`
+                        }
                       >
                         <Phone className="size-3.5 shrink-0 text-primary" />
-                        <span className="font-mono">{item.phone}</span>
+                        <span className="font-mono">
+                          {hidePhone ? maskPhone(item.phone) : item.phone}
+                        </span>
                       </a>
                     )}
                   </div>

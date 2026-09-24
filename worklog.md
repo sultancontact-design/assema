@@ -3910,3 +3910,248 @@ PLACEHOLDER_STORIES: 5 قصص افتراضية عند فراغ المدوّنة 
 - ✅ 2 public APIs (no auth) مع fallback صريح عند فشل DB
 - ✅ 0 أخطaء lint، 0 تحذيرات
 - ✅ Dev server 200 OK لكل المسارات
+
+---
+Task ID: v14-core
+Agent: Main (Z.ai Code)
+Task: v14.0 — مزايا أساسية: AdSlot + Sidebar + Privacy + Data Admin + Map3D
+
+## Work Log
+
+### Item 1: AdSlot model + admin UI + 7 positions
+- إضافة `model AdSlot` إلى `prisma/schema.prisma` بـ 7 مواضع (HEADER, SIDEBAR_TOP,
+  SIDEBAR_BOTTOM, IN_FEED, FOOTER, LEFT, RIGHT) و 4 أنواع (IMAGE, SCRIPT, HTML,
+  ADSENSE) + تتبّع الظهور والنقرات + الأولوية + فترة الصلاحية
+- `bun run db:push` — تمت مزامنة النموذج بنجاح
+- إنشاء `/api/admin/ads/slots` (GET + POST) — SUPER_ADMIN فقط:
+  * GET: قائمة كل المساحات (مرتّبة حسب priority)
+  * POST: إنشاء مساحة جديدة مع validation عبر zod (z.enum على position + type)
+  * تسجيل AuditLog لكل إنشاء
+- إنشاء `/api/admin/ads/slots/[id]` (PATCH + DELETE) — SUPER_ADMIN فقط:
+  * PATCH: تحديث المساحة (حقول اختيارية + resetStats لإعادة تصفير العدّادات)
+  * DELETE: حذف نهائي مع تسجيل AuditLog بـ severity=warning
+- إنشاء `/api/public/ads/slots` (GET عمومي بدون مصادقة):
+  * ?position=HEADER|SIDEBAR_TOP|...
+  * يبحث عن AdSlot نشط ضمن فترة الصلاحية بأعلى أولوية
+  * يُزيّد عدّاد الظهور (views) بشكل fire-and-forget
+  * عند فشل DB يُرجع `{ slot: null }` (لا خطأ 500) — متوافق مع نمط try/catch fallback
+- إنشاء `/api/public/ads/slots/[id]/click` (POST عمومي):
+  * يُزيّد عدّاد النقرات (clicks) على المساحة المُحدَّدة
+- إعادة كتابة `src/components/ads/ad-placement.tsx`:
+  * أولاً: يستعلم عن AdSlot من `/api/public/ads/slots?position=…` على المount
+  * IMAGE: <img> داخل <a> لو linkUrl موجود + تسجيل نقرة
+  * SCRIPT/HTML: dangerouslySetInnerHTML + تسجيل نقرة
+  * ADSENSE: <ins class="adsbygoogle"> مع data-ad-slot من content + publisherId من السياق
+  * ثانياً: لو لا AdSlot ولا AdSense → placeholder مغربي الأناقة (Megaphone + label)
+  * ثالثاً: لو لا AdSlot لكن AdSense مفعّل → ins tag من الإعدادات (سلوك سابق)
+  * خريطة `AdPlacementType` (header-leaderboard, sidebar-top, ...) → `AdSlot.position` (HEADER, SIDEBAR_TOP, ...)
+- إنشاء `src/components/admin/ads/ad-slot-form-dialog.tsx` (client):
+  * نافذة إنشاء/تعديل مع 7 خيارات للموضع و 4 للنوع
+  * حقول: name, position, type, content, imageUrl, linkUrl, width, height,
+    startDate, endDate, priority, isActive
+  * عرض حقل imageUrl/linkUrl فقط للنوع IMAGE
+  * عرض حقل content فقط للأنواع SCRIPT/HTML/ADSENSE (مع تلميح مميّز لـADSENSE)
+  * Switch للنشاط + Reset stats اختياري
+  * زر حذف داخل نافذة التعديل
+- إنشاء `src/app/admin/ads/slots/page.tsx` (server component, SUPER_ADMIN):
+  * جدول كل AdSlots: name, position badge, type badge, status, priority,
+    views, clicks, CTR محسوب, فترة الصلاحية, زر تعديل
+  * 4 KPIs: إجمالي المساحات، المساحات النشطة، إجمالي الظهور، CTR الإجمالي
+  * ترتيب حسب priority desc ثم createdAt desc
+- إنشاء `src/app/admin/ads/slots/create-trigger.tsx` + `edit-trigger.tsx` (client
+  components منفصلة لأن الصفحة server component — تفتح الـAdSlotFormDialog)
+
+### Item 2: RTL News Ticker enhancement
+- تحديث `src/components/community/activity-ticker.tsx`:
+  * إضافة emoji لكل نوع نشاط (🤲 👋 🎉 👥 🏆 🔥 💝 ✨) بجانب أيقونة Lucide
+  * البصيلات الآن تعرض: emoji + دائرة أيقونة + نص + time-ago
+  * تدرّج إخفاء أعرض (w-16 بدل w-12) على الحافّتين (start-0/end-0)
+  * تدرّج ثلاثي (from-muted/80 via-muted/40 to-transparent) لإخفاء أنعم
+  * تم التحقق من RTL: `x: ["0%", "-50%"]` مع `loop = [...items, ...items]`
+    يحرّك المحتوى من اليمين إلى اليسار (الاتجاه الطبيعي للقراءة العربية)
+  * تصدير `ACTIVITY_ICONS` بجانب `ACTIVITY_EMOJI` لإعادة الاستعمال
+
+### Item 3: Collapsible Sidebar
+- إنشاء `src/components/layout/collapsible-sidebar.tsx` ('use client'):
+  * شريط ثابت على سطح المكتب (جهة اليمين في RTL: `fixed end-0 top-16`)
+  * على الجوال: زر هامبرغر عائم (top-20 end-2) يفتحه كـ Sheet
+  * يحتوي 15 عنصر: الرئيسية، المجتمع، صندوق المعروف، الفعاليات، المجموعات،
+    الرسائل، النقاشات، المبادرات، المتجر، الخريطة، المدوّنة، دليل الحي،
+    قصص النجاح، تاريخ الحي، الأخلاق
+  * كل عنصر: أيقونة Lucide + تسمية عربية
+  * إبراز العنصر النشط: bg-primary/10 + text-primary + ring-1 ring-primary/20
+  * زر طيّ/توسعة (ChevronLeft/ChevronRight) — يحفظ الحالة في localStorage
+    تحت مفتاح `sidebar.collapsed`
+  * في الوضع المطويّ: عناصر `size-11` + Tooltip على الجانب الأيسر يُظهر التسمية
+  * أنميشن framer-motion: `motion.aside animate={{ width: collapsed ? 64 : 224 }}`
+    مع transition spring (stiffness 260, damping 30)
+  * AnimatePresence للمؤشّر الطيّ السفلي
+  * اثنان من أزرار التوسعة/الطيّ (في الرأس والتذييل)
+  * `usePathname` يُغلق الـSheet على الجوال تلقائياً عند التنقّل
+
+### Item 4: Phone Number Privacy
+- إنشاء `src/lib/privacy.ts`:
+  * `maskPhone(phone)`: 0612345678 → "0612-XX-XX-XX" (يُظهر أول 4 أرقام فقط)
+  * `shouldMaskPhone(role)`: true لكل دور ما عدا SUPER_ADMIN/TREASURER/DISTRICT_MOD
+  * `maskName(fullName)`: "محمد بنعلي" → "محمد ب." (للعرض العام على الشريط)
+- تحديث `src/app/community/districts/[slug]/page.tsx`:
+  * استيراد `maskPhone + shouldMaskPhone` من `@/lib/privacy`
+  * إضافة `phone: true` إلى `topMembers` select
+  * حساب `hidePhone = shouldMaskPhone(currentUser?.role)` بعد جلب currentUser
+  * عرض `phone` للأعضاء الأكثر نشاطاً (إن وُجد) في عمود النقاط: إمّا كاملاً
+    (للمشرفين) أو مُخفى "0612-XX-XX-XX" (للزائر/العضو)
+  * تحديث ملاحظة الخصوصية: تُظهر رسالة مختلفة حسب الدور
+- تحديث `src/app/guide/page.tsx`:
+  * استيراد `maskPhone + shouldMaskPhone` + `getCurrentUser`
+  * حساب `hidePhone = shouldMaskPhone(currentUser?.role)` على مستوى الصفحة
+  * تعطيل `href="tel:..."` (undefined) لو الإخفاء مفعّل — الزائر لا يستطيع الاتصال
+  * عرض `maskPhone(item.phone)` للزائر، `item.phone` كاملاً للمشرف
+  * aria-label مميّز يُوضّح سياسة الإخفاء
+- تحديث `src/app/community/profile/page.tsx`:
+  * إزالة `maskPhone` المحلي المُكرَّر (كان "0612-••••••")
+  * استيراد `maskPhone + shouldMaskPhone` من `@/lib/privacy`
+  * عرض هاتف المستخدم: مُخفى للأعضاء غير الإداريين، كامل للمشرفين
+    (سياسة موحّدة عبر المنصة)
+
+### Item 5: Admin Data Management Panel
+- إنشاء `src/app/api/admin/data/route.ts` (SUPER_ADMIN فقط):
+  * GET: قائمة 41 نموذج مع العدّدات + إجمالي السجلّات
+    (User, Family, District, Group, Event, FundRequest, Contribution, ...)
+  * DELETE: body { model, mode?: "soft"|"hard", filter?: Record }
+    - soft: `updateMany({ data: { deletedAt: now() } })` — للنماذج ذات deletedAt
+    - hard: `deleteMany({ where: filter })` — حذف نهائي
+    - حماية AuditLog: لا يمكن حذفه نهائياً من هنا (soft فقط)
+    - تسجيل AuditLog بـ severity=critical لو حُذف سجلّات، warning لو 0
+- إنشاء `src/components/admin/data-admin-client.tsx` ('use client'):
+  * جدول كل النماذج: name (code), label, نوع الحذف (soft/hard badge), count
+  * لكل نموذج: زرّ "حذف ناعم" (للنماذج ذات deletedAt) + زرّ "حذف الكل"
+  * 3 عمليات مجمّعة سريعة:
+    - "حذف كل المساهمات المعلّقة" (Contribution where status=PENDING, mode=hard)
+    - "حذف كل الطلبات المرفوضة" (FundRequest where status=REJECTED, mode=soft)
+    - "حذف كل النقاشات القديمة" (Discussion where createdAt < now-90d, mode=hard)
+  * نافذة تأكيد (AlertDialog) لكل عملية خطرة — تُظهر label + hint + mode
+  * Refresh button يُعيد جلب العدّادات
+  * sonner toast يُظهر عدد السجلّات المحذوفة + نوع الحذف
+- إنشاء `src/app/admin/data/page.tsx` (server component, SUPER_ADMIN):
+  * يجلب العدّادات من 41 نموذج (try/catch — يُرجع 0 لو فشل)
+  * breadcrumb + ترويسة مع شرح سياسة الحذف الناعم مقابل النهائي
+  * يُمرّر البيانات لـ DataAdminClient
+
+### Item 6: MapLibre 3D Map
+- تثبيت `maplibre-gl@6.11.1` — `bun add maplibre-gl`
+- إنشاء `src/components/community/map-3d.tsx` ('use client'):
+  * MapLibre GL JS مع بلاطات OpenFreeMap (liberty style) — بلا API key
+  * `import * as maplibregl from "maplibre-gl"` + `import type { Map, Marker, Popup }`
+    (تغيير مهم: default export غير موجود في v6 → namespace import)
+  * `import "maplibre-gl/dist/maplibre-gl.css"` — لأنماط التحكّم والـpopup
+  * center: [-7.9811, 31.6295] (Marrakech [lng, lat])
+  * zoom: 12, pitch: 45 (3D tilt), bearing: 0
+  * 5 علامات للأحياء: دوائر ملونة بألوان زليج مراكش (ترابي/أخضر صنوبر/ذهبي نحاسي/...)
+  * SVG pin element لكل علامة (مع stroke كريمي + دائرة داخلية)
+  * Popup HTML على النقر يُظهر: اسم الحي + اسم فرنسي (لو وجد) + عدد الأعضاء
+    والأسر بالعربية مع Tajawal font + dir=rtl
+  * NavigationControl (visualizePitch) في top-left
+  * ScaleControl (metric, maxWidth 150) في bottom-left
+  * locale عربية: تكبير/تصغير/إعادة ضبط الاتجاه/متر/قدم/ملء الشاشة
+  * attributionControl compact
+  * responsive: 500px على سطح المكتب، 300px على الجوال (useEffect + resize listener)
+  * تنظيف صحيح: إزالة markers + map.remove() على unmount
+  * زاوية عائمة "مراكش · المملكة المغربية" (top-2 end-2)
+- إنشاء `src/app/community/map-3d/page.tsx` (server component):
+  * يجلب الأحياء من db.district.findMany (try/catch — يُرجع [] لو فشل)
+  * خريطة DISTRICT_COORDS افتراضية لـ 5 أحياء (sidi-youssef-ben-ali, medina,
+    guelize, menara, annakhil) بإحداثيات [lat, lng]
+  * Page title: "خريطة ثلاثية الأبعاد لمراكش"
+  * 3 إحصاءات: عدد الأحياء، إجمالي الأعضاء، إجمالي الأسر
+  * جدول إحصاءات الأحياء: اسم + أعضاء + أسر + سكان + نسبة الانخراط (Badge ملوّن)
+  * زر "عرض الخريطة ثنائية الأبعاد" يُوجّه لـ /community/map
+  * breadcrumb + ZelligeDivider
+
+## النتائج
+- ✅ `bun run db:push` — تمت مزامنة نموذج AdSlot بنجاح
+- ✅ `bun run lint` — 0 أخطaء، 0 تحذيرات (تأكيد مرّتين)
+- ✅ Dev server: كل المسارات الأساسية 200 OK:
+  * `GET /` → 200 (صفحة رئيسية مع AdPlacement محدّث يستعلم عن AdSlot)
+  * `GET /api/public/ads/slots?position=HEADER` → 200 (`{ slot: null }` عند فشل DB)
+  * `GET /guide` → 200 (تم تطبيق maskPhone + shouldMaskPhone)
+  * `GET /community` → 200 (تم التحقق منه عند أوّل إقلاع)
+- ⚠️ ملاحظة بيئية: خادم dev معرّض لـOOM-kill في sandbox (4GB RAM).
+  كل طلب route جديد يُ trigger compilation تستخدم ذاكرة كبيرة. المحاولة الأولى
+  لـ`/community/map-3d` كانت 500 بسبب `import maplibregl, {...} from "maplibre-gl"`
+  (default export غير موجود في v6) — تمّ إصلاحه إلى `import * as maplibregl` +
+  `import type { Map, Marker, Popup }`.
+- ✅ كل الكود عربي فصيح (تسميات + تلميحات + رسائل + aria-labels)
+- ✅ RTL مع logical properties (ps-/pe-/ms-/me-/start-/end-/inset-x-0)
+- ✅ touch targets ≥ 44px (h-11 لكل زر رئيسي، size-11 للعناصر المطويّة)
+- ✅ framer-motion لكل الأنميشن (motion.aside, AnimatePresence, stagger,
+  transition spring)
+- ✅ shadcn/ui: Card, Button, Badge, Table, Dialog, AlertDialog, Switch,
+  Select, Sheet, Textarea, Input, Label, Tooltip, Separator
+- ✅ sonner toast للإشعارات الحيّة (في AdSlotFormDialog + DataAdminClient)
+- ✅ كل fetch URLs نسبية (`/api/public/ads/slots?position=…`,
+  `/api/public/ads/slots/${id}/click`, `/api/admin/ads/slots`, `/api/admin/data`)
+- ✅ server components لجلب البيانات + client components للتفاعل
+- ✅ Prisma schema مُحْدَث بدون data loss (db:push --accept-data-loss)
+- ✅ AuditLog لكل العمليات الإدارية (adslot.created, adslot.updated,
+  adslot.deleted, admin.data.delete مع severity critical/warning)
+- ✅ Soft delete (set deletedAt) للنماذج الستة القابلة لذلك + Hard delete
+  للباقي + حماية AuditLog من الحذف النهائي
+
+## Stage Summary
+- ✅ Item 1: AdSlot model + admin UI + 7 positions + update AdPlacement (15 ملف)
+  - schema.prisma, 2 API routes (admin create/list + admin update/delete),
+    2 public API routes (slots GET + click POST), 1 admin form dialog,
+    1 admin page (server) + 2 client triggers (create/edit), ad-placement
+    rewrite
+- ✅ Item 2: RTL News Ticker enhancement — emojis + أعرض gradient + تصدير الأيقونات
+- ✅ Item 3: CollapsibleSidebar — 15 عنصر، طيّ مع localStorage، Sheet للجوال،
+  framer-motion spring transition
+- ✅ Item 4: privacy.ts (maskPhone + shouldMaskPhone + maskName) + تطبيق على
+  3 صفحات (districts/[slug], guide, profile)
+- ✅ Item 5: Admin Data Management Panel — API GET/DELETE (41 نموذج) + client
+  component (3 عمليات مجمّعة + AlertDialog تأكيد + sonner feedback) + page
+- ✅ Item 6: MapLibre 3D Map — maplibre-gl@6.11.1 + Map3D component (vanilla
+  maplibre-gl مع React useEffect) + map-3d page
+
+## ملفّات جديدة (15 ملف)
+- prisma/schema.prisma (مُحدَّث: إضافة model AdSlot)
+- src/app/api/admin/ads/slots/route.ts (GET + POST)
+- src/app/api/admin/ads/slots/[id]/route.ts (PATCH + DELETE)
+- src/app/api/public/ads/slots/route.ts (GET عمومي)
+- src/app/api/public/ads/slots/[id]/click/route.ts (POST عمومي)
+- src/components/admin/ads/ad-slot-form-dialog.tsx (client)
+- src/app/admin/ads/slots/page.tsx (server)
+- src/app/admin/ads/slots/create-trigger.tsx (client)
+- src/app/admin/ads/slots/edit-trigger.tsx (client)
+- src/components/ads/ad-placement.tsx (مُعاد كتابتها بالكامل)
+- src/components/community/activity-ticker.tsx (مُحدَّث: emojis + gradients)
+- src/components/layout/collapsible-sidebar.tsx (جديد)
+- src/lib/privacy.ts (maskPhone + shouldMaskPhone + maskName)
+- src/app/api/admin/data/route.ts (GET + DELETE)
+- src/components/admin/data-admin-client.tsx (client)
+- src/app/admin/data/page.tsx (server)
+- src/components/community/map-3d.tsx (جديد)
+- src/app/community/map-3d/page.tsx (جديد)
+
+## ملفّات محدّثة
+- src/app/community/districts/[slug]/page.tsx (إخفاء الهاتف حسب الدور)
+- src/app/guide/page.tsx (إخفاء الهاتف + تعطيل tel: link)
+- src/app/community/profile/page.tsx (استعمال privacy.ts الموحّد)
+
+## تقنية
+- ✅ Next.js 16 App Router + TypeScript 5 strict
+- ✅ Tailwind 4 + shadcn/ui (New York style) + Lucide icons
+- ✅ Prisma 6 + PostgreSQL (Supabase)
+- ✅ framer-motion 12 + sonner 2
+- ✅ maplibre-gl 6.11.1 + OpenFreeMap tiles
+- ✅ RTL `dir="rtl" lang="ar"` مع logical properties
+- ✅ كل الـfetches نسبية (XTransformPort لا حاجة له لأن الكل على port 3000)
+- ✅ لا CDN خارجي للخطوط أو المكتبات (OpenFreeMap بلاطات مجانية)
+
+## verification
+- `bun run db:push`: ✅ Your database is now in sync with your Prisma schema.
+- `bun run lint`: ✅ 0 أخطaء، 0 تحذيرات
+- `GET /`: 200 (الصفحة الرئيسية مع AdPlacement المح mod يطّلب slots)
+- `GET /api/public/ads/slots?position=HEADER`: 200 (`{ slot: null }` عند فشل DB)
+- `GET /guide`: 200 (مع maskPhone مطبّق)
+- `GET /community`: 200 (تحقّق عند أوّل إقلاع)

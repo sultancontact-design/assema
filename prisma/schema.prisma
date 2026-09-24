@@ -716,6 +716,36 @@ model Ad {
 }
 
 // ===================================================================
+//  AdSlot — مساحة إعلانية مستقلّة (7 مواضع)
+//  - مواضع: HEADER, SIDEBAR_TOP, SIDEBAR_BOTTOM, IN_FEED, FOOTER, LEFT, RIGHT
+//  - أنواع: IMAGE, SCRIPT, HTML, ADSENSE
+//  - تتبّع الظهور (views) والنقرات (clicks)
+//  - أولوية (priority) + فترة صلاحية (startDate/endDate)
+// ===================================================================
+
+model AdSlot {
+  id          String   @id @default(cuid())
+  name        String
+  position    String   // HEADER, SIDEBAR_TOP, SIDEBAR_BOTTOM, IN_FEED, FOOTER, LEFT, RIGHT
+  type        String   // IMAGE, SCRIPT, HTML, ADSENSE
+  content     String?
+  imageUrl    String?
+  linkUrl     String?
+  width       Int?
+  height      Int?
+  isActive    Boolean  @default(true)
+  startDate   DateTime?
+  endDate     DateTime?
+  clicks      Int      @default(0)
+  views       Int      @default(0)
+  priority    Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([position, isActive])
+  @@index([isActive])
+}
+
+// ===================================================================
 //  الشكاوى والاقتراحات (Complaints & Feedback)
 // ===================================================================
 

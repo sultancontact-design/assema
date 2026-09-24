@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { maskPhone, shouldMaskPhone } from "@/lib/privacy";
 import {
   formatMAD,
   formatDateArabic,
@@ -58,16 +59,6 @@ export const dynamic = "force-dynamic";
 // ===================================================================
 //  أدوات مساعدة محلية
 // ===================================================================
-
-/** قناع الهاتف: 0612345678 → 0612-•••••• */
-function maskPhone(phone: string): string {
-  if (!phone) return "—";
-  const digits = phone.replace(/\D/g, "");
-  if (digits.length < 4) return digits;
-  const head = digits.slice(0, 4);
-  const tail = "•".repeat(Math.max(0, digits.length - 4));
-  return `${head}-${tail}`;
-}
 
 /** أحرف الاسم الأولى من fullName */
 function getInitials(fullName: string): string {
@@ -285,7 +276,11 @@ export default async function ProfilePage() {
                     <InfoRow
                       icon={Phone}
                       label="الهاتف"
-                      value={maskPhone(profile.phone)}
+                      value={
+                        shouldMaskPhone(user.role)
+                          ? maskPhone(profile.phone)
+                          : profile.phone || "—"
+                      }
                     />
                     <InfoRow
                       icon={MapPin}

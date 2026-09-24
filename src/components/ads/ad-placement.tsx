@@ -2,19 +2,13 @@
 
 // ===================================================================
 //  AdPlacement — مكوّن موضع إعلاني (client)
-//  - يقرأ إعدادات AdSense من AdsProvider عبر useAds()
-//  - لو active=true: يُعرض <ins class="adsbygoogle"> مع data-ad-client +
-//    data-ad-slot، ويُنفّذ (adsbygoogle.push({})) بعد التحميل
-//  - لو active=false: يُعرض placeholder بـ"مساحة إعلانية" بألوان زليج
-//  - أبعاد متجاوبة: لكل موضع أبعاد مختلفة على الجوال وسطح المكتب
-//  - مع وضع التجربة (testMode): يضيف data-ad-test="on"
-//
-//  المواضع المدعومة:
-//    header-leaderboard: 728×90 سطح المكتب، 320×50 الجوال
-//    sidebar-top/sidebar-bottom: 300×250
-//    in-feed: 600×200 (يتكيّف)
-//    in-article: 468×120
-//    footer-banner: 728×90 سطح المكتب، 320×50 الجوال
+//  - أولاً: يستعلم عن AdSlot من قاعدة البيانات يطابق الموضع
+//    - إن وُجد: يعرض محتواه (IMAGE/SCRIPT/HTML/ADSENSE)
+//    - يسجّل ظهوراً عند العرض + نقرة عند الضغط
+//  - ثانياً: لو لم يوجد AdSlot، يلجأ إلى AdSense من AdsProvider
+//    (لو active=true و publisherId غير فارغ)
+//  - ثالثاً: لو لا هذا ولا ذاك، يعرض placeholder بـ"مساحة إعلانية"
+//  - أبعاد متجاوبة لكل موضع
 // ===================================================================
 
 import * as React from "react";
@@ -31,19 +25,20 @@ interface AdPlacementProps {
   hideOnMobile?: boolean;
 }
 
+// ─────────── خريطة مواضع AdPlacementType → AdSlot.position ───────────
+const PLACEMENT_TO_POSITION: Record<AdPlacementType, string> = {
+  "header-leaderboard": "HEADER",
+  "sidebar-top": "SIDEBAR_TOP",
+  "sidebar-bottom": "SIDEBAR_BOTTOM",
+  "in-feed": "IN_FEED",
+  "in-article": "IN_FEED", // في القلب تُعامل كداخل التدفق
+  "footer-banner": "FOOTER",
+};
+
 // ─────────── أبعاد العرض لكل موضع ───────────
-// - desktop: الأبعاد على شاشات ≥ 768px
-// - mobile: الأبعاد على شاشات < 768px
-// - minH: أقل ارتفاع (CSS) لتفادي تقلّص الحيّز
 const PLACEMENT_SIZES: Record<
   AdPlacementType,
-  {
-    desktopW: number;
-    desktopH: number;
-    mobileW: number;
-    mobileH: number;
-    label: string;
-  }
+  { desktopW: number; desktopH: number; mobileW: number; mobileH: number; label: string }
 > = {
   "header-leaderboard": {
     desktopW: 728,
@@ -89,7 +84,6 @@ const PLACEMENT_SIZES: Record<
   },
 };
 
-// slot افتراضي لكل موضع (يُستعمل إن لم يُضبط في Setting)
 const DEFAULT_SLOTS: Record<AdPlacementType, string> = {
   "header-leaderboard": "0000000001",
   "sidebar-top": "0000000002",
@@ -99,6 +93,18 @@ const DEFAULT_SLOTS: Record<AdPlacementType, string> = {
   "footer-banner": "0000000006",
 };
 
+interface AdSlotPayload {
+  id: string;
+  name: string;
+  position: string;
+  type: string; // IMAGE | SCRIPT | HTML | ADSENSE
+  content: string | null;
+  imageUrl: string | null;
+  linkUrl: string | null;
+  width: number | null;
+  height: number | null;
+}
+
 declare global {
   interface Window {
     adsbygoogle?: unknown[];
@@ -107,7 +113,7 @@ declare global {
 
 /**
  * AdPlacement — مكوّن موضع إعلاني متجاوب.
- * يعرض إعلان AdSense حقيقياً عند التفعيل، أو placeholder مغربي الأناقة.
+ * يفضّل AdSlot من قاعدة البيانات ثم AdSense ثم placeholder.
  */
 export function AdPlacement({
   placement,
@@ -117,9 +123,47 @@ export function AdPlacement({
   const { active, publisherId, testMode, slots } = useAds();
   const insRef = React.useRef<HTMLModElement>(null);
   const pushedRef = React.useRef(false);
+  const viewedRef = React.useRef<string | null>(null);
 
-  // تنفيذ adsbygoogle.push بعد التحميل لتفعيل عرض الإعلان
+  const [slot, setSlot] = React.useState<AdSlotPayload | null | undefined>(
+    undefined
+  );
+
+  const position = PLACEMENT_TO_POSITION[placement] ?? "HEADER";
+  const size = PLACEMENT_SIZES[placement];
+
+  // 1) جلب AdSlot المطابق للموضع من قاعدة البيانات
   React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/public/ads/slots?position=${position}`,
+          { cache: "no-store" }
+        );
+        if (!res.ok) {
+          if (!cancelled) setSlot(null);
+          return;
+        }
+        const data = (await res.json()) as { slot: AdSlotPayload | null };
+        if (!cancelled) {
+          setSlot(data.slot ?? null);
+          if (data.slot) {
+            viewedRef.current = data.slot.id;
+          }
+        }
+      } catch {
+        if (!cancelled) setSlot(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [position]);
+
+  // 2) تنفيذ adsbygoogle.push بعد التحميل لو سنعرض AdSense (لو لا AdSlot)
+  React.useEffect(() => {
+    if (slot) return; // سنعرض AdSlot
     if (!active || !publisherId || pushedRef.current) return;
     if (typeof window === "undefined") return;
     try {
@@ -128,34 +172,161 @@ export function AdPlacement({
     } catch {
       // تجاهل: قد يحدث لو لم يُحمّل سكربت AdSense بعد
     }
-  }, [active, publisherId, placement]);
+  }, [active, publisherId, placement, slot]);
 
-  const size = PLACEMENT_SIZES[placement];
-  const slotId = slots[placement] ?? DEFAULT_SLOTS[placement];
+  // ─────────── مسار: عرض AdSlot من قاعدة البيانات ───────────
+  if (slot) {
+    const handleSlotClick = () => {
+      // تسجيل نقرة (fire-and-forget)
+      fetch(`/api/public/ads/slots/${slot.id}/click`, { method: "POST" }).catch(
+        () => {}
+      );
+    };
 
-  // ─────────── placeholder مغربي (لو غير مفعّل) ───────────
+    // IMAGE: صورة مع رابط اختياري
+    if (slot.type === "IMAGE" && slot.imageUrl) {
+      const Wrapper = slot.linkUrl ? "a" : "div";
+      const wrapperProps = slot.linkUrl
+        ? {
+            href: slot.linkUrl,
+            target: "_blank" as const,
+            rel: "noopener noreferrer",
+            onClick: handleSlotClick,
+            "aria-label": slot.name,
+          }
+        : { onClick: handleSlotClick };
+      return (
+        <div
+          className={cn(
+            "flex items-center justify-center overflow-hidden rounded-md",
+            hideOnMobile && "hidden md:flex",
+            className
+          )}
+          style={{
+            minHeight: `${slot.height ?? size.mobileH}px`,
+            minWidth: slot.width ? `${slot.width}px` : undefined,
+          }}
+          role="complementary"
+          aria-label={slot.name}
+        >
+          <Wrapper
+            {...wrapperProps}
+            className="block w-full"
+            style={{ minHeight: "inherit" }}
+          >
+            <img
+              src={slot.imageUrl}
+              alt={slot.name}
+              className="h-auto w-full max-w-full object-contain"
+              style={{
+                maxHeight: `${slot.height ?? size.desktopH}px`,
+              }}
+              loading="lazy"
+            />
+          </Wrapper>
+        </div>
+      );
+    }
+
+    // SCRIPT: سكربت خام (dangerouslySetInnerHTML)
+    if (slot.type === "SCRIPT" && slot.content) {
+      return (
+        <div
+          className={cn(
+            "flex items-center justify-center overflow-hidden rounded-md",
+            hideOnMobile && "hidden md:flex",
+            className
+          )}
+          style={{ minHeight: `${slot.height ?? size.mobileH}px` }}
+          role="complementary"
+          aria-label={slot.name}
+          onClick={handleSlotClick}
+          dangerouslySetInnerHTML={{ __html: slot.content }}
+        />
+      );
+    }
+
+    // HTML: محتوى HTML خام (dangerouslySetInnerHTML)
+    if (slot.type === "HTML" && slot.content) {
+      return (
+        <div
+          className={cn(
+            "flex items-center justify-center overflow-hidden rounded-md",
+            hideOnMobile && "hidden md:flex",
+            className
+          )}
+          style={{ minHeight: `${slot.height ?? size.mobileH}px` }}
+          role="complementary"
+          aria-label={slot.name}
+          onClick={handleSlotClick}
+          dangerouslySetInnerHTML={{ __html: slot.content }}
+        />
+      );
+    }
+
+    // ADSENSE: علامة ins باستخدام publisherId من السياق
+    if (slot.type === "ADSENSE") {
+      const slotId = slot.content?.trim() || slots[placement] || DEFAULT_SLOTS[placement];
+      if (!active || !publisherId) {
+        return <Placeholder hideOnMobile={hideOnMobile} className={className} size={size} />;
+      }
+      return (
+        <div
+          className={cn(
+            "flex items-center justify-center overflow-hidden rounded-md",
+            hideOnMobile && "hidden md:flex",
+            className
+          )}
+          style={{ minHeight: `${size.mobileH}px` }}
+          role="complementary"
+          aria-label={slot.name || "محتوى إعلاني مدعوم"}
+          onClick={handleSlotClick}
+        >
+          <ins
+            ref={insRef}
+            className="adsbygoogle"
+            style={{ display: "block", width: "100%", height: "100%" }}
+            data-ad-client={publisherId}
+            data-ad-slot={slotId}
+            data-ad-format="auto"
+            data-full-width-responsive="true"
+            {...(testMode ? { "data-ad-test": "on" } : {})}
+          />
+        </div>
+      );
+    }
+  }
+
+  // ─────────── مسار: لا AdSlot — استعمال AdSense من الإعدادات ───────────
   if (!active || !publisherId) {
+    // نعرض placeholder فقط بعد التأكّد من عدم وجود AdSlot
+    if (slot === undefined) {
+      return (
+        <div
+          className={cn(
+            "flex flex-col items-center justify-center gap-1.5 rounded-md border border-dashed border-border bg-muted/30 text-muted-foreground/70",
+            hideOnMobile && "hidden md:flex",
+            className
+          )}
+          style={{ minHeight: `${size.mobileH}px` }}
+          role="complementary"
+          aria-label="مساحة إعلانية"
+        >
+          <span className="size-4 animate-pulse rounded-full bg-muted-foreground/30" />
+        </div>
+      );
+    }
     return (
-      <div
-        className={cn(
-          "flex flex-col items-center justify-center gap-1.5 rounded-md border border-dashed border-border bg-muted/30 text-muted-foreground/70",
-          hideOnMobile && "hidden md:flex",
-          className
-        )}
-        style={{
-          minHeight: `${size.mobileH}px`,
-        }}
-        role="complementary"
-        aria-label="مساحة إعلانية"
-      >
-        <Megaphone className="size-5 opacity-60" aria-hidden="true" />
-        <p className="text-[11px] font-medium">مساحة إعلانية</p>
-        <p className="text-[10px] opacity-60">{size.label}</p>
-      </div>
+      <Placeholder
+        hideOnMobile={hideOnMobile}
+        className={className}
+        size={size}
+      />
     );
   }
 
-  // ─────────── إعلان AdSense حقيقي ───────────
+  // ─────────── مسار: لا AdSlot — AdSense من الإعدادات ───────────
+  const slotId = slots[placement] ?? DEFAULT_SLOTS[placement];
   return (
     <div
       className={cn(
@@ -163,9 +334,7 @@ export function AdPlacement({
         hideOnMobile && "hidden md:flex",
         className
       )}
-      style={{
-        minHeight: `${size.mobileH}px`,
-      }}
+      style={{ minHeight: `${size.mobileH}px` }}
       role="complementary"
       aria-label="محتوى إعلاني مدعوم"
     >
@@ -179,6 +348,34 @@ export function AdPlacement({
         data-full-width-responsive="true"
         {...(testMode ? { "data-ad-test": "on" } : {})}
       />
+    </div>
+  );
+}
+
+// ─────────── Placeholder مغربي الأناقة ───────────
+function Placeholder({
+  hideOnMobile,
+  className,
+  size,
+}: {
+  hideOnMobile: boolean;
+  className?: string;
+  size: { mobileH: number; label: string };
+}) {
+  return (
+    <div
+      className={cn(
+        "flex flex-col items-center justify-center gap-1.5 rounded-md border border-dashed border-border bg-muted/30 text-muted-foreground/70",
+        hideOnMobile && "hidden md:flex",
+        className
+      )}
+      style={{ minHeight: `${size.mobileH}px` }}
+      role="complementary"
+      aria-label="مساحة إعلانية"
+    >
+      <Megaphone className="size-5 opacity-60" aria-hidden="true" />
+      <p className="text-[11px] font-medium">مساحة إعلانية</p>
+      <p className="text-[10px] opacity-60">{size.label}</p>
     </div>
   );
 }
