@@ -183,8 +183,13 @@ export function ContributionsAdminClient({ data }: Props) {
     if (!selected) return;
     setProcessing(selected.id);
     try {
+      // camelCase → kebab-case for URL
+      const kebabType = selected.type
+        .replace(/([A-Z])/g, "-$1")
+        .toLowerCase()
+        .replace(/^-/, "");
       const res = await fetch(
-        `/api/admin/contributions/${selected.type}/${selected.id}`,
+        `/api/admin/contributions/review/${kebabType}/${selected.id}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
