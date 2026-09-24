@@ -1,23 +1,61 @@
-name: Daily Price Fetch
+name: Daily Real Price Fetch
+
+# =====================================================================
+#  يطلب من Vercel كل 6 ساعات تحديث الأسعار الحقيقية من المصادر الرسمية.
+#  كل المصادر مُؤكّدة (FAOSTAT area=504 + مساهمات المستخدمين + data.gov.ma).
+#  ❌ لا fallback موسمي. إذا فشلت كل المصادر، لا تُولّد أي سعر.
+# =====================================================================
+
 on:
   schedule:
-    - cron: '0 6 * * *'
+    # كل 6 ساعات: 00:17, 06:17, 12:17, 17:17 UTC
+    # (17 بعد الدقيقة لتفادي ضغط GitHub Actions على الساعة الكاملة)
+    - cron: '17 0,6,12,18 * * *'
   workflow_dispatch:
 
 jobs:
   fetch:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Fetch real prices from official sources
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          echo "Fetching real prices from official Moroccan sources..."
-          RESPONSE=$(curl -s -X POST https://my-project-beta-ochre.vercel.app/api/cron/prices \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            -H "Content-Type: application/json" \
-            --max-time 50)
-          echo "Response: $RESPONSE"
-          if echo "$RESPONSE" | grep -q '"status":"SUCCESS"'; then
-            echo "✅ Prices fetched successfully"
-          else
-            echo "⚠️ Fetch failed or no data — no fake prices generated"
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET secret is not set on GitHub — cannot authenticate to Vercel cron endpoint."
+            exit 1
           fi
+          echo "Fetching real prices from FAOSTAT (area=504 Morocco) + data.gov.ma + user reports..."
+          RESPONSE=$(curl -s -X POST https://my-project-beta-ochre.vercel.app/api/cron/prices \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            --max-time 55)
+          echo "Response: $RESPONSE"
+          # تحقق من نجاح جلب واحد على الأقل
+          if echo "$RESPONSE" | jq -e '.count > 0' >/dev/null 2>&1; then
+            COUNT=$(echo "$RESPONSE" | jq -r '.count')
+            SOURCE=$(echo "$RESPONSE" | jq -r '.source // "UNKNOWN"')
+            echo "✅ Fetched $COUNT real prices from $SOURCE"
+            echo "$RESPONSE" | jq -r '.details[]? | "- \(.source): \(.count) prices (\(.status)\(.error // ""))"'
+          else
+            echo "⚠️ No prices fetched from any source — no fake data generated."
+            echo "Response details:"
+            echo "$RESPONSE" | jq -r '.details[]? | "- \(.source): \(.status) — \(.error // "ok")"' 2>/dev/null || echo "$RESPONSE"
+          fi
+
+      - name: Cleanup any synthetic prices (defensive)
+        if: always()
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "(skipping cleanup — no CRON_SECRET)"
+            exit 0
+          fi
+          echo "Running defensive cleanup of any synthetic prices (MOCK/SEASONAL/SYNTHETIC)..."
+          RESPONSE=$(curl -s -X POST https://my-project-beta-ochre.vercel.app/api/admin/prices/cleanup \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            --max-time 20 || echo "{}")
+          echo "Cleanup: $RESPONSE"

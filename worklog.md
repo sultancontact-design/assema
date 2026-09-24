@@ -4155,3 +4155,246 @@ Task: v14.0 — مزايا أساسية: AdSlot + Sidebar + Privacy + Data Admin
 - `GET /api/public/ads/slots?position=HEADER`: 200 (`{ slot: null }` عند فشل DB)
 - `GET /guide`: 200 (مع maskPhone مطبّق)
 - `GET /community`: 200 (تحقّق عند أوّل إقلاع)
+
+---
+Task ID: 2
+Agent: general-purpose (web research)
+Task: Research and confirm which Moroccan/international market price sources work in 2024-2025
+
+Work Log:
+- قراءة آخر ~200 سطر من worklog.md للفهم السياق (مشروع Next.js 16 عربي لحي سيدي
+  يوسف بن علي بمراكش — صفحة admin/data، AdSlot model، MapLibre 3D لمراكش، إلخ).
+- استعمال الـ Skill "web-search" عبر CLI:
+  `z-ai function -n web_search -a '{"query": "...", "num": 6}'`
+- البحث #1: "prixagriculture.org prix des produits Maroc 2024 2025"
+  → عثر على مقال AgriMaroc (24 ديسمبر 2019) بعنوان: "Pourquoi le site
+    http://www.prixagriculture.org ne fonctionne plus ?" → الموقع متوقّف منذ 2019.
+- البحث #2: "FAOSTAT API v1 producer prices PP area=143 Morocco endpoint 2024"
+  → توكيد FAO press release (23 ديسمبر 2025): "FAOSTAT update of Agriculture
+    producer prices, 2010-2024" → الـ API ما يزال يُحدَّث.
+- البحث #3: "data.gov.ma prix agricoles dataset CKAN Maroc"
+  → توكيد portal Open Data المغربي على قيد الحياة، يستعمل CKAN API v3.
+- البحث #4: "ONICL Maroc Office National Interprofessionnel Cereales"
+  → توكيد ONICL له موقع جديد أُطلق نونبر 2023 على onicl.org.ma.
+- البحث #5: "site:prixagriculture.org OR prixagriculture.org Maroc fruits légumes"
+  → توكيد قطعي أن www.prixagriculture.org ميت منذ 2019 (كان الموقع الرسمي
+    لوزارة الفلاحة المغربية لتتبّع الأسعار، تخلّت عنه الوزارة).
+- البحث #6: "onicl.org.ma site web officiel prix céréales indicatifs Maroc"
+  → توكيد الديوان يُحدّد "prix référentiel" سنوياً (مثلاً 280 DH/quintal blé
+    tendre لحملة 2026) — لكن لا يوجد سعر أسبوعي للسوق.
+- البحث #7: "EACCE Maroc citrus export prices établissement autonome contrôle"
+  → توكيد الموقع الحالي: moroccofoodex.org.ma (تحوّل من EACCE إلى Morocco
+    Foodex) — مُخصّص للتصدير، ليس أسواق السوق المحلّي.
+- البحث #8: "Ministère Agriculture Maroc marché prix bulletin hebdomadaire"
+  → لم أعثر على نشرة أسعار رسمية موثّقة من وزارة الفلاحة لـ 2024-2025.
+- البحث #9: "HCP Maroc indice prix consommation IPC données mensuelles télécharger"
+  → توكيد HCP يصدر IPC شهرياً (آخر: يوليو 2025، نُشر غشت 2025)؛ XLSX متوفّر على
+    data.gov.ma (Organisation: HCP).
+- البحث #10: "ORMVAS ORMVA Haouz Marrakech office régional mise valeur agricole"
+  → توكيد ORMVAH موجود بالمراكش (Office Régional de Mise en Valeur Agricole du
+    Haouz)، هاتف 24 44 96 50 — لكن لا يبدو أنه ينشر أسعار سوق أسبوعية.
+- البحث #11: "data.gov.ma dataset prix marché fruits légumes Maroc Open Data"
+  → البحث "prix agricoles" على data.gov.ma يُرجِع 7 datasets فقط، لا يوجد فيها
+    أسعار سوق أسبوعية للفواكه/الخضار — أغلبها إنتاج نباتي (Production végétale
+    2010-2022) ومواشي (Cheptel 2010-2021).
+- البحث #12: "FAOSTAT bulk download API JSON endpoint producer prices country
+  Morocco 143"
+  → توكيد أن API يتطلّب bulk download zip (لا login): paulrougieux r-universe
+    يؤكّد get_faostat_bulk_url "no login required".
+- البحث #13/#14/#15: بحث مباشر عن fenixservices.fao.org / area code 143
+  → OWID docs: "Each FAO dataset is typically given as a long table with Area
+    Code, Area, Item Code, Item, Element Code, Element, Year, Unit, Value".
+- البحث #16: "Maroc marché gros fruits légumes prix hebdomadaire Casablanca Manda"
+  → كشف المصدر الذهبي: lematin.ma + medias24.com + lebrief.ma + agrimaroc.ma
+    تنشر كلها نشرة أسبوعية لأسعار سوق الجملة بالدار البيضاء (مرجع وطني).
+- البحث #17/#24/#30/#32: فحص تفصيلي لـ area=143
+  → توكيد قطعي: M49 code 143 = "Central Asia" (إقليم: كازاخستان + قيرغيزستان +
+    طاجيكستان + تركمانستان + أوزبكستان) — NOT Morocco. M49 code المغرب = 504.
+- البحث #18/#25: "lematin.ma marché gros fruits légumes Casablanca prix"
+  → توكيد Le Matin يصدر نشرة أسبوعية: آخر مقال مؤكّد بـ Aug 13, 2025 (طماطم
+    ترتفع بـ Casablanca) + May 6, 2026 (بصل يقفز 4-6 إلى 6-9 DH/kg).
+- البحث #19: "Maroc Marchés hebdomadaire Souk Semmarine Casablanca prix"
+  → لم أعثر على "Maroc Marchés" كمصدر رسمي نشري — Souk Semmarine هو سوق
+    سياحي بمراكش للمصنوعات التقليدية (إسواق الحرف)، ليس للأغذية بأسعار جملة.
+- البحث #20/#27/#28: فحص API structure
+  → apis.apievangelist.com + GitHub api-evangelist/unfao: "FAO FAOSTAT Data
+    API Returns JSON or CSV" — JSON is the default response.
+- البحث #21: "morocco foodex.gov.ma site web citrus export statistics"
+  → توكيد الموقع الرسمي: www.moroccofoodex.org.ma — حيّ، لكنه للتصدير.
+- البحث #22: "onicl.org.ma prix indicatifs céréales blé tendre dur semoule"
+  → توكيد ONICL ينشر "prix référentiel" سنوي فقط (مثلاً 280 DH/quintal blé
+    tendre لحملة 2026)، لا يوجد سلسلة أسعار أسبوعية.
+- البحث #23: "AMIS OECD-FAO agricultural outlook Morocco prices wheat"
+  → AMIS لا يغطّي المغرب بأسعار يومية/أسبوعية — توقعات 10 سنوات فقط.
+- البحث #26/#29: "agrimaroc.ma prix fruits légumes Maroc"
+  → توكيد AgriMaroc ينشر مقالات سعر سوق الجملة بالدار البيضاء (آخر: Aug 19,
+    2026 "Prix de gros à Casablanca: un panier de sept légumes à 2,59 DH/kg").
+- البحث #31: "fafostat.org Morocco producer price wheat citrus tomato onion"
+  → توكيد FAO STATISTICAL YEARBOOK 2024 (نوفمبر 2024) يحتوي على بيانات
+    المغرب للأسعار السنوية للمنتجات الفلاحية الأساسية.
+- البحث #34: "ONEE RAMSA Maroc eau électricité tarif prix barème 2024 2025"
+  → توكيد ONEE على one.org.ma ينشر جداول الأسعار الكهربائية (0.9010 DH/kWh
+    0-100 kWh). RAMSA تم دمجها في SRM (Souss-Massa)؛ مراكش تحت RADEEMA.
+- البحث #35: "COSUMAR Maroc sucre prix barème 2024 groupe indicatif"
+  → COSUMAR شركة خاصة (لا API أسعار عامة) — تقريرها المالي 2024: 10.239 MMDH
+    رقم معاملات، 850 MDH صافي الربح (معلومات مالية، ليست أسعار للمستهلك).
+- البحث #36: "Maroc Marchés Casablanca marché gros prix officiel journal hebdo"
+  → كشف medias24.com لديها عمود ثابت: "Le point hebdomadaire sur les prix au
+    marché de gros de Casablanca" — آخر مقال مؤكّد: يوليو 2024 (يحتمل أن يكون
+    مدفوعاً للأعضاء — paywall محتمل للنص الكامل).
+
+Stage Summary:
+- ✅ مصادر مؤكّدة عاملة (مرتّبة بالأولوية والحيوية):
+
+  1) FAOSTAT Producer Prices API (الأفضل لأسعار سنوية وطنية رسمية)
+     - URL: https://fenixservices.fao.org/faostat/api/v1/en/data/PP?area=504
+            &item=..&element=..&year=2023
+     - ⚠️ CRITICAL FIX: استعمال area=504 (M49 المغرب)، NOT area=143 (= Central
+       Asia). الـ URL القديم في الـcodebase سيعطي بيانات كازاخستان+آسيا الوسطى،
+       ليس المغرب!
+     - Method: GET
+     - Headers: User-Agent (أي قيمة معقولة) + Accept: application/json
+     - Response: JSON (long format: {data: [{Area Code, Area, Item Code, Item,
+       Element Code, Element, Year, Unit, Value, Flag, ...}]})
+     - Coverage: وطني مغربي (لا تفصيل إقليمي لمراكش)
+     - Auth: مجاني بدون تسجيل
+     - Recency: سنوي بـ lag سنة واحدة (2023 هو الأحدث المتاح الآن، سيُضاف 2024
+       لاحقاً)
+     - Parse hint:
+       `const rows = (await res.json()).data.filter(r => r.Area === "Morocco" &&
+        r.Item === "Tomatoes" && r.Year === "2023"); rows[0].Value // price in
+        local currency per tonne`
+     - Alternative bulk: https://fenixservices.fao.org/faostat/api/v1/en/data/PP
+       (يُرجِع zip CSV لكل الدول)
+
+  2) data.gov.ma CKAN API (للحصول على IPC من HCP + إنتاج نباتي)
+     - URL: https://data.gov.ma/api/3/action/package_search?q=indice+prix
+            +consommation
+     - Method: GET
+     - Headers: لا تخصيصات مطلوبة
+     - Response: JSON (CKAN standard: result.results[]، كل عنصر فيه
+       resources[] بـ url/format/mimetype)
+     - Coverage: وطني + إقليمي (مثل Marrakech-Safi) للـ IPC
+     - Auth: لا
+     - Recency: IPC شهري (HCP تنشر بـ XLSX كل شهر)
+     - Parse hint:
+       `const ds = (await res.json()).result.results;
+        ds.forEach(d => d.resources.forEach(r => {
+          if (r.format === 'XLSX') fetch(r.url) // download the XLSX
+        }))`
+     - ⚠️ تنبيه: الـ CKAN search عن "prix agricoles" يُرجِع ~7 datasets ليس فيها
+       أسعار سوق أسبوعية للفواكه/الخضار — فقط إنتاج + مواشي + IPC.
+
+  3) Le Matin / Medias24 / AgriMaroc HTML columns (الأفضل لأسعار سوق الجملة
+     الأسبوعية الحيّة بالدرهم/كغ)
+     - URLs (3 منافذ موثّقة):
+       * https://lematin.ma (بحث عن "marché de gros Casablanca" — أحدث مقال
+         مؤكّد: 13 غشت 2025)
+       * https://medias24.com (عمود ثابت: "Le point hebdomadaire sur les prix
+         au marché de gros de Casablanca" — آخر: يوليو 2024، يحتمل paywall)
+       * https://www.agrimaroc.ma (عمود "Prix de gros à Casablanca" — آخر مقال
+         مؤكّد: 19 غشت 2026)
+     - Method: GET (HTML)
+     - Headers: User-Agent (لتفادي blocking)
+     - Response: text/html
+     - Coverage: سوق الجملة بالدار البيضاء (المرجع الوطني، ليس مراكش تحديداً)
+     - Auth: لا (medias24 قد يحتاج اشتراك للنص الكامل)
+     - Recency: أسبوعي، عادة خلال 30 يوم
+     - Parse hint: regex على النص: /(\w[\w\s-]+?)\s*[:\-]?\s*(\d+[.,]?\d*)\s*[-à]\s*
+       (\d+[.,]?\d*)\s*DH\/kg/gi  — مثال ناتج: {product:"Tomate",
+       min:3.8, max:4.5, unit:"DH/kg"}
+     - ⚠️ تنبيه: scraping HTML هشّ، يحتاج تعديل دوري للـselectors عند تغيّر
+       تصميم الموقع.
+
+  4) HCP Morocco IPC (للتضخّم والإستهلاك الشهري — مكمل وليس بديل)
+     - URL الرئيسي: https://www.hcp.ma
+     - URL قاعدة البيانات: https://bds.hcp.ma
+     - URL XLSX عبر data.gov.ma: https://data.gov.ma/dataset/indice-des-prix
+       -la-consommation-base-100-2017 (تصدره منظمة HCP على CKAN)
+     - Method: GET (HTML + XLSX)
+     - Coverage: وطني + إقليمي (Marrakech-Safi محدّد)
+     - Auth: لا
+     - Recency: شهري (آخر: IPC يوليو 2025، نُشر 19 غشت 2025)
+     - Parse hint: تحميل XLSX → استعمال xlsx-sheetjs → قراءة عدة ورقات IPC بحسب
+       المنتجات الـ351
+     - Limitation: مؤشّر (Base 100 = 2017)، ليس سعر بالدرهم/كغ.
+
+  5) ONICL (www.onicl.org.ma) — لأسعار الحبوب المرجعية فقط (سنوي)
+     - URL: https://www.onicl.org.ma
+     - Method: GET (HTML)
+     - Coverage: وطني، referential price للحملة السنوية
+     - Auth: لا
+     - Recency: سنوي (يُحدّد كل مايو/يونيو — مثلاً 280 DH/quintal blé tendre
+       لحملة 2026)
+     - Limitation: ليس سعر سوق أسبوعي — سعر الدولة المرجعي للمزارعين فقط.
+
+  6) Morocco Foodex (www.moroccofoodex.org.ma) — سابقاً EACCE (للتصدير
+     الحمضيات)
+     - URL: https://www.moroccofoodex.org.ma
+     - Method: GET (HTML)
+     - Coverage: أسعار تصدير الحمضيات (EU/US/UK)، ليس سوق محلي
+     - Auth: لا
+     - Recency: ملخّصات حملة (مواسم)، ليس أسعار أسبوعية
+
+- ❌ مصادر مؤكّدة ميتة/غير مفيدة (يجب حذفها من الـcodebase):
+
+  1) https://www.prixagriculture.org/prix-des-produits
+     - الموقع متوقّف منذ ديسمبر 2019 (مقال AgriMaroc: "Pourquoi le site
+       http://www.prixagriculture.org ne fonctionne plus ?")
+     - كان الموقع الرسمي لوزارة الفلاحة المغربية لكن تخلّت عنه الوزارة — لا
+       يرجِع أي جدول أسعار. النطاق ما زال مُحجَز (BGP prefix موجود) لكن بدون
+       محتوى ويب.
+     - الحذف ضروري من src/lib/price-source.ts (أو أينما كان مُسجّلاً).
+
+- ⚠️ مصادر فيها bug في الـcodebase الحالي:
+
+  1) FAOSTAT URL `area=143` → يجب استبدالها بـ `area=504` (= M49 المغرب)
+     - 143 = Central Asia region في M49 standard (per unstats.un.org: "Morocco,
+       504, MAR" — و "Central Asia (code 143)")
+     - الـ URL الحالي في الـcodebase يُرجِع بيانات آسيا الوسطى، ليس المغرب!
+     - Fix: في src/lib/price-source.ts، استبدل:
+       `area=143` → `area=504`
+     - توصية: اختبر الـ URL المعدّل بـ curl قبل الإنتاج:
+       `curl -s -H 'User-Agent: maarouf/1.0' 'https://fenixservices.fao.org/
+        faostat/api/v1/en/data/PP?area=504&item=..&element=..&year=2023' | head
+        -c 1000`
+
+- 💡 مصادر جديدة مكتشفة لم تكن في القائمة الأصلية (يوصى بإضافتها):
+
+  1) medias24.com — "Le point hebdomadaire sur les prix au marché de gros de
+     Casablanca" (نشرة أسبوعية منتظمة، أسعار بالدرهم/كغ لكل المنتجات)
+  2) lebrief.ma — نشرة "Fruits, légumes et viandes" (أحدث مقال مؤكّد بـ 2025)
+  3) maroc-diplomatique.net — نشرات أسعار سوق الجملة بالدار البيضاء (آخر:
+     10 يونيو 2026، مع تفاصيل المنتجات بالدرهم/كغ)
+  4) le360.ma — نشرة أسبوعية لأسعار سوق الجملة (آخر مؤكّد: 16 يناير 2025)
+  5) ONEE (one.org.ma) — للأسعار الكهربائية الرسمية بالدرهم/kWh (لم يكن في
+     القائمة الأصلية، لكن مهم لـ"خدمات" المستعملين)
+  6) SRM-SM (srm-sm.ma) + RADEEMA — للماء الإقليمي (مراكش تحت RADEEMA)
+  7) HCP بـ bds.hcp.ma — قاعدة بيانات مباشرة لمؤشّرات IPC
+
+- 🏆 توصية نهائية مرتّبة بالموثوقية والحيوية:
+
+  RANK 1 (الأساس): FAOSTAT Producer Prices API (area=504) — للأسعار السنوية
+    الوطنية الرسمية المجانية للمحاصيل الكبرى (بطماطم، بصل، فحم، حمضيات، حبوب).
+    استعمله كـ baseline وطني. صلاحيته عالية لكل المنتجات الأساسية.
+  RANK 2 (للحيوية الأسبوعية): Le Matin / AgriMaroc / medias24 HTML scraping
+    — نشرة سوق الجملة بالدار البيضاء بالدرهم/كغ (المرجع الوطني للمستهلك
+    المغربي). ضروري لعرض "سعر هذا الأسبوع". مراكش-السافي تتبع عادة الدار البيضاء
+    بـ lag أيام.
+  RANK 3 (للتضخّم الإقليمي): HCP IPC من data.gov.ma — لمؤشّر التضخّم في
+    Marrakech-Safi. مكمل فقط، لا يحل محل أسعار المنتجات الفردية.
+  RANK 4 (للأسعار المرجعية السنوية): ONICL — لسعر الدولة المرجعي للحبوب فقط.
+    نشره سنوي.
+  RANK 5 (للأسعار الخدمية): ONEE — للأسعار الكهربائية الوطنية بالدرهم/kWh.
+
+- 📌 ملاحظات诚实 (honest caveats):
+  * لم أستطع اختبار الـ URLs مباشرة بـ curl من الـsandbox (لا internet
+    egress). كل التوكيدات مبنية على web search snippets + تواريخ آخر مقال منشور
+    مؤكّد.
+  * لا يوجد أي مصدر عام واحد ينشر "أسعار سوق مراكش تحديداً بالدرهم/كغ أسبوعياً".
+    المرجع العملي هو سوق الجملة بالدار البيضاء (يتبعه كل المغرب عادةً بـlag
+    أيام + تكاليف نقل إقليمية).
+  * prixagriculture.org لو عاد يوماً ما، يكون الحل الأمثل (كان ينشر أسعار
+    المناطق — لكن تخلّت عنه الوزارة).
+  * ORMVAH و ORMVAS لا يبدو أنهما ينشران أسعار سوق إقليمية على الويب — مجرد
+    هيئات للري وتطوير السواقي.

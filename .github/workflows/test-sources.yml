@@ -1,40 +1,190 @@
 name: Test Real Price Sources
+
+# =====================================================================
+#  يختبر كل المصادر المرشّحة للأسعار الحقيقية ويُنتج تقريراً قابلاً
+#  للقراءة آلياً. النتائج تُرفع كـartifact لكي يطّلع عليها المطور.
+#
+#  المصادر المختبرة:
+#   1. FAOSTAT area=504 (Morocco) — ❗ استُبدل 143 بـ504
+#   2. data.gov.ma CKAN API
+#   3. prixagriculture.org (للتحقق من أنه مُوقّف — نأمل رؤية HTTP غير 200)
+#   4. ONICL onicl.org.ma (للحبوب فقط)
+#   5. ONDA / Morocco Foodex — للتحقق من الوصول العام
+#  مصادر إخبارية (نصّ HTML — نختبر الوصول فقط ولا نحلّل المحتوى هنا):
+#   6. lematin.ma / agrimaroc.ma / medias24.com
+# =====================================================================
+
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '17 4 * * 1'  # كل اثنين 04:17 UTC (خفيف)
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - name: Test prixagriculture.org
+      - name: Set up report file
         run: |
-          echo "=== Testing prixagriculture.org ==="
-          curl -sL -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" \
-            "https://www.prixagriculture.org/prix-des-produits" \
-            -o response1.html -w "HTTP: %{http_code} | Size: %{size_download}\n" --max-time 15
-          if [ -s response1.html ]; then
-            echo "Content sample:"
-            head -c 500 response1.html
-            echo ""
-            grep -ciP "tomate|oignon|carotte|prix|price" response1.html || true
+          mkdir -p ./report
+          echo '{"startedAt":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","sources":[' > ./report/sources.json
+
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      # 1) FAOSTAT — Morocco (area=504) — الرقم الصحيح للمغرب
+      # ❗ ملاحظة: area=143 = آسيا الوسطى (خطأ شائع). 504 = المغرب
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      - name: FAOSTAT Morocco (area=504)
+        id: faostat
+        run: |
+          echo "=== FAOSTAT area=504 (Morocco) ==="
+          STATUS_CODE=$(curl -s -o faostat_resp.json -w "%{http_code}" \
+            -A "Mozilla/5.0 assema-price-probe/1.0" \
+            -H "Accept: application/json" \
+            --max-time 20 \
+            "https://fenixservices.fao.org/faostat/api/v1/en/data/PP?area=504&item=..&element=..&year=2023,2022")
+          echo "HTTP: $STATUS_CODE"
+          SIZE=$(stat -c %s faostat_resp.json 2>/dev/null || echo 0)
+          echo "Bytes: $SIZE"
+          ROWS=0
+          FIRST_AREA=""
+          FIRST_ITEM=""
+          if [ "$STATUS_CODE" = "200" ] && [ "$SIZE" -gt 100 ]; then
+            ROWS=$(jq -r '.data | length // 0' faostat_resp.json 2>/dev/null || echo 0)
+            FIRST_AREA=$(jq -r '.data[0].Area // .data[0].area // "missing"' faostat_resp.json 2>/dev/null)
+            FIRST_ITEM=$(jq -r '.data[0].Item // .data[0].item // "missing"' faostat_resp.json 2>/dev/null)
+            echo "First row Area: $FIRST_AREA"
+            echo "First row Item: $FIRST_ITEM"
+            echo "Row count: $ROWS"
           fi
+          # تحقق أمني: Area يجب أن يحتوي على Morocco أو Maroc
+          AREA_OK="false"
+          if echo "$FIRST_AREA" | grep -qiE "morocco|maroc"; then
+            AREA_OK="true"
+          fi
+          echo "Area check (Morocco): $AREA_OK"
+          echo '{"source":"FAOSTAT","url":"https://fenixservices.fao.org/faostat/api/v1/en/data/PP?area=504&item=..&element=..&year=2023,2022","http":'$STATUS_CODE',"bytes":'$SIZE',"rows":'$ROWS',"firstArea":"'$FIRST_AREA'","firstItem":"'$FIRST_ITEM'","areaOk":'$AREA_OK',"name":"FAOSTAT Producer Prices (Morocco)"}' > ./report/faostat.json
+          cat ./report/faostat.json | jq .
+          # تحقق من عدم الانحدار: لو رجع area=143 سيرجع Area='Asia' أو مشابه
+          echo "=== Regression check: area=143 (should NOT be Morocco) ==="
+          curl -s -A "Mozilla/5.0 assema-price-probe/1.0" --max-time 10 \
+            "https://fenixservices.fao.org/faostat/api/v1/en/data/PP?area=143&item=..&element=..&year=2023" \
+            | jq -r '.data[0].Area // .data[0].area // "no-data"' | head -c 200
+          echo ""
 
-      - name: Test FAOSTAT API
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      # 2) data.gov.ma CKAN — مجموعات بيانات الأسعار
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      - name: data.gov.ma CKAN
+        id: datagov
         run: |
-          echo "=== Testing FAOSTAT ==="
-          curl -sL "https://fenixservices.fao.org/faostat/api/v1/en/data/PP?area=143&item=..&element=..&year=2023" \
-            -w "\nHTTP: %{http_code} | Size: %{size_download}\n" --max-time 15 | head -c 500
+          echo "=== data.gov.ma CKAN ==="
+          STATUS_CODE=$(curl -s -o datagov_resp.json -w "%{http_code}" \
+            -A "Mozilla/5.0 assema-price-probe/1.0" \
+            -H "Accept: application/json" \
+            --max-time 20 \
+            "https://data.gov.ma/api/3/action/package_search?q=prix+agricoles&rows=20")
+          echo "HTTP: $STATUS_CODE"
+          SIZE=$(stat -c %s datagov_resp.json 2>/dev/null || echo 0)
+          DATASETS=0
+          RESOURCES=0
+          if [ "$STATUS_CODE" = "200" ]; then
+            DATASETS=$(jq -r '.result.results | length // 0' datagov_resp.json 2>/dev/null || echo 0)
+            RESOURCES=$(jq -r '[.result.results[].resources[]?] | length' datagov_resp.json 2>/dev/null || echo 0)
+            echo "Datasets: $DATASETS"
+            echo "Resources: $RESOURCES"
+            echo "Top dataset titles:"
+            jq -r '.result.results[:3] | .[].title // .[].name' datagov_resp.json 2>/dev/null | head -10
+          fi
+          echo '{"source":"DATA_GOV","url":"https://data.gov.ma/api/3/action/package_search?q=prix+agricoles&rows=20","http":'$STATUS_CODE',"bytes":'$SIZE',"datasets":'$DATASETS',"resources":'$RESOURCES',"name":"data.gov.ma CKAN API"}' > ./report/datagov.json
+          cat ./report/datagov.json | jq .
 
-      - name: Test data.gov.ma
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      # 3) prixagriculture.org — نتحقق من أنه مُوقّف
+      #    (نتوقّع HTTP غير 200 أو حجم صفر)
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      - name: prixagriculture.org (regression — should be dead)
+        id: prixagri
         run: |
-          echo "=== Testing data.gov.ma ==="
-          curl -sL "https://data.gov.ma/api/3/action/package_search?q=prix" \
-            -w "\nHTTP: %{http_code}\n" --max-time 15 | head -c 500
+          echo "=== prixagriculture.org (expected: not working) ==="
+          STATUS_CODE=$(curl -s -o prixagri_resp.html -w "%{http_code}" \
+            -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+            --max-time 15 \
+            "https://www.prixagriculture.org/prix-des-produits" || echo "000")
+          echo "HTTP: $STATUS_CODE"
+          SIZE=$(stat -c %s prixagri_resp.html 2>/dev/null || echo 0)
+          echo "Bytes: $SIZE"
+          echo '{"source":"PRIXAGRICULTURE","url":"https://www.prixagriculture.org/prix-des-produits","http":'$STATUS_CODE',"bytes":'$SIZE',"expected":"dead_or_unreachable","note":"Site reported abandoned since Dec 2019 by agriMaroc; should not be used"}' > ./report/prixagri.json
+          cat ./report/prixagri.json | jq .
 
-      - name: Trigger price fetch
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      # 4) ONICL — الحبوب فقط
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      - name: ONICL (grain referrer)
+        id: onicl
         run: |
-          echo "=== Triggering price fetch on Vercel ==="
+          echo "=== onicl.org.ma ==="
+          STATUS_CODE=$(curl -s -o onicl_resp.html -w "%{http_code}" \
+            -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+            --max-time 15 \
+            "https://www.onicl.org.ma/" || echo "000")
+          echo "HTTP: $STATUS_CODE"
+          SIZE=$(stat -c %s onicl_resp.html 2>/dev/null || echo 0)
+          echo "Bytes: $SIZE"
+          echo '{"source":"ONICL","url":"https://www.onicl.org.ma/","http":'$STATUS_CODE',"bytes":'$SIZE',"expected":"alive_redirect_to_new_domain","note":"ONICL publishes cereal annual referential prices only"}' > ./report/onicl.json
+          cat ./report/onicl.json | jq .
+
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      # 5) مصادر إخبارية — Casablanca wholesale (Le Matin, AgriMaroc, Medias24)
+      # نختبر الوصول فقط ولا نحلّل المحتوى في هذه الخطوة
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      - name: News sources reachability
+        id: news
+        run: |
+          echo "=== News sources (Casablanca wholesale bulletins) ==="
+          for url in "https://lematin.ma" "https://www.agrimaroc.ma" "https://medias24.com" "https://lebrief.ma"; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" -A "Mozilla/5.0 assema-price-probe/1.0" --max-time 10 "$url" || echo "000")
+            echo "$url -> $STATUS"
+          done
+          echo '{"source":"NEWS","note":"Reachability test only — Casablanca wholesale weekly bulletins from Le Matin / AgriMaroc / Medias24 / leBrief. Marrakech retailers track these with small lag."}' > ./report/news.json
+          cat ./report/news.json | jq .
+
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      # 6) تقرير نهائي + ارفاق artifact
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      - name: Assemble report
+        run: |
+          # ادمج كل ملفات JSON في مصفوفة واحدة
+          ITEMS=$(cat ./report/faostat.json ./report/datagov.json ./report/prixagri.json ./report/onicl.json ./report/news.json | jq -cs '.')
+          # اغلق مصفوفة sources
+          echo '"finishedAt":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","sources":'$ITEMS'}' >> ./report/sources.json
+          # sources.json بدأ بـ { ومصوفة sources:[ ولم يُغلق — نُصلحه الآن
+          # الحلّ: نعيد بناء الملف ككائن JSON صحيح
+          jq -n --slurpfile s ./report/sources.json '{startedAt: $s[0].startedAt, finishedAt: $s[0].finishedAt, sources: $s[0].sources}' > ./report/final.json || true
+          cat ./report/final.json | jq . || cat ./report/final.json
+          echo ""
+          echo "=== SUMMARY ==="
+          echo "FAOSTAT area=504 Morocco: $(jq -r '.sources[] | select(.source=="FAOSTAT") | "\(.http) HTTP, \(.rows // 0) rows, areaOk=\(.areaOk)"' ./report/final.json 2>/dev/null || echo 'n/a')"
+          echo "data.gov.ma: $(jq -r '.sources[] | select(.source=="DATA_GOV") | "\(.http) HTTP, \(.datasets // 0) datasets"' ./report/final.json 2>/dev/null || echo 'n/a')"
+          echo "prixagriculture.org: $(jq -r '.sources[] | select(.source=="PRIXAGRICULTURE") | "\(.http) HTTP"' ./report/final.json 2>/dev/null || echo 'n/a')"
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: price-sources-report
+          path: ./report/
+          retention-days: 30
+
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      # 7) (اختياري) اطلب من Vercel تحديث الأسعار — فقط لو CRON_SECRET مُعطى
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      - name: Trigger Vercel cron (optional)
+        if: ${{ env.CRON_SECRET != '' }}
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          echo "=== Triggering /api/cron/prices on Vercel ==="
           curl -s -X POST https://my-project-beta-ochre.vercel.app/api/cron/prices \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Authorization: Bearer $CRON_SECRET" \
             -H "Content-Type: application/json" \
-            --max-time 50
+            --max-time 50 || echo "(trigger failed — sources still tested)"
