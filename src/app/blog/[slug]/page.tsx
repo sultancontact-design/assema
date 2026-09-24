@@ -15,6 +15,8 @@ import {
   User,
   Eye,
   ArrowRight,
+  Clock,
+  Star,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -116,6 +118,17 @@ export default async function BlogPostPage({ params }: PageProps) {
             <Eye className="size-3" />
             {post.views} قراءة
           </span>
+          {post.readingTime && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Clock className="size-3" />
+              {post.readingTime} دقائق قراءة
+            </span>
+          )}
+          {post.featured && (
+            <Badge className="bg-amber-500 text-amber-50 text-[10px]">
+              <Star className="size-3 inline" /> مقال مميّز
+            </Badge>
+          )}
         </div>
         <h1 className="font-heading text-3xl sm:text-4xl font-extrabold text-foreground leading-tight mb-3">
           {post.title}
@@ -123,6 +136,16 @@ export default async function BlogPostPage({ params }: PageProps) {
         <p className="text-base text-muted-foreground leading-relaxed mb-4">
           {post.excerpt}
         </p>
+        {/* صورة الغلاف */}
+        {post.coverImage && (
+          <div className="aspect-video rounded-lg overflow-hidden bg-muted mb-4 max-h-96">
+            <img
+              src={post.coverImage}
+              alt={post.title}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
         <div className="flex items-center justify-between gap-3 flex-wrap text-sm text-muted-foreground border-y border-border/60 py-3">
           <span className="flex items-center gap-2">
             <span className="grid place-items-center size-9 rounded-full bg-primary/10 text-primary shrink-0">

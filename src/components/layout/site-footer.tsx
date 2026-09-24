@@ -12,6 +12,8 @@ const FOOTER_LINKS = {
       { href: "/community/fund", label: "صندوق المعروف" },
       { href: "/community/events", label: "الفعاليات" },
       { href: "/community/groups", label: "المجموعات" },
+      { href: "/community/prices", label: "أسعار السوق" },
+      { href: "/community/contributions/price-report", label: "أبلغ عن سعر" },
     ],
   },
   about: {
@@ -19,6 +21,7 @@ const FOOTER_LINKS = {
     links: [
       { href: "/about", label: "من نحن" },
       { href: "/privacy-policy", label: "سياسة الخصوصية" },
+      { href: "/privacy-requests", label: "طلبات حماية البيانات (CNDP)" },
       { href: "/terms", label: "شروط الاستخدام" },
       { href: "/ethics", label: "تصميمنا الأخلاقي" },
     ],
@@ -29,6 +32,7 @@ const FOOTER_LINKS = {
       { href: "/contact", label: "اتصل بنا" },
       { href: "/faq", label: "أسئلة شائعة" },
       { href: "/complaints", label: "صندوق الشكاوى" },
+      { href: "/community/contributions/story-submission", label: "شارك قصة نجاح" },
     ],
   },
 };

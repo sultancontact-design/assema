@@ -31,6 +31,9 @@ import {
   Compass,
   Award,
   History,
+  Tag,
+  Megaphone,
+  ShieldCheck,
   ChevronLeft,
   ChevronRight,
   PanelLeftClose,
@@ -73,6 +76,9 @@ const NAV_ITEMS = [
   { href: "/guide", label: "دليل الحي", icon: Compass },
   { href: "/stories", label: "قصص النجاح", icon: Award },
   { href: "/history", label: "تاريخ الحي", icon: History },
+  { href: "/community/prices", label: "أسعار السوق", icon: Tag },
+  { href: "/community/contributions/price-report", label: "أبلغ عن سعر", icon: Megaphone },
+  { href: "/privacy-requests", label: "حماية البيانات", icon: ShieldCheck },
   { href: "/ethics", label: "الأخلاق", icon: Heart },
 ] as const;
 
