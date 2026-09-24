@@ -256,7 +256,7 @@ function LoginForm() {
                   </p>
                 </div>
                 <Link
-                  href="/forgot-password"
+                  href="#"
                   className="text-sm text-primary hover:underline underline-offset-4"
                 >
                   نسيت كلمة المرور؟
