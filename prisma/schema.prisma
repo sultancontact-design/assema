@@ -285,6 +285,18 @@ model User {
   blogPosts         BlogPost[]
   guideItems        GuideItem[]
 
+  // ─────────── v15.0 — CNDP + المساهمات ───────────
+  cndpRequests              CndpRequest[]
+  priceReports              PriceReport[]
+  serviceReviewSubmissions  ServiceReviewSubmission[]
+  eventProposals            EventProposal[]
+  storySubmissions          StorySubmission[]
+  // العلاقات العكسية للمراجعين (للنماذج التي تحتاج مشرف)
+  priceReviewActions        PriceReport[]              @relation("PriceReviewer")
+  serviceReviewActions      ServiceReviewSubmission[]  @relation("ServiceReviewReviewer")
+  eventProposalActions      EventProposal[]            @relation("EventProposalReviewer")
+  storyReviewActions        StorySubmission[]          @relation("StoryReviewer")
+
 
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -323,24 +335,33 @@ model Referral {
 // ===================================================================
 
 model BlogPost {
-  id          String   @id @default(cuid())
-  title       String
-  slug        String   @unique
-  excerpt     String
-  content     String
-  category    String   // HEALTH, EDUCATION, FINANCE, PARENTING, RELIGIOUS, COMMUNITY
-  authorId    String?
-  imageUrl    String?
-  tags        String?
-  status      String   @default("published") // draft, published, archived
-  views       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  author      User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  id              String   @id @default(cuid())
+  title           String
+  slug            String   @unique
+  excerpt         String
+  content         String   // HTML المُحوَّل من TipTap
+  // ───── v15.0 — حقول TipTap الإضافية ─────
+  tiptapContent   String?  // JSON-encoded TipTap doc (للتحرير لاحقاً)
+  coverImage      String?  // صورة الغلاف (URL)
+  readingTime     Int?     // دقائق القراءة (محسوبة)
+  featured        Boolean  @default(false)  // مقال مميّز في الصفحة الرئيسية
+  publishedAt     DateTime? // لنشر مُجدول (لا يساوي createdAt)
+  // ──────────────────────────────────────
+  category        String   // HEALTH, EDUCATION, FINANCE, PARENTING, RELIGIOUS, COMMUNITY
+  authorId        String?
+  imageUrl        String?
+  tags            String?
+  status          String   @default("published") // draft, published, archived
+  views           Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  author          User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
 
   @@index([slug])
   @@index([category])
   @@index([status])
+  @@index([publishedAt])
+  @@index([featured])
 }
 
 // ===================================================================
@@ -1244,7 +1265,8 @@ model Service {
   updatedAt    DateTime @updatedAt
   
   serviceReviews ServiceReview[]
-  
+  reviewSubmissions ServiceReviewSubmission[]  // v15.0 — مراجعات قيد المراجعة
+
   @@index([category, isActive])
   @@index([districtId])
   @@index([isActive])
@@ -1341,20 +1363,7 @@ model Price {
   @@index([recordedAt])
 }
 
-model PriceReport {
-  id          String   @id @default(cuid())
-  userId      String
-  productId   String
-  districtId  String?
-  price       Float
-  marketName  String?
-  notes       String?
-  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
-  adminNote   String?
-  createdAt   DateTime @default(now())
-  @@index([userId])
-  @@index([status])
-}
+// ملاحظة: PriceReport نُقل إلى أسفل الملف (v15.0) بحقول موسّعة + علاقة User
 
 model PriceFetchLog {
   id            String   @id @default(cuid())
@@ -1366,4 +1375,185 @@ model PriceFetchLog {
   fetchedAt     DateTime @default(now())
   @@index([source, fetchedAt])
   @@index([fetchedAt])
+}
+
+// ===================================================================
+//  v15.0 — CNDP (اللجنة الوطنية لمراقبة حماية البيانات)
+//  قانون 09-08 — إلزامي قانونياً (غرامة تصل إلى 300,000 درهم)
+//
+//  يحق لكل شخص طلب:
+//   - الاطّلاع على بياناته (حق الوصول)
+//   - تصحيح بياناته (حق التصحيح)
+//   - حذف بياناته (حق المحو)
+//   - تقييد المعالجة (حق التقييد)
+//   - نقل بياناته (حق النقل)
+//   - الاعتراض على المعالجة (حق الاعتراض)
+//
+//  يلتزم النظام بالاستجابة في أجل أقصاه 30 يوماً (المادة 31 من 09-08)
+// ===================================================================
+
+enum CndpRequestType {
+  ACCESS        // حق الوصول
+  RECTIFICATION // حق التصحيح
+  ERASURE       // حق المحو
+  RESTRICTION  // حق تقييد المعالجة
+  PORTABILITY   // حق النقل
+  OBJECTION     // حق الاعتراض
+}
+
+enum CndpRequestStatus {
+  PENDING       // قيد الانتظار (لم تُعالج)
+  IN_REVIEW     // قيد الدراسة
+  APPROVED       // مقبولة + نُفّذت
+  PARTIALLY     // نُفّذت جزئياً
+  REJECTED      // مرفوضة (مع تسبيب)
+  EXPIRED       // انقضت مهلة 30 يوماً دون استجابة
+}
+
+model CndpRequest {
+  id              String            @id @default(cuid())
+  // صاحب الطلب
+  fullName        String            // الاسم الكامل لصاحب الطلب
+  email           String            // بريد إلكتروني للتواصل
+  phone           String?           // هاتف اختياري
+  nationalId      String?           // رقم البطاقة الوطنية (مُعمّى عند التخزين)
+  userId          String?           // إذا كان المستخدم مُسجّلاً (ربط بالحساب)
+  user            User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  // تفاصيل الطلب
+  requestType     CndpRequestType
+  description     String            // وصف الطلب التفصيلي (محرر للإدخال)
+  targetData      String?          // نوع البيانات المعنية (مثلاً: الملف الشخصي، الرسائل، المساهمات)
+  districtId      String?           // الحي المعني (لو وُجد)
+  // إثبات الهوية (إرفاق وثيقة)
+  identityDocUrl  String?           // URL لوثيقة إثبات (للطلبات الحساسة)
+  // التتبّع
+  status          CndpRequestStatus @default(PENDING)
+  assignedTo      String?           // معالِج معيّن (SUPER_ADMIN أو DPO)
+  adminResponse   String?           // ردّ الإدارة النصّي
+  processedAt     DateTime?         // وقت الاستجابة النهائية
+  expiresAt       DateTime          // أقصى أجل = createdAt + 30 يوماً
+  // التدقّق
+  ipAddress       String?
+  userAgent       String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([requestType, status])
+  @@index([userId])
+  @@index([email])
+  @@index([expiresAt])
+  @@index([status, assignedTo])
+}
+
+// ===================================================================
+//  v15.0 — نماذج مساهمة المستخدمين (4 أنواع)
+//  كل نموذج يخضع للمراجعة من طرف مشرف معتمد قبل النشر.
+// ===================================================================
+
+// 1) تقرير سعر — مراجعة المساهمات بأسعار السوق التي يُبلّغ بها المستخدمون
+model PriceReport {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId       String?  // ربط بمنتج معيّن (إن وُجد)
+  productName     String   // اسم المنتج (مطلوب)
+  productNameAr   String   // الاسم بالعربية
+  category        String   // VEGETABLE, FRUIT, MEAT, GRAIN, DAIRY
+  price           Float    // الدرهم
+  unit            String   @default("درهم/كغ")
+  marketName      String?  // اسم السوق
+  districtId      String?
+  notes           String?
+  // المراجعة
+  status          String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  reviewedBy      String?
+  reviewer        User?    @relation("PriceReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+  adminNote       String?
+  reviewedAt      DateTime?
+  // إثبات (صورة إيصال / صورة من السوق)
+  proofUrl        String?
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@index([status, createdAt])
+  @@index([category, status])
+  @@index([districtId])
+}
+
+// 2) تقييم خدمة — مراجعة تقييمات الخدمات (Service + ServiceReview العائد لـ v14.1)
+// نُنشئ هذا النموذج الموسّع ليُحدّث ServiceReview ويربطه بنظام المراجعة
+model ServiceReviewSubmission {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serviceId       String   // الخدمة المعنية
+  service         Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  rating          Int      // 1-5
+  title           String
+  body            String
+  // المراجعة
+  status          String   @default("PENDING") // PENDING, APPROVED, REJECTED, FLAGGED
+  reviewedBy      String?
+  reviewer        User?    @relation("ServiceReviewReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+  adminNote       String?
+  reviewedAt      DateTime?
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@index([status, createdAt])
+  @@index([serviceId, status])
+}
+
+// 3) اقتراح فعالية — يقترح المستخدم فعالية جديدة للمجتمع
+model EventProposal {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String
+  description     String
+  proposedDate    DateTime
+  location        String?
+  districtId      String?
+  expectedAttendees Int?
+  category        String?  // SOCIAL, EDUCATIONAL, CHARITY, CULTURAL
+  budget          Float?
+  // المراجعة
+  status          String   @default("PENDING") // PENDING, APPROVED, REJECTED, CONVERTED
+  reviewedBy      String?
+  reviewer        User?    @relation("EventProposalReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+  adminNote       String?
+  reviewedAt      DateTime?
+  // ربط لو تحوّلت إلى Event فعلي
+  convertedEventId String?
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@index([status, createdAt])
+  @@index([districtId])
+}
+
+// 4) قصة نجاح — يُرسل المستخدم قصة نجاحه مع المجتمع
+model StorySubmission {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String
+  body            String   // النص الكامل
+  consentGiven    Boolean  @default(false) // الموافقة على النشر
+  anonymize       Boolean  @default(true) // نشر باسم مجهول افتراضياً
+  imageUrl        String?
+  districtId      String?
+  // المراجعة
+  status          String   @default("PENDING") // PENDING, APPROVED, REJECTED, PUBLISHED
+  reviewedBy      String?
+  reviewer        User?    @relation("StoryReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+  adminNote       String?
+  reviewedAt      DateTime?
+  publishedAt     DateTime? // لو نُشرت كمقال
+  blogPostId      String?  // ربط بـBlogPost لو تحوّلت لمقال منشور
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@index([status, createdAt])
+  @@index([districtId])
 }
