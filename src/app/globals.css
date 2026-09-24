@@ -436,3 +436,94 @@
     animation: none;
   }
 }
+
+/* ═══════════ v11.0 — ألوان نابضة محسّنة ═══════════ */
+:root {
+  --primary: #C9492B;
+  --primary-light: #E85A38;
+  --secondary: #1D4D2D;
+  --accent: #D4A017;
+  --success: #10B981;
+  --warning: #F59E0B;
+  --error: #EF4444;
+}
+
+.hero-gradient {
+  background: linear-gradient(135deg, #C9492B 0%, #D4A017 50%, #1D4D2D 100%) !important;
+}
+
+.text-gradient-zellige {
+  background: linear-gradient(90deg, #C9492B, #D4A017) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+.card-glow {
+  box-shadow: 0 4px 20px rgba(201, 73, 43, 0.12) !important;
+  transition: box-shadow 0.3s ease, transform 0.2s ease !important;
+}
+
+.card-glow:hover {
+  box-shadow: 0 8px 40px rgba(201, 73, 43, 0.25) !important;
+  transform: translateY(-2px) !important;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201, 73, 43, 0.4); }
+  50% { box-shadow: 0 0 0 12px rgba(201, 73, 43, 0); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s infinite !important;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite !important;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer-skeleton {
+  background: linear-gradient(90deg, var(--muted) 25%, var(--muted-foreground) 50%, var(--muted) 75%) !important;
+  background-size: 200% 100% !important;
+  animation: shimmer 1.5s infinite !important;
+}
+
+.lift-on-hover {
+  transition: transform 0.2s ease, box-shadow 0.3s ease !important;
+}
+
+.lift-on-hover:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
+}
+
+.press-on-active:active {
+  transform: scale(0.97) !important;
+  transition: transform 0.1s !important;
+}
+
+.scale-on-hover {
+  transition: transform 0.2s ease !important;
+}
+
+.scale-on-hover:hover {
+  transform: scale(1.03) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
