@@ -127,6 +127,7 @@ const SETTINGS_SUB_LINKS: NavSubLink[] = [
   { href: "/admin/settings", label: "عام", match: "" },
   { href: "/admin/settings/security", label: "الأمان", match: "security" },
   { href: "/admin/settings/security/ips", label: "قائمة IP", match: "security/ips" },
+  { href: "/admin/settings/permissions", label: "صلاحيات PDF", match: "permissions" },
   { href: "/admin/settings/email", label: "البريد", match: "email" },
 ];
 

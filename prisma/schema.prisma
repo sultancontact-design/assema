@@ -1153,3 +1153,36 @@ model InitiativeVote {
 }
 
 // ===================================================================
+
+// ===================================================================
+//  صلاحيات تحميل PDF (Download Permissions)
+// ===================================================================
+
+model DownloadPermission {
+  id           String   @id @default(cuid())
+  userId       String
+  reportType   String   // FUND_REPORT, EVENT_REPORT, USER_DATA, LEDGER, ALL
+  grantedBy    String
+  grantedAt    DateTime @default(now())
+  expiresAt    DateTime?
+  isActive     Boolean  @default(true)
+  
+  @@index([userId, isActive])
+  @@index([reportType])
+}
+
+model DownloadLog {
+  id           String   @id @default(cuid())
+  userId       String
+  reportType   String
+  reportId     String?
+  downloadedAt DateTime @default(now())
+  ipAddress    String?
+  userAgent    String?
+  status       String   // GRANTED, DENIED
+  reason       String?
+  
+  @@index([userId])
+  @@index([status])
+  @@index([downloadedAt])
+}
