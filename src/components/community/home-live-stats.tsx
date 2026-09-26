@@ -110,6 +110,7 @@ export function HomeLiveStats({
                   className={`font-heading text-3xl sm:text-4xl font-extrabold ${stat.color}`}
                 >
                   <AnimatedCounter
+                    key={stat.value}
                     value={stat.value}
                     duration={2200}
                     delay={idx * 150}
