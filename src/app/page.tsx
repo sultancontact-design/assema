@@ -368,33 +368,37 @@ async function ContributionsSection({ isVisitor }: { isVisitor: boolean }) {
       </Card>
     );
   }
+  // Bento: أول بطاقة كبيرة (col-span-2 row-span-2) + الباقي صغيرة
+  const [featured, ...rest] = items;
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {items.map((c) => (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 auto-rows-[120px]">
+      {/* البطاقة المميّزة — تأخذ 2 أعمدة + صفّين */}
+      {featured && (
         <Card
-          key={c.id}
-          className="relative overflow-hidden border-border warm-shadow card-glow lift-on-hover"
+          key={featured.id}
+          className="md:col-span-2 md:row-span-2 relative overflow-hidden border-border warm-shadow card-glow lift-on-hover bg-gradient-to-br from-primary/10 via-accent/5 to-transparent"
         >
-          <CardContent className="p-4">
+          <CardContent className="p-6 h-full flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <Badge variant="secondary" className="font-mono bg-muted">
-                {c.receiptCode}
+                {featured.receiptCode}
               </Badge>
               <span className="text-xs text-muted-foreground">
-                {c.confirmedAt
-                  ? formatDateArabic(new Date(c.confirmedAt))
-                  : formatDateArabic(new Date(c.createdAt))}
+                {featured.confirmedAt
+                  ? formatDateArabic(new Date(featured.confirmedAt))
+                  : formatDateArabic(new Date(featured.createdAt))}
               </span>
             </div>
-            <div className="mt-3 text-2xl font-heading font-extrabold text-primary">
-              {formatNumber(c.amount)}{" "}
-              <span className="text-sm font-normal text-muted-foreground">د.م</span>
-            </div>
-            <div className="mt-1 text-xs text-muted-foreground">
-              مساهمة شهر {c.month} — مؤكّدة
+            <div>
+              <div className="font-heading font-extrabold text-primary" style={{ fontSize: "clamp(2rem, 4vw, 3.25rem)" }}>
+                {formatNumber(featured.amount)}{" "}
+                <span className="text-base font-normal text-muted-foreground">د.م</span>
+              </div>
+              <div className="mt-2 text-sm text-muted-foreground">
+                مساهمة شهر {featured.month} — مؤكّدة عبر {featured.method === "CASH" ? "نقداً" : featured.method === "BANK_TRANSFER" ? "تحويل بنكي" : featured.method}
+              </div>
             </div>
           </CardContent>
-          {/* تدرّج إخفاء في الأسفل عند الزوار */}
           {isVisitor && (
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent">
               <div className="absolute inset-x-0 bottom-1 flex items-center justify-center">
@@ -403,6 +407,36 @@ async function ContributionsSection({ isVisitor }: { isVisitor: boolean }) {
                 </span>
               </div>
             </div>
+          )}
+        </Card>
+      )}
+      {/* البطاقات الصغيرة */}
+      {rest.map((c) => (
+        <Card
+          key={c.id}
+          className="relative overflow-hidden border-border warm-shadow card-glow lift-on-hover"
+        >
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <Badge variant="secondary" className="font-mono bg-muted text-[10px]">
+                {c.receiptCode}
+              </Badge>
+              <span className="text-[10px] text-muted-foreground">
+                {c.confirmedAt
+                  ? formatDateArabic(new Date(c.confirmedAt))
+                  : formatDateArabic(new Date(c.createdAt))}
+              </span>
+            </div>
+            <div className="mt-2 text-xl font-heading font-extrabold text-primary">
+              {formatNumber(c.amount)}{" "}
+              <span className="text-xs font-normal text-muted-foreground">د.م</span>
+            </div>
+            <div className="mt-0.5 text-[10px] text-muted-foreground">
+              شهر {c.month}
+            </div>
+          </CardContent>
+          {isVisitor && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-background to-transparent" />
           )}
         </Card>
       ))}
@@ -420,9 +454,102 @@ async function EventsSection({ isVisitor, vertical = false }: { isVisitor: boole
       </Card>
     );
   }
+  // Bento: أول بطاقة مميّزة (أطول) + الباقي أصغر
+  const [featured, ...rest] = items;
+  if (vertical) {
+    return (
+      <div className="grid gap-3 auto-rows-min">
+        {featured && (
+          <Card
+            key={featured.id}
+            className="relative overflow-hidden border-border warm-shadow card-glow lift-on-hover bg-gradient-to-br from-secondary/10 to-transparent border-s-4 border-s-secondary"
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <Badge variant="secondary" className="text-accent border-accent/30">
+                  {featured.type}
+                </Badge>
+                <span className="text-xs text-muted-foreground">
+                  {formatDateArabic(new Date(featured.startDate))}
+                </span>
+              </div>
+              <h3 className="font-heading font-bold text-lg text-foreground line-clamp-2 leading-snug mb-2">
+                <Link href={`/community/events/${featured.slug}`} className="underline-animate">
+                  {featured.title}
+                </Link>
+              </h3>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <MapPin className="size-3.5 text-primary" />
+                <span className="truncate">{featured.location}</span>
+              </div>
+            </CardContent>
+            {isVisitor && (
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-background to-transparent" />
+            )}
+          </Card>
+        )}
+        {rest.map((e) => (
+          <Card
+            key={e.id}
+            className="relative overflow-hidden border-border warm-shadow card-glow lift-on-hover"
+          >
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between gap-2">
+                <Badge variant="outline" className="text-accent border-accent/30 text-[10px]">
+                  {e.type}
+                </Badge>
+                <span className="text-[10px] text-muted-foreground">
+                  {formatDateArabic(new Date(e.startDate))}
+                </span>
+              </div>
+              <h3 className="mt-1.5 font-heading font-bold text-sm text-foreground line-clamp-2 leading-snug">
+                <Link href={`/community/events/${e.slug}`} className="underline-animate">
+                  {e.title}
+                </Link>
+              </h3>
+              <div className="mt-1.5 flex items-center gap-1 text-[10px] text-muted-foreground">
+                <MapPin className="size-3 text-primary" />
+                <span className="truncate">{e.location}</span>
+              </div>
+            </CardContent>
+            {isVisitor && (
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-background to-transparent" />
+            )}
+          </Card>
+        ))}
+      </div>
+    );
+  }
+  // Non-vertical: all items in regular grid (featured gets col-span-2)
   return (
-    <div className={vertical ? "grid gap-3" : "grid gap-3 sm:grid-cols-2 lg:grid-cols-3"}>
-      {items.map((e) => (
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {featured && (
+        <Card
+          key={featured.id}
+          className="sm:col-span-2 relative overflow-hidden border-border warm-shadow card-glow lift-on-hover bg-gradient-to-br from-secondary/10 to-transparent border-s-4 border-s-secondary"
+        >
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <Badge variant="secondary" className="text-accent border-accent/30">
+                {featured.type}
+              </Badge>
+              <span className="text-xs text-muted-foreground">
+                {formatDateArabic(new Date(featured.startDate))}
+              </span>
+            </div>
+            <h3 className="font-heading font-bold text-lg text-foreground line-clamp-2 leading-snug mb-2">
+              <Link href={`/community/events/${featured.slug}`} className="underline-animate">
+                {featured.title}
+              </Link>
+            </h3>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <MapPin className="size-3.5 text-primary" />
+              <span className="truncate">{featured.location}</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {rest.map((e) => (
         <Card
           key={e.id}
           className="relative overflow-hidden border-border warm-shadow card-glow lift-on-hover"
@@ -819,7 +946,7 @@ export default async function HomePage() {
       </section>
 
       {/* ─────────── 8. دعوة للانضمام (CTA نهائي) ─────────── */}
-      <section className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+      <section className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-8 md:pt-12 pb-16 md:pb-24">
         <Card className="overflow-hidden border-0 maarouf-gradient-soft text-primary-foreground">
           <CardContent className="relative p-8 md:p-12 text-center">
             {/* أنميشن الخلفية: نمط زخرفي شفّاف */}
