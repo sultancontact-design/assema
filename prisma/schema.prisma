@@ -1581,3 +1581,39 @@ model FeatureFlag {
   @@index([status])
   @@index([category, status])
 }
+
+// ===================================================================
+//  v30.0 — CMS: SiteContent + ImageAsset (admin-controlled content)
+// ===================================================================
+
+model SiteContent {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  type        String   @default("TEXT")
+  section     String
+  labelAr     String
+  description String?
+  isActive    Boolean  @default(true)
+  updatedBy   String?
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  @@index([section])
+}
+
+model ImageAsset {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  url         String
+  alt         String
+  section     String
+  labelAr     String
+  description String?
+  isActive    Boolean  @default(true)
+  updatedBy   String?
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  @@index([section])
+}
