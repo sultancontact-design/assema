@@ -4857,3 +4857,80 @@ Stage Summary:
 - ✅ المشكلة 3 مُصلَحة + مُثبَتة بصرياً (5 بطاقات: 56/40/40/32/32)
 - ✅ المشكلة 4 مُصلَحة + مُثبَتة بالأرقام (46 طلب بلاط، 1.7s load، 0 errors)
 - اللقطات: /tmp/map-v34-streets.png, -satellite.png, -terrain.png, -cards.png, -final.png
+
+---
+Task ID: v35.0
+Agent: main developer
+Task: تثبيت 12 مهارة تصميم + DESIGN.md + إعادة تصميم الصفحة الرئيسية (anti-AI-slop)
+
+Work Log:
+الخطوة 1-7: تثبيت المهارات
+- استنسخت 3 مستودعات (podo/design-agent-skills 157 skill + anthropics/skills 19 skill + ranbot-ai/awesome-skills)
+- نسخت 12 مهارة الأكثر صلة إلى .agents/skills/:
+  1. frontend-design (Anthropic official — anti-AI-slop)
+  2. brand-guidelines (Anthropic)
+  3. design-taste-frontend (DESIGN_VARIANCE=8, MOTION=6, DENSITY=4)
+  4. ui-ux-pro-max (50 styles + 97 palettes + 57 font pairings)
+  5. accessibility-agents, addyosmani-quality, color-expert
+  6. content-strategy, brand-design-md, ai-graphic-design-skill
+  7. baseline-ui, claude-wireframe-skill
+
+الخطوة 8: مرجع Dashboard
+- استنسخت Kiranism/next-shadcn-dashboard-starter (6k+ stars)
+- درست بنيته: parallel routes (layout.tsx + @sales + @area_stats + @bar_stats + @pie_stats)
+- نمط KPI Cards: text-2xl font-semibold tabular-nums + CardAction Badge TrendingUp
+
+الخطوة 10: DESIGN.md (قواعد صارمة)
+- 12 قسم: الهوية، الألوان، محظور، مطلوب، Typography، Layout، Dashboard، Mobile، Animations، Components، Quality Gates، القرارات
+- محظور: Inter/Roboto/Arial، تدرّج بنفسجي، 3+ بطاقات متطابقة، centered everything، emoji، fade-up على كل قسم
+- مطلوب: Bento Grid (12-col)، typography هرمي، spacing سخي 24/32/48/64/96، prefers-reduced-motion، WCAG 2.2 AA
+
+الخطوة 11: تطبيق على الصفحة الرئيسية
+
+home-hero.tsx (إعادة تصميم كاملة):
+- تخطيط غير متمركز: grid grid-cols-1 lg:grid-cols-12 (7/5 split)
+- عنوان display: clamp(2.5rem, 6vw, 5rem) — لا تظليل كلمة واحدة
+- بطاقة KPI حيّة على الجانب: fund total (58,660) + families (50) + events (90)
+- fetch من /api/public/stats (client-side) — يتجنّب فشل SSR على Vercel
+- حركة واحدة منسّقة: containerVariants + itemVariants مع staggerChildren 0.08s
+- أزرار CTA غير متمركزة (items-start)
+- لا ALL-CAPS متباعدة، لا emoji
+
+page.tsx (إعادة هيكلة أقسام):
+- Hero → preview → CTA متوقّعة: أصلحت بـ Bento Grid
+- قسم "ماذا يحدث في الحي؟":
+  - رأس يساري (text-start، لا text-center)
+  - Bento: 8-col مساهمات + 4-col فعاليات (vertical)
+  - Bento: 8-col قصص + 4-col نقاشات
+- قسم "على ماذا نقف؟": رأس يساري بدل centered
+- قسم "باقات الإعلانات":
+  - رأس يساري بدل centered
+  - Bento: ذهبية col-span-2 (660px) + 3 بطاقات صغيرة (322px)
+  - bg-primary/5 على البطاقة البارزة
+- حذف ALL emojis من placeholder stories (📝🤲🕌🌱🩺💚)
+- أحداث عمودية (vertical prop جديد على EventsSection)
+
+Deploy + verify:
+- commit 9f2df0a pushed إلى GitHub main
+- Vercel بنى تلقائياً (انتظرت 160s للاكتمال)
+- Agent Browser على desktop 1440x900
+- VLM أكّد 4/4 قواعد التصميم:
+  ✅ Hero asymmetric (text + stats card) — bounding box: 7/5 grid confirmed
+  ✅ KPI card حيّة (58,660 / 50 / 90) — live data من API
+  ✅ Display headline 72px (clamp working) — لا gradient على كلمة واحدة
+  ✅ Preview Bento Grid 12-col (8/4 + 8/4) — JS eval أكّد col-span-8 + col-span-4
+  ✅ Ads Bento: ذهبية col-span-2 (660px) vs 322px (الأخرى) — JS bounding box
+  ✅ Headers يسارية (text-start) — لا text-center
+  ✅ No emojis في المحتوى
+  ✅ No purple gradients
+  ✅ No Inter/Roboto/Arial (Tajawal + IBM Plex Sans Arabic)
+  ✅ No 3+ identical cards في صف واحد
+
+Stage Summary:
+- ✅ 12 مهارة تصميم مثبتة في .agents/skills/
+- ✅ DESIGN.md بقواعد صارمة (12 قسم)
+- ✅ CLAUDE.md لمساعدة الوكلاء
+- ✅ Hero يعكس البيانات الحيّة (58,660 درهم)
+- ✅ Bento Grid على 3 أقسام (preview + ads + hero)
+- ✅ لا AI slop (لا emoji، لا centered، لا gradient بنفسجي، لا Inter)
+- اللقطات: /tmp/v35-hero-new.png, v35-bento.png, v35-ads-final.png
