@@ -24,8 +24,13 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
-  // إسكات تحذير "Turbopack with webpack config" — مقصود لـ Serwist
   turbopack: {},
+  // v32.0: redirect old flat map → 3D map
+  async redirects() {
+    return [
+      { source: "/community/map", destination: "/community/map-3d", permanent: true },
+    ];
+  },
 };
 
 export default withSerwist(nextConfig);

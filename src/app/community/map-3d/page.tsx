@@ -1,282 +1,111 @@
-// ===================================================================
-//  صفحة الخريطة ثلاثية الأبعاد — /community/map-3d
-//  Server Component — يعرض Map3D + جدول إحصاءات الأحياء + رابط للخريطة 2D
-// ===================================================================
-
-import Link from "next/link";
-import { ChevronLeft, Map as MapIcon, ArrowRight } from "lucide-react";
+import dynamic from "next/dynamic";
+import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ZelligeDivider } from "@/components/shared/zellige-divider";
-import { Map3D, type DistrictMarker } from "@/components/community/map-3d";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { formatNumber } from "@/lib/constants";
+import { MapPin, Users, Home } from "lucide-react";
+
+// Lazy load map component (saves ~200KB initial bundle)
+const ThreeDMap = dynamic(
+  () => import("@/components/map/three-d-map").then((m) => m.ThreeDMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-[70vh] min-h-[400px] bg-muted rounded-2xl flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="mt-4 text-sm text-muted-foreground">جاري تحميل الخريطة...</p>
+        </div>
+      </div>
+    ),
+  }
+);
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "خريطة ثلاثية الأبعاد لمراكش",
   description:
-    "استكشف أحياء مراكش على خريطة ثلاثية الأبعاد — 5 أحياء مع علامات نابضة ومعلومات الأعضاء.",
+    "استكشف أحياء مراكش على خريطة ثلاثية الأبعاد — مبانٍ 3D، صور قمر صناعي، وتضاريس.",
 };
 
-// إحداثيات أحياء مراكش (افتراضية قابلة للتحديث من قاعدة البيانات لاحقاً)
-const DISTRICT_COORDS: Record<
-  string,
-  { latitude: number; longitude: number; nameFr: string }
-> = {
-  "sidi-youssef-ben-ali": {
-    latitude: 31.6295,
-    longitude: -7.9811,
-    nameFr: "Sidi Youssef Ben Ali",
-  },
-  medina: {
-    latitude: 31.6320,
-    longitude: -7.9890,
-    nameFr: "Médina",
-  },
-  guelize: {
-    latitude: 31.6340,
-    longitude: -8.0089,
-    nameFr: "Guéliz",
-  },
-  menara: {
-    latitude: 31.6160,
-    longitude: -8.0200,
-    nameFr: "Ménara",
-  },
-  annakhil: {
-    latitude: 31.6530,
-    longitude: -7.9900,
-    nameFr: "Annakhil",
-  },
+const DISTRICT_COORDS: Record<string, [number, number]> = {
+  "sidi-youssef-ben-ali": [-7.970, 31.610],
+  medina: [-7.989, 31.629],
+  guelize: [-7.998, 31.643],
+  menara: [-7.950, 31.600],
+  annakhil: [-7.920, 31.650],
 };
 
 export default async function Map3DPage() {
-  // جلب الأحياء من قاعدة البيانات
-  const allDistricts = await db.district
-    .findMany({
-      where: { deletedAt: null, isActive: true },
-      select: {
-        slug: true,
-        name: true,
-        nameAr: true,
-        nameFr: true,
-        members: true,
-        familiesCount: true,
-        population: true,
-        contributions: true,
-      },
-      orderBy: { createdAt: "asc" },
-    })
-    .catch(() => [] as never[]);
+  const user = await getCurrentUser();
+  if (!user) redirect("/login?callbackUrl=/community/map-3d");
 
-  // بناء بيانات العلامات
-  const markers: DistrictMarker[] = (allDistricts as any[]).map((d) => {
-    const coords = DISTRICT_COORDS[d.slug] ?? {
-      latitude: 31.6295,
-      longitude: -7.9811,
-      nameFr: d.nameFr ?? "",
-    };
-    return {
-      slug: d.slug,
-      name: d.nameAr ?? d.name,
-      nameFr: d.nameFr ?? coords.nameFr,
-      members: d.members ?? 0,
-      families: d.familiesCount ?? 0,
-      latitude: coords.latitude,
-      longitude: coords.longitude,
-    };
+  const districts = await db.district.findMany({
+    select: { id: true, name: true, nameAr: true, slug: true },
+    take: 10,
   });
 
-  const totalMembers = markers.reduce((s, m) => s + m.members, 0);
-  const totalFamilies = markers.reduce((s, m) => s + m.families, 0);
+  const districtStats = await Promise.all(
+    districts.map(async (d) => {
+      const [members, families] = await Promise.all([
+        db.user.count({ where: { districtId: d.id, deletedAt: null } }),
+        db.family.count({ where: { districtId: d.id } }),
+      ]);
+      return { ...d, members, families };
+    })
+  ).catch(() => []);
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-8 md:py-12">
-      {/* رأس الصفحة */}
-      <div className="mb-4 flex items-center gap-2 text-sm">
-        <Link
-          href="/community/map"
-          className="inline-flex min-h-11 items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
-        >
-          <ChevronLeft className="size-4" />
-          خريطة ثنائية الأبعاد
-        </Link>
-        <span className="text-muted-foreground">/</span>
-        <span className="font-medium text-foreground">خريطة ثلاثية الأبعاد</span>
-      </div>
-
-      <header className="text-center mb-6">
-        <Badge
-          variant="secondary"
-          className="bg-primary/10 text-primary border-primary/20 mb-3"
-        >
-          <MapIcon className="size-3 ms-1.5" />
+    <section className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+      <header className="mb-8 text-center">
+        <Badge variant="outline" className="mb-3 bg-primary/5 text-primary border-primary/20">
+          <MapPin className="size-3" />
           خريطة ثلاثية الأبعاد
         </Badge>
-        <h1 className="font-heading text-3xl sm:text-4xl font-extrabold text-foreground mb-2">
-          خريطة ثلاثية الأبعاد لمراكش
+        <h1 className="font-heading text-3xl sm:text-5xl font-extrabold mb-2">
+          <span className="shimmer-text">خريطة أحياء مراكش</span>
         </h1>
-        <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-          استكشف أحياء مراكش بتجسيم ثلاثي الأبعاد. انقر على علامة الحيّ لعرض
-          معلومات الأعضاء والأسر. تكبير/تصغير/تدوير عبر أزرار التحكّم.
+        <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">
+          استكشف أحياء المدينة الحمراء على خريطة ثلاثية الأبعاد مع مبانٍ 3D،
+          صور قمر صناعي، وتضاريس تفصيلية.
         </p>
         <ZelligeDivider variant="diamond" className="opacity-70 mt-4" />
       </header>
 
-      {/* الخريطة */}
-      <Card className="warm-shadow">
-        <CardHeader className="border-b border-border pb-2">
-          <CardTitle className="flex items-center gap-2 text-sm">
-            <MapIcon className="size-4 text-primary" />
-            أحياء مراكش — عرض ثلاثي الأبعاد
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Map3D districts={markers} desktopHeight={500} mobileHeight={300} />
-        </CardContent>
-      </Card>
+      {/* The 3D Map */}
+      <ThreeDMap />
 
-      {/* إحصاءات مختصرة */}
-      <section className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3">
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-[11px] text-muted-foreground">عدد الأحياء</p>
-            <p className="font-heading text-xl font-bold text-primary">
-              {formatNumber(markers.length)}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-[11px] text-muted-foreground">إجمالي الأعضاء</p>
-            <p className="font-heading text-xl font-bold text-secondary">
-              {formatNumber(totalMembers)}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-[11px] text-muted-foreground">إجمالي الأسر</p>
-            <p className="font-heading text-xl font-bold text-accent">
-              {formatNumber(totalFamilies)}
-            </p>
-          </CardContent>
-        </Card>
-      </section>
-
-      {/* جدول الإحصاءات لكل حي */}
-      <Card className="mt-6 warm-shadow">
-        <CardHeader className="border-b border-border">
-          <CardTitle className="flex items-center gap-2 text-sm">
-            <ArrowRight className="size-4 text-accent" />
-            إحصاءات الأحياء
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto custom-scrollbar">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="text-start">الحي</TableHead>
-                  <TableHead className="text-start">الأعضاء</TableHead>
-                  <TableHead className="text-start">الأسر</TableHead>
-                  <TableHead className="text-start">السكان التقريبيون</TableHead>
-                  <TableHead className="text-start">نسبة الانخراط</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {markers.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className="text-center text-muted-foreground py-6"
-                    >
-                      لا توجد أحياء بعد.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  markers.map((d) => {
-                    const population =
-                      (allDistricts as any[]).find(
-                        (x) => x.slug === d.slug
-                      )?.population ?? 0;
-                    const rate =
-                      population > 0
-                        ? Math.round((d.members / population) * 1000) / 10
-                        : 0;
-                    return (
-                      <TableRow key={d.slug}>
-                        <TableCell>
-                          <Link
-                            href={`/community/districts/${d.slug}`}
-                            className="font-medium text-foreground hover:text-primary transition-colors"
-                          >
-                            {d.name}
-                          </Link>
-                          {d.nameFr && (
-                            <p className="text-[11px] text-muted-foreground" dir="ltr">
-                              {d.nameFr}
-                            </p>
-                          )}
-                        </TableCell>
-                        <TableCell className="font-semibold text-primary">
-                          {formatNumber(d.members)}
-                        </TableCell>
-                        <TableCell className="font-semibold text-secondary">
-                          {formatNumber(d.families)}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {population > 0 ? formatNumber(population) : "—"}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className={
-                              rate > 5
-                                ? "border-emerald-600/30 bg-emerald-600/10 text-emerald-700"
-                                : rate > 1
-                                  ? "border-amber-500/30 bg-amber-500/10 text-amber-700"
-                                  : "border-zinc-500/30 bg-zinc-500/10 text-zinc-700"
-                            }
-                          >
-                            {rate}%
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* أزرار سفلى */}
-      <div className="mt-8 flex flex-wrap justify-center gap-3">
-        <Button asChild variant="outline" className="h-11 gap-2">
-          <Link href="/community/map">
-            <MapIcon className="size-4" />
-            <span>عرض الخريطة ثنائية الأبعاد</span>
-          </Link>
-        </Button>
-        <Button asChild className="h-11 gap-2">
-          <Link href="/community">
-            <span>العودة للمجتمع</span>
-          </Link>
-        </Button>
-      </div>
-    </main>
+      {/* District stats */}
+      {districtStats.length > 0 && (
+        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+          {districtStats.slice(0, 5).map((d) => {
+            const coords = DISTRICT_COORDS[d.slug] ?? [-7.98, 31.63];
+            const engagement = d.families > 0 ? Math.round((d.members / (d.families * 4)) * 100) : 0;
+            return (
+              <Card key={d.id} className="lift-on-hover">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Home className="size-4 text-primary" />
+                    <h3 className="font-heading font-bold text-sm">{d.nameAr ?? d.name}</h3>
+                  </div>
+                  <div className="space-y-1 text-xs text-muted-foreground">
+                    <p className="flex items-center gap-1">
+                      <Users className="size-3" />
+                      <span className="font-bold text-foreground">{d.members}</span> عضو
+                    </p>
+                    <p>🏠 <span className="font-bold text-foreground">{d.families}</span> أسرة</p>
+                    <p>📈 نسبة الانخراط: <Badge variant="outline" className="text-[10px]">{engagement}%</Badge></p>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </section>
   );
 }
