@@ -52,7 +52,7 @@ interface PopupInstance {
 const VENDOR_SCRIPT = "/vendor/maplibre-gl.js";
 const VENDOR_WORKER = "/vendor/maplibre-gl-csp-worker.js";
 const STYLE_LIBERTY = "https://tiles.openfreemap.org/styles/liberty";
-const SATELLITE_TILES = ["https://tiles.stadiamaps.com/tiles/alide_satellite/{z}/{x}/{y}@2x.jpg"];
+const SATELLITE_TILES = ["https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}@2x.jpg"];
 const SATELLITE_TILES_FALLBACK = ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"];
 const TERRAIN_TILES = ["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"];
 const MARRAKECH: [number, number] = [-7.98, 31.63];
