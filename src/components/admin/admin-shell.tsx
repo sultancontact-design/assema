@@ -46,6 +46,7 @@ import {
   Radio,
   BookOpen,
   Inbox,
+  Flag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -154,6 +155,7 @@ const NAV_LINKS: NavLinkItem[] = [
   { href: "/admin/blog", label: "المدوّنة", icon: BookOpen, match: "blog" },
   { href: "/admin/contributions", label: "مساهمات المستخدمين", icon: Inbox, match: "contributions" },
   { href: "/admin/cndp", label: "طلبات CNDP", icon: ShieldCheck, match: "cndp" },
+  { href: "/admin/feature-control", label: "مركز التحكم", icon: Flag, match: "feature-control" },
   { href: "/admin/data", label: "إدارة البيانات", icon: DatabaseBackup, match: "data" },
   { href: "/admin/district-monitor", label: "مراقبة الأحياء", icon: MapPin, match: "district-monitor" },
   { href: "/admin/analytics", label: "التحليلات", icon: BarChart3, match: "analytics" },
