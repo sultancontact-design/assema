@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import {
   Activity, RefreshCw, Users, Coins, CalendarDays, TrendingUp, TrendingDown,
   AlertTriangle, Lock, Bell, BookOpen, ShoppingCart, MessageSquare,
-  Lightbulb, Tag, ShieldCheck, FileText, Flag, UsersRound, MapPin, Megaphone,
+  Lightbulb, Tag, ShieldCheck, File, Flag, UsersRound, MapPin, Megaphone,
   Heart, MessageCircle, ArrowUpRight,
 } from "lucide-react";
 import {
@@ -62,7 +62,7 @@ const SECTION_ICONS: Record<string, React.ComponentType<{ className?: string }>>
   users: Users, families: UsersRound, districts: MapPin, groups: Users, fund_pending: Coins,
   contributions: Coins, events: CalendarDays, blog_posts: BookOpen, blog_comments: MessageCircle,
   blog_likes: Heart, ads: Megaphone, store: ShoppingCart, discussions: MessageSquare,
-  initiatives: Lightbulb, price_reports: Tag, cndp: ShieldCheck, audit_logs: FileText, feature_flags: Flag,
+  initiatives: Lightbulb, price_reports: Tag, cndp: ShieldCheck, audit_logs: File, feature_flags: Flag,
 };
 
 const SECTION_LINKS: Record<string, string> = {
