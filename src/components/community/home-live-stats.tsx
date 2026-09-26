@@ -110,13 +110,11 @@ export function HomeLiveStats({
                 <div
                   className={`font-heading text-3xl sm:text-4xl font-extrabold ${stat.color}`}
                 >
-                  <AnimatedCounter
-                    key={stat.value}
-                    value={stat.value}
-                    duration={2200}
-                    delay={idx * 150}
-                    formatFn={stat.formatFn}
-                  />
+                  {loading ? (
+                    <span className="opacity-50">...</span>
+                  ) : (
+                    <span>{stat.formatFn(stat.value)}</span>
+                  )}
                 </div>
                 <div className="text-xs sm:text-sm text-muted-foreground mt-1">
                   {stat.label}
