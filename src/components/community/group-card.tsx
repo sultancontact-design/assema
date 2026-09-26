@@ -52,7 +52,7 @@ export interface GroupCardData {
   slug: string;
   description: string | null;
   category: string;
-  iconEmoji: string;
+  imageUrl: string;
   isPrivate: boolean;
   memberCount: number;
   leaderName: string | null;
@@ -146,35 +146,33 @@ export function GroupCard({
       className="h-full"
     >
       <Card className="warm-shadow border-border bg-card h-full flex flex-col overflow-hidden transition-all hover:border-primary/30 hover:shadow-lg">
-        <CardHeader className="space-y-3 pb-3">
-          <div className="flex items-start justify-between gap-2">
-            <div
-              className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-4xl"
-              aria-hidden
-            >
-              {group.iconEmoji}
-            </div>
-            <div className="flex flex-col items-end gap-1.5">
-              <Badge
-                variant="outline"
-                className="bg-muted text-muted-foreground"
-              >
-                {group.category}
+        {/* Real photograph header */}
+        <div className="relative h-44 overflow-hidden">
+          <img
+            src={group.imageUrl}
+            alt={group.name}
+            className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+            loading="lazy"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+          <div className="absolute top-3 end-3 flex flex-col gap-1.5">
+            <Badge className="bg-white/20 backdrop-blur-md text-white border-0 text-[10px]">
+              {group.category}
+            </Badge>
+            {group.isPrivate && (
+              <Badge className="bg-amber-500/80 backdrop-blur-md text-white border-0 text-[10px]">
+                <Lock className="size-3" />
+                خاصة
               </Badge>
-              {group.isPrivate && (
-                <Badge
-                  variant="outline"
-                  className="bg-amber-50 text-amber-700 border-amber-200"
-                >
-                  <Lock className="size-3" />
-                  خاصة
-                </Badge>
-              )}
-            </div>
+            )}
           </div>
-          <CardTitle className="font-heading text-lg font-bold text-foreground">
-            {group.name}
-          </CardTitle>
+          <div className="absolute bottom-3 inset-x-3">
+            <CardTitle className="font-heading text-xl font-bold text-white">
+              {group.name}
+            </CardTitle>
+          </div>
+        </div>
+        <CardHeader className="space-y-3 pb-3 pt-4">
           <CardDescription className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
             {group.description ?? "مجموعة من أبناء الحي"}
           </CardDescription>

@@ -1,8 +1,7 @@
 // ===================================================================
-//  /ethics — قيمنا ومبادئنا (v28.0 — REWRITE)
-//  ❌ Removed: "تحذير", "إدمان", "خطر", "أذى", emojis
-//  ✅ Added: "قيمنا", "مبادئنا", "التزامنا", "رؤيتنا"
-//  ✅ Professional language like Stripe/Linear trust pages
+//  /ethics — صفحة التصميم الأخلاقي
+//  صفحة عامة تشرح بصدق آليات الانتماء + روابط للاختيار للخروج
+//  + إحصائيات وقت الشاشة + 4 مبادئ
 // ===================================================================
 
 import Link from "next/link";
@@ -11,241 +10,292 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ZelligeDivider } from "@/components/shared/zellige-divider";
 import {
-  Eye, Settings2, Heart, Shield, Bell, Flame, Gift,
-  Users, Clock, ArrowLeft, Sparkles, Lock,
+  Eye,
+  Settings2,
+  Heart,
+  Shield,
+  Bell,
+  Flame,
+  Gift,
+  Users,
+  Clock,
+  ArrowLeft,
 } from "lucide-react";
 
 export const metadata = {
-  title: "قيمنا ومبادئنا",
-  description: "التزامنا بالشفافية والاحترام والحماية في كل ما نقدّمه لمجتمعنا.",
+  title: "تصميمنا الأخلاقي",
 };
-
-const PRINCIPLES = [
-  {
-    icon: Eye,
-    image: "https://images.unsplash.com/photo-1554224155-6724dd031d9f?w=400&q=85",
-    title: "الشفافية",
-    description: "نشرح بوضوح كيف تعمل المنصة، ولماذا. لا أسرار، لا خداع — كل آلية موثّقة هنا.",
-  },
-  {
-    icon: Settings2,
-    image: "https://images.unsplash.com/photo-1554415707-72e20038b528?w=400&q=85",
-    title: "التحكّم الكامل",
-    description: "تتحكّم في كل إشعار وكل تذكير. بإمكانك تعديل كل شيء أو إيقافه من الإعدادات.",
-  },
-  {
-    icon: Heart,
-    image: "https://images.unsplash.com/photo-1521791135904-15f7b4faff47?w=400&q=85",
-    title: "الاحترام",
-    description: "نُصمّم لتجربة مفيدة لا تستهلك وقتك. هدفنا دقائق مفيدة، لا ساعات مهدورة.",
-  },
-  {
-    icon: Shield,
-    image: "https://images.unsplash.com/photo-1563013544-824ae38b5697?w=400&q=85",
-    title: "الحماية",
-    description: "كل آلية محفّزاتها تخدم الهدف الأساسي: مساعدة الأسر في حيّك. لا مكافآت فارغة.",
-  },
-];
 
 const MECHANISMS = [
   {
+    emoji: "🔥",
     icon: Flame,
-    title: "السلاسل اليومية",
-    purpose: "تُحفّزك على بناء عادة إيجابية — العودة يومياً للمساهمة في صندوق المعروف.",
-    why: "العادات تُبنى بالتكرار. سلسلة 7 أيام متتالٍ تُحوّل المساهمة من قرار يومي إلى عادة طبيعية.",
-    safeguards: [
-      "إمكانية تجميد السلسلة مرّتين مجاناً",
+    title: "السلاسل اليومية (Streaks)",
+    purpose: "تُحفّزك على العودة يومياً لبناء عادة لا ترك ساعات إضافية.",
+    why: "العادات لا تُبنى بإقناع لحظي بل بالتكرار. سلسلة 7 يوم متتالٍ تُحوّل 'الدخول' من قرار يومي إلى عادة تلقائية.",
+    harmRisk: "قد تُصبح هاجساً يومياً يُسبّب قلقاً عند فوات يوم.",
+    controls: [
+      "2 freezes مجانية لحماية سلسلتك",
       "إيقاف تنبيهات السلاسل من الإعدادات",
-      "استراحة مُجدولة متى شئت",
+      "خذ استراحة لمدة تصل ليوم",
     ],
+    settingsHref: "/community/notifications/settings",
   },
   {
+    emoji: "🎁",
     icon: Gift,
-    title: "المكافآت المتغيّرة",
-    purpose: "مكافآت متنوّعة تُضيف عنصر التشويق الإيجابي لتشجيع المساهمة.",
-    why: "التنويع يُحفّز الاهتمام بشكل طبيعي. نستعمله لتشجيع العطاء، لا للاستهلاك.",
-    safeguards: [
-      "عجلة واحدة يومياً فقط",
-      "صندوق مكافآت لكل 5 مساهمات",
-      "بدون أموال حقيقية — نقاط معروف فقط",
+    title: "الصندوق الغامض + العجلة",
+    purpose: "مكافآت متغيرة وعشوائية تُضيف عنصر التشويق دون قمار.",
+    why: "الدوبامين يستجيب بقوّة للعشوائية. نستغلّ هذا لأهداف إيجابية: تحفيز المساهمة بدل التمرّد.",
+    harmRisk: "قد يُحفّز السلوك القهري (مثل ماكينات القمار).",
+    controls: [
+      "عجلة واحدة يومياً فقط — لا زيادة",
+      "صندوق واحد لكل 5 مساهمات — لا أكثر",
+      "بدون أموال حقيقية متبادلة",
     ],
+    settingsHref: "/community/notifications/settings",
   },
   {
+    emoji: "🔔",
     icon: Bell,
     title: "الإشعارات الذكية",
     purpose: "تذكيرات مخصّصة تحترم وقتك وتركيزك.",
     why: "الإشعار المُحسَّن يقلّل الضوضاء ويُبقيك على اطّلاع بما يهمّك فقط.",
-    safeguards: [
+    harmRisk: "إشعارات مفرطة قد تُسبّب إجهاداً ذهنياً وانقطاع تركيز.",
+    controls: [
       "10 أنواع — كلّ قابل للإيقاف",
       "ساعات هدوء قابلة للتخصيص",
-      "حدّ يومي أقصى قابل للتعديل",
+      "حدّ يومي أقصى (افتراضي: 5)",
+      "خذ استراحة لـ1/4/8/24 ساعة",
     ],
+    settingsHref: "/community/notifications/settings",
   },
   {
+    emoji: "👥",
     icon: Users,
     title: "الدليل الاجتماعي",
-    purpose: "إظهار نشاط المجتمع لتعرف أنّك لست وحدك في العطاء.",
+    purpose: "إظهار نشاط الآخرين لك لتعرف أنك لست وحدك.",
     why: "رؤية 12 عضواً نشطاً الآن تُحفّزك للانضمام بدل تأجيل القرار.",
-    safeguards: [
-      "لا مقارنات شخصية (أنت أحسن/أسوأ من X)",
+    harmRisk: "قد يُولّد شعوراً بالضغط للمواكبة (FOMO).",
+    controls: [
+      "لا تنبيهات بمقارنة شخصية (أنت أحسن/أسوأ من X)",
       "كل البيانات إجمالية، لا فردية حسّاسة",
-      "إمكانية إخفاء الدليل الاجتماعي",
     ],
+    settingsHref: "/community/notifications/settings",
+  },
+  {
+    emoji: "⏰",
+    icon: Clock,
+    title: "تنبيهات الإلحاح والندرة",
+    purpose: "إبراز ما سيفوت: سلسلة معرّضة، شارة منتهية، حدث محدود.",
+    why: "العقل البشري حسّاس للفقدان أكثر من الكسب (Prospect Theory). نستعمل هذا للإلحاح الإيجابي فقط.",
+    harmRisk: "إلحاح مفرط قد يُولّد قلقاً يومياً.",
+    controls: [
+      "تنبيهات الإلحاح يمكن إيقافها بشكل مستقلّ",
+      "أقصى حدث محدود: 3 أيام فقط",
+      "لا 'عرض ينتهي بعد 5 دقائق!' خادعة",
+    ],
+    settingsHref: "/community/notifications/settings",
+  },
+];
+
+const PRINCIPLES = [
+  {
+    icon: Eye,
+    title: "الشفافية",
+    description:
+      "نشرح لك كيف ولماذا نُحفّزك. هذه الصفحة دليل على ذلك — لا أسرار، لا خداع.",
+  },
+  {
+    icon: Settings2,
+    title: "التحكّم",
+    description:
+      "لك أن توقف أيّ آلية، تحدّ ساعات الهدوء، تأخذ استراحة. أنت المتقدّم.",
+  },
+  {
+    icon: Heart,
+    title: "الصحة",
+    description:
+      "نُصمّم لعادات إيجابية لا لاستغلال. هدفنا 5 دقائق يومياً مفيدة، لا 5 ساعات تالفة.",
+  },
+  {
+    icon: Shield,
+    title: "الفائدة",
+    description:
+      "كل آلية محفّزاتها تخدم الهدف الأساسي: مساعدة الأسر في حيّك. لا مكافآت فارغة.",
   },
 ];
 
 export default function EthicsPage() {
   return (
-    <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 space-y-12">
-      {/* Hero */}
-      <header className="text-center space-y-4 max-w-3xl mx-auto">
-        <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+    <div className="container mx-auto max-w-4xl px-4 py-10 space-y-10">
+      {/* الرأس */}
+      <header className="space-y-3 text-center">
+        <Badge variant="outline" className="bg-secondary/5 text-secondary border-secondary/20">
           <Shield className="size-3" />
-          التزامنا الأخلاقي
+          التزام أخلاقي
         </Badge>
-        <h1 className="font-heading text-3xl sm:text-5xl font-extrabold">
-          <span className="shimmer-text">قيمنا ومبادئنا</span>
+        <h1 className="font-heading text-3xl font-bold text-foreground sm:text-4xl">
+          تصميمنا الأخلاقي للانتماء
         </h1>
-        <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-          نؤمن أنّ المنصة الجيّدة تُحترم مستخدميها. هذه الصفحة تشرح بصدق
-          كيف نُصمّم كل ميزة، ولماذا، وكيف تحتفظ بالتحكّم الكامل في يدك.
+        <p className="text-sm text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+          نُصمّم المنصة بآليات تحفيز قوية (السلاسل، الصناديق، الإشعارات) —
+          لكنّنا نعرف أنّ هذه الآليات سلاح ذو حدّين. هذه الصفحة تشرح بصدق ما
+          نفعله، لماذا، وما المخاطر، وكيف تحمي نفسك.
         </p>
       </header>
 
       <ZelligeDivider variant="stars" />
 
-      {/* Principles */}
-      <section className="space-y-6">
-        <h2 className="font-heading text-2xl font-bold heading-gradient">مبادئنا الأربعة</h2>
+      {/* المبادئ الأربعة */}
+      <section className="space-y-4">
+        <h2 className="font-heading text-xl font-bold text-foreground">
+          مبادئنا الأربعة
+        </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {PRINCIPLES.map((p, idx) => (
-            <div key={p.title} className="premium-card overflow-hidden fade-stagger" style={{ animationDelay: `${idx * 0.1}s` }}>
-              {/* Real photograph */}
-              <div className="img-overlay-card aspect-[4/3]">
-                <img src={p.image} alt={p.title} className="w-full h-full object-cover" loading="lazy" />
-                <div className="overlay">
-                  <div className="size-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center mb-2">
-                    <p.icon className="size-5 text-white" />
-                  </div>
-                  <h3 className="font-heading text-lg font-bold text-white">{p.title}</h3>
+          {PRINCIPLES.map((p) => (
+            <Card key={p.title} className="warm-shadow">
+              <CardContent className="space-y-2 p-5">
+                <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <p.icon className="size-5" />
                 </div>
-              </div>
-              {/* Description below image */}
-              <div className="p-5">
-                <p className="text-sm text-muted-foreground leading-relaxed">{p.description}</p>
-              </div>
-            </div>
+                <h3 className="font-heading text-base font-bold text-foreground">
+                  {p.title}
+                </h3>
+                <p className="text-xs text-muted-foreground">{p.description}</p>
+              </CardContent>
+            </Card>
           ))}
         </div>
       </section>
 
       <ZelligeDivider variant="wave" />
 
-      {/* Mechanisms */}
-      <section className="space-y-6">
-        <div>
-          <h2 className="font-heading text-2xl font-bold heading-gradient">كيف نُحفّز الانتماء</h2>
-          <p className="text-sm text-muted-foreground mt-2">
-            لكل ميزة: هدفها، سبب وجودها، وكيف نحميك.
-          </p>
+      {/* الآليات */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div>
+            <h2 className="font-heading text-xl font-bold text-foreground">
+              آليات الانتماء لدينا — شرح صريح
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              لكل آلية: لماذا نستعملها، ما المخاطر، وكيف تتوقّف عنها.
+            </p>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {MECHANISMS.map((m, idx) => (
-            <div key={m.title} className="premium-card p-6 space-y-4 fade-stagger" style={{ animationDelay: `${idx * 0.1}s` }}>
-              <div className="flex items-center gap-3">
-                <div className="size-10 rounded-xl bg-gradient-to-br from-primary/20 to-accent/10 flex items-center justify-center">
-                  <m.icon className="size-5 text-primary" />
+        <div className="space-y-4">
+          {MECHANISMS.map((m) => (
+            <Card key={m.title} className="overflow-hidden">
+              <CardContent className="p-0">
+                <div className="grid grid-cols-1 gap-0 md:grid-cols-[auto_1fr]">
+                  <div className="flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-primary/10 via-accent/10 to-secondary/10 p-6 text-center">
+                    <span className="text-4xl" aria-hidden>
+                      {m.emoji}
+                    </span>
+                    <m.icon className="size-5 text-primary" />
+                    <h3 className="font-heading text-base font-bold text-foreground">
+                      {m.title}
+                    </h3>
+                  </div>
+                  <div className="space-y-3 p-5">
+                    <div>
+                      <p className="text-xs font-medium text-primary">الهدف</p>
+                      <p className="text-sm text-foreground">{m.purpose}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-secondary">لماذا</p>
+                      <p className="text-sm text-muted-foreground">{m.why}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-destructive">
+                        ⚠️ خطر محتمل
+                      </p>
+                      <p className="text-sm text-muted-foreground">{m.harmRisk}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-accent">حماياتنا</p>
+                      <ul className="mt-1 space-y-1">
+                        {m.controls.map((c) => (
+                          <li
+                            key={c}
+                            className="flex items-start gap-1.5 text-sm text-foreground"
+                          >
+                            <span className="text-secondary mt-0.5">✓</span>
+                            <span>{c}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <Button
+                      asChild
+                      size="sm"
+                      variant="outline"
+                      className="h-10"
+                    >
+                      <Link href={m.settingsHref}>
+                        تحكّم في هذه الآلية
+                        <ArrowLeft className="size-3.5" />
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
-                <h3 className="font-heading text-lg font-bold">{m.title}</h3>
-              </div>
-
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs font-bold text-primary mb-1">الهدف</p>
-                  <p className="text-sm text-foreground">{m.purpose}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-muted-foreground mb-1">لماذا</p>
-                  <p className="text-sm text-muted-foreground">{m.why}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-emerald-600 mb-1 flex items-center gap-1">
-                    <Lock className="size-3" /> ضماناتنا
-                  </p>
-                  <ul className="space-y-1">
-                    {m.safeguards.map((s) => (
-                      <li key={s} className="flex items-start gap-2 text-sm text-foreground">
-                        <span className="text-emerald-600 mt-0.5">✓</span>
-                        <span>{s}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-
-              <Button asChild size="sm" variant="outline" className="btn-premium w-full">
-                <Link href="/community/notifications/settings">
-                  <Settings2 className="size-3.5" />
-                  <span>إدارة هذه الميزة</span>
-                </Link>
-              </Button>
-            </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       </section>
 
       <ZelligeDivider variant="diamond" />
 
-      {/* Screen time */}
+      {/* وقت الشاشة */}
       <section>
-        <div className="premium-card p-8 text-center space-y-4">
-          <div className="size-12 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/10 flex items-center justify-center mx-auto">
-            <Clock className="size-6 text-primary" />
-          </div>
-          <h2 className="font-heading text-xl font-bold">وقتك ثمين</h2>
-          <p className="text-sm text-muted-foreground max-w-lg mx-auto leading-relaxed">
-            هدفنا أن تقضي هنا 5-10 دقائق يومياً فقط — تكفي لتسجيل الدخول،
-            مساهمة بسيطة، وفحص صندوق المعروف. لا نريد منك أكثر من ذلك.
-          </p>
-          <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto pt-2">
-            <div>
-              <p className="stat-number">5-10</p>
-              <p className="text-xs text-muted-foreground mt-1">دقائق يومياً (هدفنا)</p>
+        <Card className="bg-gradient-to-br from-secondary/5 to-accent/5">
+          <CardContent className="space-y-3 p-6 text-center">
+            <Clock className="mx-auto size-8 text-secondary" />
+            <h2 className="font-heading text-xl font-bold text-foreground">
+              وقت شاشتك على المنصة
+            </h2>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              هدفنا أن تقضي هنا 5-10 دقائق يومياً فقط — تكفي لتسجيل الدخول،
+              مساهمة بسيطة، وفحص صندوق. لا نريد منك أكثر.
+            </p>
+            <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
+              <Stat label="هدفنا اليومي" value="5-10 د" />
+              <Stat label="زمن الجلسة الوسيط" value="3:42" />
+              <Stat label="نسبة من يأخذ استراحة" value="8%" />
             </div>
-            <div>
-              <p className="stat-number">3:42</p>
-              <p className="text-xs text-muted-foreground mt-1">وسيط زمن الجلسة</p>
-            </div>
-            <div>
-              <p className="stat-number">8%</p>
-              <p className="text-xs text-muted-foreground mt-1">يأخذ استراحة</p>
-            </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </section>
 
       {/* CTA */}
-      <section className="text-center space-y-4">
-        <div className="inline-flex items-center gap-2 text-primary">
-          <Sparkles className="size-5" />
-          <h2 className="font-heading text-xl font-bold">التحكّم في يدك</h2>
-        </div>
+      <section className="space-y-4 text-center">
+        <h2 className="font-heading text-xl font-bold text-foreground">
+          تحكّم كامل في يدك
+        </h2>
         <div className="flex flex-wrap justify-center gap-3">
-          <Button asChild size="lg" className="btn-premium h-12 px-6 bg-gradient-to-r from-primary to-orange-600 border-0">
+          <Button asChild size="default" className="h-11">
             <Link href="/community/notifications/settings">
-              <Settings2 className="size-4" />
-              <span>إعدادات الإشعارات</span>
+              ⚙️ إعدادات الإشعارات
             </Link>
           </Button>
-          <Button asChild size="lg" variant="outline" className="h-12 px-6 backdrop-blur-md bg-background/50">
+          <Button asChild size="default" variant="outline" className="h-11">
             <Link href="/community/hooks">
-              <Flame className="size-4" />
-              <span>حلقة الانتماء</span>
+              🔥 صفحة حلقة الانتماء (للأعضاء)
             </Link>
           </Button>
         </div>
       </section>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg bg-card p-3">
+      <p className="font-heading text-lg font-bold text-foreground">{value}</p>
+      <p className="text-[10px] text-muted-foreground">{label}</p>
     </div>
   );
 }

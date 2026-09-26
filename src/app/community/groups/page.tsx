@@ -23,15 +23,15 @@ import { GroupCard, type GroupCardData } from "@/components/community/group-card
 export const dynamic = "force-dynamic";
 
 // ===================================================================
-//  خريطة slug → emoji للمجموعات الافتراضية الخمسة
+//  خريطة slug → صور فوتوغرافية حقيقية للمجموعات
 // ===================================================================
 
-const GROUP_ICON_EMOJIS: Record<string, string> = {
-  mothers: "👩",
-  fathers: "👨",
-  youth: "🧑",
-  children: "🧒",
-  elders: "👵",
+const GROUP_IMAGES: Record<string, string> = {
+  mothers: "https://images.unsplash.com/photo-1499017404655-611a3f8abe9b?w=800&q=85",
+  fathers: "https://images.unsplash.com/photo-1511895426328-dc8714191300?w=800&q=85",
+  youth: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&q=85",
+  children: "https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=800&q=85",
+  elders: "https://images.unsplash.com/photo-1447069387593-a5de0862481e?w=800&q=85",
 };
 
 // ===================================================================
@@ -113,7 +113,7 @@ export default async function GroupsPage({ searchParams }: PageProps) {
       slug: g.slug,
       description: g.description,
       category: g.category,
-      iconEmoji: GROUP_ICON_EMOJIS[g.slug] ?? g.icon ?? "👥",
+      imageUrl: GROUP_IMAGES[g.slug] ?? "https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800&q=85",
       isPrivate: g.isPrivate,
       memberCount: g.members.length,
       leaderName: leader?.user.fullName ?? null,
