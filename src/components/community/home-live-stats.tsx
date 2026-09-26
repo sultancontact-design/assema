@@ -24,11 +24,33 @@ interface HomeLiveStatsProps {
 const arabicNumber = new Intl.NumberFormat("ar-MA");
 
 export function HomeLiveStats({
-  families,
-  contributions,
-  contributionsTotal,
-  events,
+  families: initialFamilies,
+  contributions: initialContributions,
+  contributionsTotal: initialTotal,
+  events: initialEvents,
 }: HomeLiveStatsProps) {
+  // v26.0: Fetch from API on mount (SSR may return 0 if DB unreachable during build)
+  const [families, setFamilies] = React.useState(initialFamilies);
+  const [contributions, setContributions] = React.useState(initialContributions);
+  const [contributionsTotal, setTotal] = React.useState(initialTotal);
+  const [events, setEvents] = React.useState(initialEvents);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    fetch("/api/public/stats", { cache: "no-store" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data) {
+          setFamilies(data.families ?? 0);
+          setContributions(data.contributions ?? 0);
+          setTotal(data.contributionsTotal ?? 0);
+          setEvents(data.events ?? 0);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
   const stats = [
     {
       label: "أسرة مسجّلة",
