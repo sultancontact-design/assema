@@ -239,7 +239,6 @@ async function fetchBlogStories(): Promise<StoryCard[]> {
         author,
         category: r.category,
         href: `/blog/${r.slug}`,
-        emoji: "📝",
       } as StoryCard;
     });
   } catch {
@@ -304,17 +303,15 @@ const PLACEHOLDER_STORIES: StoryCard[] = [
     author: "هيئة التحرير",
     category: "مالية",
     href: "/blog",
-    emoji: "🤲",
   },
   {
     id: "p2",
     title: "دور المسجد في تجميع كلمة الحي",
     excerpt:
-      "من منبر المسجد تتجمّع الأفراح والأتراح. تعرّف على six functions التي يلعبها المسجد.",
+      "من منبر المسجد تتجمّع الأفراح والأتراح. تعرّف على الوظائف الستّ التي يلعبها المسجد.",
     author: "هيئة التحرير",
     category: "دينية",
     href: "/blog",
-    emoji: "🕌",
   },
   {
     id: "p3",
@@ -324,7 +321,6 @@ const PLACEHOLDER_STORIES: StoryCard[] = [
     author: "هيئة التحرير",
     category: "تربية",
     href: "/blog",
-    emoji: "🌱",
   },
   {
     id: "p4",
@@ -334,7 +330,6 @@ const PLACEHOLDER_STORIES: StoryCard[] = [
     author: "هيئة التحرير",
     category: "صحة",
     href: "/blog",
-    emoji: "🩺",
   },
   {
     id: "p5",
@@ -344,7 +339,6 @@ const PLACEHOLDER_STORIES: StoryCard[] = [
     author: "هيئة التحرير",
     category: "مجتمع",
     href: "/blog",
-    emoji: "💚",
   },
 ];
 
@@ -416,7 +410,7 @@ async function ContributionsSection({ isVisitor }: { isVisitor: boolean }) {
   );
 }
 
-async function EventsSection({ isVisitor }: { isVisitor: boolean }) {
+async function EventsSection({ isVisitor, vertical = false }: { isVisitor: boolean; vertical?: boolean }) {
   const items = await fetchUpcomingEvents();
   if (items.length === 0) {
     return (
@@ -427,7 +421,7 @@ async function EventsSection({ isVisitor }: { isVisitor: boolean }) {
     );
   }
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div className={vertical ? "grid gap-3" : "grid gap-3 sm:grid-cols-2 lg:grid-cols-3"}>
       {items.map((e) => (
         <Card
           key={e.id}
@@ -639,83 +633,85 @@ export default async function HomePage() {
         <FomoBanner />
       </section>
 
-      {/* ─────────── 5. معاينة المحتوى العمومي ─────────── */}
+      {/* ─────────── 5. معاينة المحتوى العمومي — Bento Grid ─────────── */}
       <section
         className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16"
         aria-labelledby="preview-heading"
       >
-        <div className="mb-8 text-center">
-          <Badge
-            variant="outline"
-            className="mb-3 text-accent border-accent/30"
-          >
+        {/* عنوان تحريري يساري (لا text-center) */}
+        <div className="mb-8 max-w-3xl">
+          <Badge variant="outline" className="mb-3 text-accent border-accent/30">
             نافذة على الحي
           </Badge>
           <h2
             id="preview-heading"
-            className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-2"
+            className="font-heading text-3xl md:text-4xl lg:text-5xl font-extrabold text-foreground mb-3 leading-[1.1]"
           >
             ماذا يحدث في الحي؟
           </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-muted-foreground leading-relaxed max-w-2xl">
             نظرة شفّافة على آخر المساهمات والفعاليات والنقاشات. سجّل دخولك
             لرؤية التفاصيل الكاملة والمشاركة.
           </p>
         </div>
 
-        {/* مساهمات */}
-        <div className="mb-12">
-          <div className="mb-3 flex items-center gap-2">
-            <HandCoins className="size-5 text-primary" />
-            <h3 className="font-heading font-bold text-lg text-foreground">
-              آخر المساهمات
-            </h3>
-            <Badge variant="secondary" className="ms-1">
-              مؤكّدة
-            </Badge>
+        {/* Bento Grid 12-أعمدة: بطاقة كبيرة 8 أعمدة + بطاقة جانبية 4 أعمدة */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-8">
+          {/* البطاقة الكبيرة: آخر المساهمات */}
+          <div className="lg:col-span-8">
+            <div className="mb-3 flex items-center gap-2">
+              <HandCoins className="size-5 text-primary" />
+              <h3 className="font-heading font-bold text-lg text-foreground">
+                آخر المساهمات
+              </h3>
+              <Badge variant="secondary" className="ms-1" >
+                مؤكّدة
+              </Badge>
+            </div>
+            <Suspense fallback={<CardGridSkeleton />}>
+              <ContributionsSection isVisitor={isVisitor} />
+            </Suspense>
           </div>
-          <Suspense fallback={<CardGridSkeleton />}>
-            <ContributionsSection isVisitor={isVisitor} />
-          </Suspense>
+
+          {/* البطاقة الجانبية: فعاليات قادمة */}
+          <div className="lg:col-span-4">
+            <div className="mb-3 flex items-center gap-2">
+              <CalendarDays className="size-5 text-secondary" />
+              <h3 className="font-heading font-bold text-lg text-foreground">
+                فعاليات قادمة
+              </h3>
+            </div>
+            <Suspense fallback={<CardGridSkeleton count={2} />}>
+              <EventsSection isVisitor={isVisitor} vertical />
+            </Suspense>
+          </div>
         </div>
 
-        {/* فعاليات */}
-        <div className="mb-12">
-          <div className="mb-3 flex items-center gap-2">
-            <CalendarDays className="size-5 text-secondary" />
-            <h3 className="font-heading font-bold text-lg text-foreground">
-              فعاليات قادمة
-            </h3>
+        {/* صف ثاني: قصص المدوّنة (8) + نقاشات (4) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <div className="lg:col-span-8">
+            <div className="mb-3 flex items-center gap-2">
+              <Quote className="size-5 text-accent" />
+              <h3 className="font-heading font-bold text-lg text-foreground">
+                من المدوّنة
+              </h3>
+            </div>
+            <Suspense fallback={<StoriesSkeleton />}>
+              <StoriesSection isVisitor={isVisitor} />
+            </Suspense>
           </div>
-          <Suspense fallback={<CardGridSkeleton />}>
-            <EventsSection isVisitor={isVisitor} />
-          </Suspense>
-        </div>
 
-        {/* قصص المدوّنة */}
-        <div className="mb-12">
-          <div className="mb-3 flex items-center gap-2">
-            <Quote className="size-5 text-accent" />
-            <h3 className="font-heading font-bold text-lg text-foreground">
-              من المدوّنة
-            </h3>
+          <div className="lg:col-span-4">
+            <div className="mb-3 flex items-center gap-2">
+              <MessageSquare className="size-5 text-secondary" />
+              <h3 className="font-heading font-bold text-lg text-foreground">
+                نقاشات الحي
+              </h3>
+            </div>
+            <Suspense fallback={<DiscussionsSkeleton />}>
+              <DiscussionsSection isVisitor={isVisitor} />
+            </Suspense>
           </div>
-          <Suspense fallback={<StoriesSkeleton />}>
-            <StoriesSection isVisitor={isVisitor} />
-          </Suspense>
-        </div>
-
-        {/* نقاشات */}
-        <div>
-          <div className="mb-3 flex items-center gap-2">
-            <MessageSquare className="size-5 text-secondary" />
-            <h3 className="font-heading font-bold text-lg text-foreground">
-              نقاشات الحي
-            </h3>
-          </div>
-          <Suspense fallback={<DiscussionsSkeleton />}>
-            <DiscussionsSection isVisitor={isVisitor} />
-          </Suspense>
         </div>
       </section>
 
@@ -726,53 +722,54 @@ export default async function HomePage() {
         </div>
       )}
 
-      {/* ─────────── 6. المبادئ مع أنميشن الدخول ─────────── */}
+      {/* ─────────── 6. المبادئ — قائمة عمودية بتسلسل رقمي ─────────── */}
       <section
         className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20"
         aria-labelledby="principles-heading"
       >
-        <div className="text-center mb-12">
+        <div className="mb-10 max-w-3xl">
           <Badge variant="outline" className="mb-3 text-secondary border-secondary/30">
             مبادئنا الخمسة
           </Badge>
           <h2
             id="principles-heading"
-            className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-3"
+            className="font-heading text-3xl md:text-4xl lg:text-5xl font-extrabold text-foreground mb-3 leading-[1.1]"
           >
             على ماذا نقف؟
           </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-muted-foreground leading-relaxed max-w-2xl">
             خمس ركائز بُنيت عليها المنصة، لا نتنازل عنها في أي مرحلة.
           </p>
         </div>
         <HomePrinciples />
       </section>
 
-      {/* ─────────── 7. باقات الإعلانات ─────────── */}
+      {/* ─────────── 7. باقات الإعلانات — بطاقة بارزة ─────────── */}
       <section className="bg-muted/30 border-y border-border" aria-labelledby="ads-heading">
         <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20">
-          <div className="text-center mb-12">
+          <div className="mb-10 max-w-3xl">
             <Badge variant="outline" className="mb-3 text-accent border-accent/30">
               للراعين والمعلنين
             </Badge>
             <h2
               id="ads-heading"
-              className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-3"
+              className="font-heading text-3xl md:text-4xl lg:text-5xl font-extrabold text-foreground mb-3 leading-[1.1]"
             >
               باقات الإعلانات
             </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-muted-foreground leading-relaxed max-w-2xl">
               رعِ حيّك وادعم المعروف. كل باقة تشمل موقعاً ومدة محدّدة. الأرباح
               تدعم صندوق المعروف.
             </p>
           </div>
 
+          {/* Bento: بطاقة ذهبية بارزة (col-span-2) + 3 بطاقات أصغر */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {AD_PACKAGES.map((pkg) => (
               <Card
                 key={pkg.name}
                 className={`relative warm-shadow card-glow lift-on-hover ${
-                  pkg.popular ? "border-primary ring-2 ring-primary/20" : ""
+                  pkg.popular ? "lg:col-span-2 border-primary ring-2 ring-primary/20 bg-primary/5" : ""
                 }`}
               >
                 {pkg.popular && (
@@ -780,12 +777,12 @@ export default async function HomePage() {
                     الأكثر طلباً
                   </Badge>
                 )}
-                <CardContent className="p-6 text-center">
+                <CardContent className={`p-6 ${pkg.popular ? "text-start" : "text-start"}`}>
                   <h3 className="font-heading text-xl font-bold text-foreground mb-2">
                     {pkg.name}
                   </h3>
                   <div className="my-4">
-                    <span className="font-heading text-3xl font-extrabold text-primary">
+                    <span className="font-heading font-extrabold text-primary" style={{ fontSize: pkg.popular ? "clamp(2rem, 4vw, 3rem)" : "1.875rem" }}>
                       {pkg.price}
                     </span>
                     <span className="text-sm text-muted-foreground ms-1">
@@ -793,7 +790,7 @@ export default async function HomePage() {
                     </span>
                   </div>
                   <dl className="space-y-1 text-sm text-muted-foreground">
-                    <div className="flex justify-center gap-1">
+                    <div className="flex items-center gap-2">
                       <dt>المدة:</dt>
                       <dd className="text-foreground font-medium">
                         {pkg.duration}
