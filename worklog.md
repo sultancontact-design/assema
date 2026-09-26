@@ -4934,3 +4934,68 @@ Stage Summary:
 - ✅ Bento Grid على 3 أقسام (preview + ads + hero)
 - ✅ لا AI slop (لا emoji، لا centered، لا gradient بنفسجي، لا Inter)
 - اللقطات: /tmp/v35-hero-new.png, v35-bento.png, v35-ads-final.png
+
+---
+Task ID: v35.1
+Agent: main developer
+Task: تطبيق DESIGN.md على /admin/dashboard (KPI cards + 4 charts + live feed + alerts)
+
+Work Log:
+قرأت الوضع الحالي:
+- /admin/dashboard/page.tsx: wrapper يستدعي DashboardClient
+- DashboardClient القديم: 18 KPI cards في grid-cols-6 (نمط قديم، لا charts، لا live feed)
+- API /api/admin/dashboard: يُرجع { sections: 18, security, generatedAt }
+- API /api/admin/analytics: يُرجع kpis + retentionCurve + engagementByMonth + featureUsage + notificationsByType
+- Recharts 2.15.4 مثبت
+
+أنشأت src/components/admin/admin-charts.tsx (4 مكوّنات رسوم):
+- RetentionLineChart (Line: D1/D7/D30 over 30 days)
+- EngagementBarChart (Bar: 12 months activities + gradient)
+- FeatureUsagePieChart (Pie: 5 features donut)
+- NotificationsAreaChart (Area: sent vs opened + gradient)
+- ArabicTooltip مخصّص (dir="rtl" + Arabic labels + tabular-nums)
+- ألوان: #E85A3D, #299B6D, #F5B220, #0EA5E9, #A855F7
+
+أعدت كتابة src/components/admin/dashboard-client.tsx:
+- رأس يساري (لا text-center): h1 "اللوحة الشاملة" + زر تحديث يمين
+- Alerts banner: طلبات معلقة + مقفولون (Link + Badge + ArrowUpRight)
+- 4 KPI cards كبيرة (clamp 1.75-2.5rem): Users, Contributions, Events, DAU/MAU
+  - كل بطاقة: icon tile (gradient bg) + trend Badge + رقم ضخم tabular-nums
+- Bento Grid 12-col: 8-col (2x2 charts) + 4-col (Live Feed)
+- Live Feed: fetch من /api/public/activity-feed (آخر 10 أنشطة)
+- 18 KPI compact grid في الأسفل (grid-cols-6, each as Link)
+
+Deploy:
+- commit 17811a3: البناء الأوّلي
+- commit bc59c1d: استبدال FileText بـ File (اعتقدت أنه المشكلة)
+- commit 3c5c49a: ✅ السبب الجذري الحقيقي — admin-shell.tsx يستعمل FileText دون استيراده!
+  - admin-shell.tsx line 159: { icon: FileText } — لكن FileText ليس في قائمة imports
+  - كان يعمل قبل تغييري بسبب chunk splitting قديم؛ تغييري كسر الـ quirk
+  - أضفت FileText لقائمة imports في admin-shell.tsx → انحلّت المشكلة
+
+التحقق (بعد النشر النهائي):
+- JS eval: h1Text="اللوحة الشاملة", chartCount=14, kpiCards=8, hasError=false ✅
+- Console errors بعد reload نظيف: 0 ✅
+- VLM أكّد:
+  ✅ 4 large KPI cards at top with trend badges
+  ✅ Live Feed sidebar with recent activities
+  ✅ 2x2 grid Bento layout (charts) + Live Feed as 3rd column
+  ✅ Arabic chart titles: "منحنى الاحتفاظ (30 يوم)" confirmed
+
+Stage Summary:
+- ✅ /admin/dashboard مُعاد تصميمه بنمط Kiranism Bento
+- ✅ 4 KPI cards كبيرة (Users/Contributions/Events/Stickiness) + trends
+- ✅ 4 Recharts (Line + Bar + Pie + Area) مع tooltips عربية RTL
+- ✅ Live Feed من /api/public/activity-feed
+- ✅ Alerts banner (pending + locked) عند الحاجة
+- ✅ 18 KPI compact grid في الأسفل
+- ✅ Skeletons بدل spinners
+- ✅ رأس يساري (لا text-center)
+- ✅ Bug FileText في admin-shell.tsx أُصلح (سبب جذرية مشكلة الـ crash)
+- اللقطات: /tmp/v35-1-dashboard-final.png, v35-1-charts.png, v35-1-dashboard-top.png
+
+Pending (مهام 2-5 لم تُنفَّذ بعد):
+- المهمة 2: تثبيت Aceternity/Magic UI (npx shadcn add — يتطلّب network)
+- المهمة 3: تطبيق DESIGN.md على /community/fund + events + store
+- المهمة 4: تطبيق DESIGN.md على /blog
+- المهمة 5: لقطات BEFORE/AFTER منظّمة
