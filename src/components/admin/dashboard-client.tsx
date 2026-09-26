@@ -4,11 +4,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Activity, RefreshCw, Users, UsersRound, MapPin, Users3, Coins, Calendar, BookOpen, MessageCircle, Heart, Megaphone, ShoppingCart, MessageSquare, Lightbulb, Tag, ShieldCheck, FileText, Flag } from "lucide-react";
+import { Activity, RefreshCw, Users, UsersRound, MapPin, Coins, Calendar, BookOpen, MessageCircle, Heart, Megaphone, ShoppingCart, MessageSquare, Lightbulb, Tag, ShieldCheck, FileText, Flag } from "lucide-react";
 
 interface Section { key: string; nameAr: string; count: number; detail?: string }
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  users: Users, families: UsersRound, districts: MapPin, groups: Users3, fund_pending: Coins,
+  users: Users, families: UsersRound, districts: MapPin, groups: Users, fund_pending: Coins,
   contributions: Coins, events: Calendar, blog_posts: BookOpen, blog_comments: MessageCircle,
   blog_likes: Heart, ads: Megaphone, store: ShoppingCart, discussions: MessageSquare,
   initiatives: Lightbulb, price_reports: Tag, cndp: ShieldCheck, audit_logs: FileText, feature_flags: Flag,
