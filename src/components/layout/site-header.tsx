@@ -10,7 +10,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Menu, X, Heart, Users, CalendarDays, Home as HomeIcon, Newspaper, Mail, MessageSquare, Lightbulb } from "lucide-react";
+import { Menu, X, Heart, Users, CalendarDays, Home as HomeIcon, Newspaper, Mail, MessageSquare, Lightbulb, Gift, BookOpen, Tag, Compass } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,6 +35,10 @@ const NAV_LINKS = [
   { href: "/community/messages", label: "الرسائل", icon: Mail },
   { href: "/community/discussions", label: "النقاشات", icon: MessageSquare },
   { href: "/community/initiatives", label: "المبادرات", icon: Lightbulb },
+  { href: "/community/store", label: "المتجر", icon: Gift },
+  { href: "/blog", label: "المدوّنة", icon: BookOpen },
+  { href: "/community/prices", label: "الأسعار", icon: Tag },
+  { href: "/guide", label: "دليل الحي", icon: Compass },
 ];
 
 export function SiteHeader() {

@@ -70,7 +70,7 @@ const NAV_ITEMS = [
   { href: "/community/messages", label: "الرسائل", icon: Mail },
   { href: "/community/discussions", label: "النقاشات", icon: MessageSquare },
   { href: "/community/initiatives", label: "المبادرات", icon: Lightbulb },
-  { href: "/community/refer", label: "المتجر", icon: Gift },
+  { href: "/community/store", label: "المتجر", icon: Gift },
   { href: "/community/map", label: "الخريطة", icon: MapPin },
   { href: "/blog", label: "المدوّنة", icon: BookOpen },
   { href: "/guide", label: "دليل الحي", icon: Compass },
