@@ -1,28 +1,11 @@
-import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { ZelligeDivider } from "@/components/shared/zellige-divider";
 import { MapPin, Users, Home } from "lucide-react";
-
-// Lazy load map component (saves ~200KB initial bundle)
-const ThreeDMap = dynamic(
-  () => import("@/components/map/three-d-map").then((m) => m.ThreeDMap),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="w-full h-[70vh] min-h-[400px] bg-muted rounded-2xl flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="mt-4 text-sm text-muted-foreground">جاري تحميل الخريطة...</p>
-        </div>
-      </div>
-    ),
-  }
-);
+import { ThreeDMap } from "@/components/map/three-d-map";
 
 export const dynamic = "force-dynamic";
 
