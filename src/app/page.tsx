@@ -94,9 +94,15 @@ interface LiveStats {
 }
 
 async function fetchLiveStats(): Promise<LiveStats> {
-  // v25.0: use Promise.allSettled — if one query fails, others still return
+  // v26.0: bypass unstable_cache (getFundStats) — use direct DB queries
+  // The cached version was returning 0 during build (DB unreachable at build time)
   const results = await Promise.allSettled([
-    getFundStats(),
+    // Direct contribution aggregate (no cache)
+    db.contribution.aggregate({
+      where: { status: "CONFIRMED" },
+      _sum: { amount: true },
+      _count: true,
+    }),
     db.family.count({ where: { isActive: true, deletedAt: null } }),
     db.event.count({
       where: {
@@ -106,13 +112,15 @@ async function fetchLiveStats(): Promise<LiveStats> {
       },
     }),
   ]);
-  const fund = results[0].status === "fulfilled" ? results[0].value : null;
+  const contribResult = results[0].status === "fulfilled" ? results[0].value : null;
   const family = results[1].status === "fulfilled" ? results[1].value : 0;
   const event = results[2].status === "fulfilled" ? results[2].value : 0;
+  const contribCount = contribResult?._count ?? 0;
+  const contribTotal = Number(contribResult?._sum.amount ?? 0);
   return {
     families: family,
-    contributions: fund?.confirmedContributionsCount ?? 0,
-    contributionsTotal: fund?.totalContributions ?? 0,
+    contributions: contribCount,
+    contributionsTotal: contribTotal,
     events: event,
   };
 }

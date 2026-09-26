@@ -421,7 +421,7 @@
 
 /* شريط التمرير الأفقي للنشاطات */
 .animate-marquee {
-  animation: marquee-rtl 18s linear infinite;
+  animation: marquee-rtl 12s linear infinite;
 }
 .animate-marquee:hover {
   animation-play-state: paused;
