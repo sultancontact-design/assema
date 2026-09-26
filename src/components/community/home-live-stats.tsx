@@ -41,13 +41,14 @@ export function HomeLiveStats({
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
         if (data) {
+          console.log("[HomeLiveStats] API returned:", data);
           setFamilies(data.families ?? 0);
           setContributions(data.contributions ?? 0);
           setTotal(data.contributionsTotal ?? 0);
           setEvents(data.events ?? 0);
         }
       })
-      .catch(() => {})
+      .catch((e) => console.error("[HomeLiveStats] fetch error:", e))
       .finally(() => setLoading(false));
   }, []);
 
