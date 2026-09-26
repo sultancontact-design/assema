@@ -94,27 +94,27 @@ interface LiveStats {
 }
 
 async function fetchLiveStats(): Promise<LiveStats> {
-  try {
-    const [fund, family, event] = await Promise.all([
-      getFundStats(),
-      db.family.count({ where: { isActive: true, deletedAt: null } }),
-      db.event.count({
-        where: {
-          status: "PUBLISHED",
-          startDate: { gte: new Date() },
-          deletedAt: null,
-        },
-      }),
-    ]);
-    return {
-      families: family,
-      contributions: fund.confirmedContributionsCount,
-      contributionsTotal: fund.totalContributions,
-      events: event,
-    };
-  } catch {
-    return { families: 0, contributions: 0, contributionsTotal: 0, events: 0 };
-  }
+  // v25.0: use Promise.allSettled — if one query fails, others still return
+  const results = await Promise.allSettled([
+    getFundStats(),
+    db.family.count({ where: { isActive: true, deletedAt: null } }),
+    db.event.count({
+      where: {
+        status: "PUBLISHED",
+        startDate: { gte: new Date() },
+        deletedAt: null,
+      },
+    }),
+  ]);
+  const fund = results[0].status === "fulfilled" ? results[0].value : null;
+  const family = results[1].status === "fulfilled" ? results[1].value : 0;
+  const event = results[2].status === "fulfilled" ? results[2].value : 0;
+  return {
+    families: family,
+    contributions: fund?.confirmedContributionsCount ?? 0,
+    contributionsTotal: fund?.totalContributions ?? 0,
+    events: event,
+  };
 }
 
 // ─────────── آخر 3 مساهمات مؤكّدة (أرقام مجهولة + المبلغ) ───────────

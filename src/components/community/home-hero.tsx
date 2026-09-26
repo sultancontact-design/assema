@@ -134,7 +134,7 @@ export function HomeHero() {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="max-w-3xl mx-auto text-center"
+          className="max-w-5xl mx-auto text-center"
         >
           {/* شارة المنصة */}
           <motion.div variants={badgeVariants}>
