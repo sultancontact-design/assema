@@ -5054,3 +5054,75 @@ Stage Summary:
 - ✅ المشكلة 2 مُصلَحة: الفجوة 200px → 0px بين sections (padding داخلي فقط)
 - ✅ المشكلة 3 مُصلَحة: ContributionsSection + EventsSection أصبحتا Bento
 - اللقطات: v35-2-contributions.png, v35-2-blog-focused.png, v35-2-final.png
+
+---
+Task ID: v35.3
+Agent: main developer
+Task: تطبيق DESIGN.md على 4 صفحات Community (fund + events + store + services)
+
+Work Log:
+أنشأت مكوّن مشترك: src/components/community/page-hero.tsx
+- Reusable PageHero: صورة خلفية (img, brightness 0.6) + gradient overlay
+- breadcrumb علوي + badge اختياري
+- عنوان display: clamp(2.25rem, 5vw, 4rem) + text-white
+- تخطيط يساري (items-end، لا text-center)
+
+/community/fund:
+- PageHero: صورة Marrakech charity + badge "شفافية مطلقة"
+- Bento Grid 4-col auto-rows-[120px]:
+  - بطاقة الرصيد الكبيرة: md:col-span-2 md:row-span-2 (featured)
+    - bg-gradient-to-br from-secondary/15 + border-s-4 border-s-secondary
+    - رقم ضخم clamp(2rem, 5vw, 3.5rem) text-secondary + Wallet icon
+    - Badge "مسجّل كعضو" أو زر "سجّل للمساهمة"
+  - 4 KPI tiles صغيرة (HandCoins, TrendingDown, Receipt, Users)
+- حذفت ZelligeDivider + الرأس القديم + Heart/ChevronLeft imports
+
+/community/events:
+- PageHero: صورة event + badge "{total} فعالية"
+- Bento Grid 3-col:
+  - أول فعالية مميّزة: md:col-span-2 md:row-span-2
+    - صورة غلاف h-64 md:h-80 + Badge "مميّزة"
+    - عنوان text-2xl md:text-3xl
+  - الباقي: بطاقات عادية h-40
+- استبدلت typeMeta.emoji بـ CalendarDays icon (حذف emoji)
+- حذفت ZelligeDivider + ChevronLeft import
+
+/community/store:
+- PageHero: صورة store + badge "{user.points} نقطة"
+- StoreClient: أضفت prop "embedded" (لا container/header إذا داخل Hero page)
+- استبدلت item.icon emoji بـ TYPE_ICONS Lucide map:
+  - FREEZE: Snowflake, BADGE: Award, FEATURE: Sparkles
+  - DISCOUNT: Percent, DIGITAL: Monitor
+- Bento Grid 4-col auto-rows-[200px]:
+  - أول 3 منتجات مميّزة: md:col-span-2
+  - bg-gradient-to-br on featured + icon tile ضخم
+
+/community/services:
+- PageHero: صورة artisans + badge "{count} خدمة"
+- ServicesDirectory: استبدلت CATEGORY_ICONS emoji بـ Lucide:
+  - PROFESSION: Wrench, CRAFT: Palette, HEALTH: HeartPulse
+  - EDUCATION: GraduationCap, ADVICE: Lightbulb
+- حذفت emoji من CATEGORIES في page.tsx
+- Bento Grid 3-col auto-rows-min:
+  - أول خدمة مميّزة: md:col-span-2 + border-s-4 border-s-primary
+  - bg-gradient-to-br on featured + icon tile ضخم
+
+Deploy + verify:
+- commit 215a139 pushed إلى GitHub main
+- Vercel auto-deployed (انتظرت 115s + reload)
+- JS eval أكّد الـ Hero على كل الصفحات:
+  ✅ events: heroImgs=1, h1Size=64px, h1Color=white
+  ✅ fund: h1 class font-extrabold text-white + 1 unsplash image
+  ✅ store: h1 class font-extrabold text-white + 2 unsplash images
+  ✅ services: heroImgs=1, h1Size=64px, h1Color=white, h1Text="دليل الخدمات"
+- 0 console errors
+- lint نظيف (0 errors, 0 warnings)
+
+Stage Summary:
+- ✅ PageHero مشترك (img + breadcrumb + display title)
+- ✅ 4 صفحات Community كلها لها Hero + Bento
+- ✅ حذف ALL emoji من 4 صفحات (events typeMeta + store item.icon + services CATEGORY_ICONS)
+- ✅ Bento Grid (featured col-span-2) بدل uniform grid
+- ✅ Lucide icons بدل emoji
+- ✅ Real Unsplash images (4 صور مختلفة)
+- اللقطات: v35-3-events.png, v35-3-fund.png, v35-3-store.png, v35-3-services.png
