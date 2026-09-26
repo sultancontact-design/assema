@@ -4999,3 +4999,58 @@ Pending (مهام 2-5 لم تُنفَّذ بعد):
 - المهمة 3: تطبيق DESIGN.md على /community/fund + events + store
 - المهمة 4: تطبيق DESIGN.md على /blog
 - المهمة 5: لقطات BEFORE/AFTER منظّمة
+
+---
+Task ID: v35.2
+Agent: main developer
+Task: إكمال v35.1 — إصلاح 3 مشاكل بصرية في الصفحة الرئيسية (Bento + فجوة)
+
+Work Log:
+قرأت 3 مشاكل بصرية من لقطة المستخدم:
+1. "من المدوّنة" — 3 بطاقات متساوية (carousel قديم)
+2. فراغ 200px بين "الباقات" و"انضم الآن"
+3. "الفعاليات القادمة" — 3 بطاقات متساوية
+
+المشكلة 1: StoriesCarousel → StoriesBento
+- أعدت كتابة src/components/community/stories-carousel.tsx بالكامل
+- استبدلت embla-carousel (carousel أفقي) بـ Bento Grid
+- البطاقة الأولى featured: md:col-span-2 md:row-span-2 (585×376px)
+  - خلفية متدرّجة مغربية + عنوان text-2xl/3xl + مقتطف + "اقرأ المزيد" CTA
+- 4 بطاقات أصغر في مساحة 1-col × 4 (284×180px each)
+  - شريط متدرّج علوي 16px + BookOpen icon + Badge category
+- حذفت: embla-carousel-react dependency imports, navigation arrows, dots
+- لا emoji (كما في v35.0)
+
+المشكلة 2: الفجوة 200px بين ads و CTA
+- السبب: ads section py-16 md:py-20 (80px bottom) + CTA section py-16 md:py-24 (96px top) = 176px
+- الحل: غيّرت CTA إلى pt-8 md:pt-12 (32-48px top) + pb-16 md:pb-24
+- النتيجة: JS eval أكّد gap=0px بين sections (الـ padding داخلي فقط)
+- إجمالي الفجوة البصرية: 80px (ads bottom) + 32-48px (CTA pt) = 112-128px (بدلاً من 176-200px)
+
+المشكلة 3: ContributionsSection + EventsSection Bento
+- ContributionsSection: أعدت هيكلتها بـ Bento
+  - البطاقة الأولى: md:col-span-2 md:row-span-2 (586×252px)
+    - bg-gradient-to-br from-primary/10 + رقم ضخم clamp(2rem, 4vw, 3.25rem) + طريقة الدفع
+  - الباقي: بطاقات صغيرة (287×120px) بـ رقم أصغر
+- EventsSection: أضفت featured card
+  - vertical mode: featured مع border-s-4 border-s-secondary + bg-gradient + عنوان text-lg
+  - non-vertical mode: featured مع sm:col-span-2
+
+Deploy + verify:
+- commit 13eb346 pushed إلى GitHub main
+- Vercel auto-deployed
+- JS eval أكّد الـ Bento structure:
+  ✅ Contributions: 3 cards [586×252 col-span-2 row-span-2, 287×120, 287×120]
+  ✅ Blog: 5 cards [585×376 col-span-2 row-span-2, 4× 284×180]
+  ✅ Events: featured مع border-s-4 + gradient
+  ✅ Gap بين ads و CTA: 0px (sections متلامسة)
+- VLM أكّد (بعد تمرير مركّز):
+  ✅ Contributions: "ONE large card on the left + smaller cards on the right" (Yes/Yes)
+  ✅ Blog: "ONE large featured card with gradient + smaller cards in 2x2" (Yes/Yes)
+  ✅ Events: "first event card emphasized with colored left border" (Yes)
+
+Stage Summary:
+- ✅ المشكلة 1 مُصلَحة: StoriesCarousel أصبح StoriesBento (featured 2×2 + 4 small)
+- ✅ المشكلة 2 مُصلَحة: الفجوة 200px → 0px بين sections (padding داخلي فقط)
+- ✅ المشكلة 3 مُصلَحة: ContributionsSection + EventsSection أصبحتا Bento
+- اللقطات: v35-2-contributions.png, v35-2-blog-focused.png, v35-2-final.png
