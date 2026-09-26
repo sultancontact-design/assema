@@ -108,7 +108,27 @@ export function HomeHero() {
         />
       </motion.div>
 
-      <div className="container mx-auto px-4 py-16 md:py-24">
+      <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
+        {/* v24.0: صورة hero كبيرة */}
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="relative w-full aspect-[21/9] sm:aspect-[3/1] rounded-2xl overflow-hidden mb-8 shadow-2xl"
+        >
+          <img
+            src="https://images.unsplash.com/photo-1597212618440-80ff1b5d0e5c?auto=format&fit=crop&w=1920&q=80"
+            alt="حي سيدي يوسف بن علي — مراكش"
+            className="w-full h-full object-cover"
+            loading="eager"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+          <div className="absolute bottom-0 inset-x-0 p-6 sm:p-10 text-center">
+            <p className="text-white/90 text-sm sm:text-base mb-1">حي سيدي يوسف بن علي · مراكش · المملكة المغربية</p>
+            <p className="text-white/70 text-xs">صورة حقيقية للمجتمع المغربي العريق</p>
+          </div>
+        </motion.div>
+
         <motion.div
           style={prefersReduced ? undefined : { y: contentY, opacity: contentOpacity }}
           variants={containerVariants}

@@ -607,7 +607,7 @@ export default async function HomePage() {
 
       {/* ─────────── 2. الأرقام الحيّة (4 بطاقات) ─────────── */}
       <section
-        className="container mx-auto px-4 py-10 md:py-12"
+        className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-12"
         aria-labelledby="stats-heading"
       >
         <h2 id="stats-heading" className="sr-only">
@@ -620,20 +620,20 @@ export default async function HomePage() {
 
       {/* ─────────── 3. شريط النشاطات الحيّة ─────────── */}
       <section
-        className="container mx-auto px-4 pb-4"
+        className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pb-4"
         aria-label="آخر نشاطات الحي"
       >
         <ActivityTicker />
       </section>
 
       {/* ─────────── 4. بانر الإلحاح الأخلاقي ─────────── */}
-      <section className="container mx-auto px-4 pb-8">
+      <section className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         <FomoBanner />
       </section>
 
       {/* ─────────── 5. معاينة المحتوى العمومي ─────────── */}
       <section
-        className="container mx-auto px-4 py-12 md:py-16"
+        className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16"
         aria-labelledby="preview-heading"
       >
         <div className="mb-8 text-center">
@@ -720,7 +720,7 @@ export default async function HomePage() {
 
       {/* ─────────── 6. المبادئ مع أنميشن الدخول ─────────── */}
       <section
-        className="container mx-auto px-4 py-16 md:py-20"
+        className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20"
         aria-labelledby="principles-heading"
       >
         <div className="text-center mb-12">
@@ -742,7 +742,7 @@ export default async function HomePage() {
 
       {/* ─────────── 7. باقات الإعلانات ─────────── */}
       <section className="bg-muted/30 border-y border-border" aria-labelledby="ads-heading">
-        <div className="container mx-auto px-4 py-16 md:py-20">
+        <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20">
           <div className="text-center mb-12">
             <Badge variant="outline" className="mb-3 text-accent border-accent/30">
               للراعين والمعلنين
@@ -814,7 +814,7 @@ export default async function HomePage() {
       </section>
 
       {/* ─────────── 8. دعوة للانضمام (CTA نهائي) ─────────── */}
-      <section className="container mx-auto px-4 py-16 md:py-24">
+      <section className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
         <Card className="overflow-hidden border-0 maarouf-gradient-soft text-primary-foreground">
           <CardContent className="relative p-8 md:p-12 text-center">
             {/* أنميشن الخلفية: نمط زخرفي شفّاف */}
