@@ -627,3 +627,188 @@ html { scroll-behavior: smooth; }
 .animate-scale-in {
   animation: scale-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   v27.0 — REDESIGN (2026 quality: Linear/Vercel/Stripe inspired)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Mesh gradient background — modern hero effect */
+.mesh-bg {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -20%, rgba(217, 79, 48, 0.12), transparent),
+    radial-gradient(ellipse 60% 50% at 80% 50%, rgba(45, 90, 61, 0.08), transparent),
+    radial-gradient(ellipse 50% 40% at 20% 80%, rgba(224, 164, 88, 0.1), transparent);
+}
+
+/* Aurora gradient — animated background */
+.aurora-bg {
+  background: linear-gradient(135deg,
+    rgba(217, 79, 48, 0.05) 0%,
+    rgba(45, 90, 61, 0.03) 33%,
+    rgba(224, 164, 88, 0.05) 66%,
+    rgba(139, 92, 246, 0.03) 100%
+  );
+  background-size: 200% 200%;
+  animation: aurora-shift 15s ease infinite;
+}
+@keyframes aurora-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Premium glass card — 2026 style */
+.premium-card {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.25rem;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+.dark .premium-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.premium-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.05), transparent);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+.premium-card:hover {
+  transform: translateY(-6px) scale(1.01);
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255,255,255,0.1);
+}
+.premium-card:hover::before {
+  opacity: 1;
+}
+
+/* Shimmer text effect */
+.shimmer-text {
+  background: linear-gradient(90deg, #D94F30 0%, #E0A458 25%, #D94F30 50%, #E0A458 75%, #D94F30 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer-slide 3s linear infinite;
+}
+@keyframes shimmer-slide {
+  to { background-position: 200% center; }
+}
+
+/* Glow border on hover */
+.glow-border {
+  position: relative;
+}
+.glow-border::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(217,79,48,0.5), rgba(45,90,61,0.3), rgba(224,164,88,0.4));
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.3s;
+  filter: blur(8px);
+}
+.glow-border:hover::after {
+  opacity: 1;
+}
+
+/* Premium button — Vercel style */
+.btn-premium {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-premium::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
+}
+.btn-premium:hover::before {
+  left: 100%;
+}
+.btn-premium:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px -5px rgba(217, 79, 48, 0.3);
+}
+
+/* Section heading with gradient underline */
+.heading-gradient {
+  position: relative;
+  display: inline-block;
+}
+.heading-gradient::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #D94F30, #E0A458, transparent);
+  border-radius: 3px;
+}
+
+/* Image overlay card — for blog/services/etc */
+.img-overlay-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+}
+.img-overlay-card img {
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.img-overlay-card:hover img {
+  transform: scale(1.08);
+}
+.img-overlay-card .overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.3) 50%, transparent 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 1.5rem;
+  transition: background 0.3s;
+}
+.img-overlay-card:hover .overlay {
+  background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.1) 100%);
+}
+
+/* Number display — large bold with gradient */
+.stat-number {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 800;
+  line-height: 1;
+  background: linear-gradient(135deg, #D94F30, #E0A458);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.02em;
+}
+
+/* Fade-in stagger animation */
+@keyframes fade-stagger {
+  from { opacity: 0; transform: translateY(30px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.fade-stagger {
+  animation: fade-stagger 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
