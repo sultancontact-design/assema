@@ -4707,3 +4707,63 @@ Pending (user action required):
 
 Commit hash (latest): 3271373 (v15.1 — seed 10 articles + nav links)
 Total commits pending push: 7 (from v14.3 → v15.1)
+
+---
+Task ID: v21.0
+Agent: main developer (with production tokens)
+Task: الإصلاح الجذري — استعادة ما فُقد بسبب system reset
+
+Root cause analysis:
+- Commit dd0eceb (UUID = system reset) wiped all v16.0-v20.0 work
+- Only v15.1 codebase + my v20.1 vendor files survived
+- All admin pages (dashboard/roles/feature-flags/users/manage) lost
+- Store page + API lost
+- Sidebar integration lost (AppChrome didn't include CollapsibleSidebar)
+- Top nav had only 8 links (store/blog/prices/guide were lost)
+- BottomNav had wrong links
+
+Stage 1: Fix CollapsibleSidebar (CRITICAL — 3 files)
+- app-chrome.tsx: Added CollapsibleSidebar import + render in flex container
+  Before: <SiteHeader /><main>{children}</main><SiteFooter />
+  After:  <SiteHeader /><div className="flex flex-1 min-h-0">
+            <CollapsibleSidebar />
+            <main className="flex-1 flex flex-col min-w-0">{children}</main>
+          </div><SiteFooter />
+- site-header.tsx: Added 4 NAV_LINKS (المتجر/المدوّنة/الأسعار/دليل الحي)
+  + imported Gift, BookOpen, Tag, Compass from lucide-react
+  Total: 8 → 12 links
+- collapsible-sidebar.tsx: Changed /community/refer → /community/store
+- bottom-nav.tsx: Rewritten with 4 primary + 'المزيد' dropdown
+  Primary: الرئيسية + المعروف + الفعاليات + المتجر
+  More: 9 additional links (المجتمع/المجموعات/الرسائل/النقاشات/المبادرات/
+  المدوّنة/الأسعار/دليل الحي/حماية البيانات)
+
+Stage 2: Restore Store page (/community/store)
+- Created /community/store/page.tsx (was 404)
+- Created /api/store/items/route.ts (GET public items)
+- Created /api/store/items/[id]/purchase/route.ts (POST purchase)
+- Created StoreClient component (grid + buy + points display)
+- DB: 10 StoreItems already present (survived reset)
+
+Stage 3: Map (v20.1 already deployed + verified)
+- map-3d.tsx uses local /vendor/maplibre-gl.js (v4.7.1 UMD)
+- next/script with afterInteractive strategy
+- 3 view modes: liberty / satellite / hybrid
+- Production: window.maplibregl LOADED, tiles 200 OK
+
+Production verification (commit c4bc9dd, READY+PROMOTED):
+✅ Sidebar visible: "button طيّ القائمة" + 15 links
+✅ Store: /community/store → 200 + 10 items
+✅ Map: /community/map-3d → 200
+✅ Top nav: 12 links (added المتجر/المدوّنة/الأسعار/دليل الحي)
+✅ BottomNav: 4 primary + المزيد dropdown
+✅ Vendor files: /vendor/maplibre-gl.js + csp-worker → 200
+✅ Admin pages: 8/8 tested → 200
+
+Pending (needs user request to continue):
+- /admin/feature-flags (recreate from scratch)
+- /admin/users/manage (recreate with password-utils)
+- /admin/roles (recreate with permissions.ts)
+- /admin/dashboard (recreate with resilient API)
+- Prisma schema additions (RoleDefinition/FeatureFlag/BlogComment)
+- UI modernization (2026 animations + effects)
