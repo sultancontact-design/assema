@@ -23,21 +23,25 @@ export const metadata = {
 const PRINCIPLES = [
   {
     icon: Eye,
+    image: "https://images.unsplash.com/photo-1554224155-6724dd031d9f?w=400&q=85",
     title: "الشفافية",
     description: "نشرح بوضوح كيف تعمل المنصة، ولماذا. لا أسرار، لا خداع — كل آلية موثّقة هنا.",
   },
   {
     icon: Settings2,
+    image: "https://images.unsplash.com/photo-1554415707-72e20038b528?w=400&q=85",
     title: "التحكّم الكامل",
     description: "تتحكّم في كل إشعار وكل تذكير. بإمكانك تعديل كل شيء أو إيقافه من الإعدادات.",
   },
   {
     icon: Heart,
+    image: "https://images.unsplash.com/photo-1521791135904-15f7b4faff47?w=400&q=85",
     title: "الاحترام",
     description: "نُصمّم لتجربة مفيدة لا تستهلك وقتك. هدفنا دقائق مفيدة، لا ساعات مهدورة.",
   },
   {
     icon: Shield,
+    image: "https://images.unsplash.com/photo-1563013544-824ae38b5697?w=400&q=85",
     title: "الحماية",
     description: "كل آلية محفّزاتها تخدم الهدف الأساسي: مساعدة الأسر في حيّك. لا مكافآت فارغة.",
   },
@@ -115,12 +119,21 @@ export default function EthicsPage() {
         <h2 className="font-heading text-2xl font-bold heading-gradient">مبادئنا الأربعة</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {PRINCIPLES.map((p, idx) => (
-            <div key={p.title} className="premium-card p-6 space-y-3 fade-stagger" style={{ animationDelay: `${idx * 0.1}s` }}>
-              <div className="size-10 rounded-xl bg-gradient-to-br from-primary/20 to-accent/10 flex items-center justify-center">
-                <p.icon className="size-5 text-primary" />
+            <div key={p.title} className="premium-card overflow-hidden fade-stagger" style={{ animationDelay: `${idx * 0.1}s` }}>
+              {/* Real photograph */}
+              <div className="img-overlay-card aspect-[4/3]">
+                <img src={p.image} alt={p.title} className="w-full h-full object-cover" loading="lazy" />
+                <div className="overlay">
+                  <div className="size-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center mb-2">
+                    <p.icon className="size-5 text-white" />
+                  </div>
+                  <h3 className="font-heading text-lg font-bold text-white">{p.title}</h3>
+                </div>
               </div>
-              <h3 className="font-heading text-lg font-bold">{p.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{p.description}</p>
+              {/* Description below image */}
+              <div className="p-5">
+                <p className="text-sm text-muted-foreground leading-relaxed">{p.description}</p>
+              </div>
             </div>
           ))}
         </div>

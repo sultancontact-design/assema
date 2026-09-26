@@ -1,31 +1,49 @@
 "use client";
 import * as React from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import {
-  Gift, Coins, ShoppingCart, ArrowLeft, Snowflake, Crown,
-  Heart, Moon, Star, Diamond, Zap, Tag, BookOpen, Image, Lock,
-} from "lucide-react";
+import { Coins, ShoppingCart, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 interface StoreItem { id: string; name: string; description: string; icon: string; pricePoints: number; type: string; stock: number | null }
 
-// Map emoji/old icons → Lucide icon component
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  "🧊": Snowflake, "❄️": Snowflake,
-  "👑": Crown,
-  "💝": Heart,
-  "🌙": Moon,
-  "⭐": Star,
-  "💎": Diamond,
-  "⚡": Zap,
-  "🎁": Gift,
-  "📚": BookOpen,
-  "🖼️": Image,
+// Real photographs for each product type (Unsplash)
+const STORE_IMAGES: Record<string, string> = {
+  // BADGE type — premium badge/trophy photos
+  'founder': 'https://images.unsplash.com/photo-1551843073-4a9a5b6fcd5f?w=600&q=85',
+  'supporter': 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&q=85',
+  'ramadan': 'https://images.unsplash.com/photo-1519817650390-64a93db51149?w=600&q=85',
+  'professional': 'https://images.unsplash.com/photo-1543165360-b3f23c34ac70?w=600&q=85',
+  // FEATURE type
+  'lightning': 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?w=600&q=85',
+  'diamond': 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=600&q=85',
+  // DISCOUNT type
+  'gift': 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=600&q=85',
+  // DIGITAL type
+  'wallpaper': 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&q=85',
+  'pdf': 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&q=85',
+  // FREEZE type
+  'freeze': 'https://images.unsplash.com/photo-1478265409131-1f65c88f965c?w=600&q=85',
 };
+
+// Map store item name → image key
+function getImageUrl(item: StoreItem): string {
+  const name = item.name.toLowerCase();
+  if (name.includes('مؤسس') || name.includes('founder')) return STORE_IMAGES.founder;
+  if (name.includes('داعم') || name.includes('supporter')) return STORE_IMAGES.supporter;
+  if (name.includes('رمضان') || name.includes('ramadan')) return STORE_IMAGES.ramadan;
+  if (name.includes('محترف') || name.includes('professional') || name.includes('⭐')) return STORE_IMAGES.professional;
+  if (name.includes('أولوية') || name.includes('lightning') || name.includes('⚡')) return STORE_IMAGES.lightning;
+  if (name.includes('مضاعف') || name.includes('diamond') || name.includes('💎')) return STORE_IMAGES.diamond;
+  if (name.includes('خصم') || name.includes('discount') || name.includes('🎁')) return STORE_IMAGES.gift;
+  if (name.includes('خلفية') || name.includes('wallpaper') || name.includes('🖼️')) return STORE_IMAGES.wallpaper;
+  if (name.includes('دليل') || name.includes('pdf') || name.includes('📚')) return STORE_IMAGES.pdf;
+  if (name.includes('تجميد') || name.includes('freeze') || name.includes('🧊')) return STORE_IMAGES.freeze;
+  // Fallback — a warm Moroccan-themed photo
+  return 'https://images.unsplash.com/photo-1539020140153-e479b8c5e640?w=600&q=85';
+}
 
 const TYPE_LABELS: Record<string, string> = { FREEZE: "تجميد", BADGE: "شارة", FEATURE: "ميزة", DISCOUNT: "خصم", DIGITAL: "رقمي" };
 const TYPE_GRADIENTS: Record<string, string> = {
@@ -35,11 +53,6 @@ const TYPE_GRADIENTS: Record<string, string> = {
   DISCOUNT: "from-emerald-500 to-teal-600",
   DIGITAL: "from-cyan-500 to-blue-600",
 };
-
-function ItemIcon({ name }: { name: string }) {
-  const Icon = ICON_MAP[name] ?? Gift;
-  return <Icon className="size-6 text-white" />;
-}
 
 export function StoreClient({ userPoints }: { userPoints: number | null }) {
   const [items, setItems] = React.useState<StoreItem[] | null>(null);
@@ -91,11 +104,10 @@ export function StoreClient({ userPoints }: { userPoints: number | null }) {
 
       {items === null ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-56 rounded-2xl" />)}
+          {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-64 rounded-2xl" />)}
         </div>
       ) : items.length === 0 ? (
         <div className="premium-card p-12 text-center text-muted-foreground">
-          <Gift className="size-8 mx-auto mb-2 opacity-50" />
           <p>لا توجد منتجات بعد</p>
         </div>
       ) : (
@@ -103,34 +115,45 @@ export function StoreClient({ userPoints }: { userPoints: number | null }) {
           {items.map((item, idx) => {
             const affordable = points >= item.pricePoints;
             const gradient = TYPE_GRADIENTS[item.type] ?? "from-primary to-orange-600";
+            const imgUrl = getImageUrl(item);
             return (
-              <div key={item.id} className={`premium-card p-5 flex flex-col h-full fade-stagger`} style={{ animationDelay: `${idx * 0.05}s` }}>
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`size-12 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg`}>
-                    <ItemIcon name={item.icon} />
+              <div key={item.id} className="premium-card overflow-hidden flex flex-col h-full fade-stagger" style={{ animationDelay: `${idx * 0.05}s` }}>
+                {/* Real photograph */}
+                <div className="img-overlay-card relative aspect-[4/3] overflow-hidden">
+                  <img
+                    src={imgUrl}
+                    alt={item.name}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                  <div className="overlay">
+                    <Badge className={`bg-gradient-to-r ${gradient} border-0 text-[10px] mb-2`}>
+                      {TYPE_LABELS[item.type] ?? item.type}
+                    </Badge>
                   </div>
-                  <Badge className="bg-muted/50 text-muted-foreground text-[10px]">{TYPE_LABELS[item.type] ?? item.type}</Badge>
                 </div>
-                <div className="flex-1">
+
+                {/* Content */}
+                <div className="p-5 flex flex-col flex-1">
                   <h3 className="font-heading font-bold text-base">{item.name}</h3>
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-3">{item.description}</p>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2 flex-1">{item.description}</p>
+                  <div className="flex items-center justify-between pt-3 mt-3 border-t border-border/40">
+                    <span className="flex items-center gap-1 text-sm font-bold text-amber-600">
+                      <Coins className="size-4" />{item.pricePoints}
+                    </span>
+                    {item.stock !== null && (
+                      <span className="text-xs text-muted-foreground">{item.stock} متبقٍّ</span>
+                    )}
+                  </div>
+                  <Button
+                    onClick={() => buy(item)}
+                    disabled={!affordable || buying === item.id}
+                    className={`btn-premium w-full mt-3 ${affordable ? `bg-gradient-to-r ${gradient} border-0` : ""}`}
+                    size="sm"
+                  >
+                    {buying === item.id ? "..." : <><ShoppingCart className="size-4" />شراء</>}
+                  </Button>
                 </div>
-                <div className="flex items-center justify-between pt-3 mt-3 border-t border-border/40">
-                  <span className="flex items-center gap-1 text-sm font-bold text-amber-600">
-                    <Coins className="size-4" />{item.pricePoints}
-                  </span>
-                  {item.stock !== null && (
-                    <span className="text-xs text-muted-foreground">{item.stock} متبقٍّ</span>
-                  )}
-                </div>
-                <Button
-                  onClick={() => buy(item)}
-                  disabled={!affordable || buying === item.id}
-                  className={`btn-premium w-full mt-3 ${affordable ? `bg-gradient-to-r ${gradient} border-0` : ""}`}
-                  size="sm"
-                >
-                  {buying === item.id ? "..." : <><ShoppingCart className="size-4" />شراء</>}
-                </Button>
               </div>
             );
           })}
