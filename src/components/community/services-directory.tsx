@@ -5,7 +5,10 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Star, Phone, MapPin, Search, Plus, BadgeCheck } from "lucide-react";
+import {
+  Star, Phone, MapPin, Search, Plus, BadgeCheck,
+  Wrench, Palette, HeartPulse, GraduationCap, Lightbulb, LayoutGrid,
+} from "lucide-react";
 import { toast } from "sonner";
 
 interface ServiceItem {
@@ -15,11 +18,16 @@ interface ServiceItem {
   rating: number; reviews: number; isVerified: boolean; reviewCount: number;
 }
 
-const CATEGORY_ICONS: Record<string, string> = {
-  PROFESSION: "🔧", CRAFT: "🎨", HEALTH: "🏥", EDUCATION: "📚", ADVICE: "💡",
+// أيقونات Lucide بدل الـ emoji
+const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  PROFESSION: Wrench,
+  CRAFT: Palette,
+  HEALTH: HeartPulse,
+  EDUCATION: GraduationCap,
+  ADVICE: Lightbulb,
 };
 
-export function ServicesDirectory({ services, categories }: { services: ServiceItem[]; categories: { value: string; label: string; icon: string }[] }) {
+export function ServicesDirectory({ services, categories }: { services: ServiceItem[]; categories: { value: string; label: string }[] }) {
   const [search, setSearch] = React.useState("");
   const [activeCat, setActiveCat] = React.useState<string>("ALL");
   const [showAdd, setShowAdd] = React.useState(false);
@@ -42,11 +50,15 @@ export function ServicesDirectory({ services, categories }: { services: ServiceI
 
       <div className="flex flex-wrap gap-2">
         <button onClick={() => setActiveCat("ALL")} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${activeCat === "ALL" ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/70"}`}>الكل</button>
-        {categories.map(c => (
-          <button key={c.value} onClick={() => setActiveCat(c.value)} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${activeCat === c.value ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/70"}`}>
-            {c.icon} {c.label}
-          </button>
-        ))}
+        {categories.map(c => {
+          const Icon = CATEGORY_ICONS[c.value] ?? LayoutGrid;
+          return (
+            <button key={c.value} onClick={() => setActiveCat(c.value)} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${activeCat === c.value ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/70"}`}>
+              <Icon className="size-4" />
+              {c.label}
+            </button>
+          );
+        })}
       </div>
 
       {showAdd && (
@@ -62,36 +74,51 @@ export function ServicesDirectory({ services, categories }: { services: ServiceI
           <p className="text-sm mt-1">كن أول من يضيف خدمة!</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filtered.map(s => (
-            <Card key={s.id} className="lift-on-hover">
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl">{CATEGORY_ICONS[s.category] || "📋"}</span>
-                    <div>
-                      <h3 className="font-heading font-bold text-foreground">{s.titleAr || s.title}</h3>
-                      {s.subcategory && <p className="text-xs text-muted-foreground">{s.subcategory}</p>}
+        // Bento: أول خدمة مميّزة (col-span-2) + الباقي متنوع
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-min">
+          {filtered.map((s, idx) => {
+            const Icon = CATEGORY_ICONS[s.category] ?? LayoutGrid;
+            const isFeatured = idx === 0;
+            return (
+              <Card
+                key={s.id}
+                className={`lift-on-hover ${isFeatured ? "md:col-span-2 bg-gradient-to-br from-primary/8 via-accent/4 to-transparent border-s-4 border-s-primary" : ""}`}
+              >
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-3">
+                      <span className={`grid place-items-center rounded-xl bg-primary/10 text-primary ${isFeatured ? "size-12" : "size-9"}`}>
+                        <Icon className={isFeatured ? "size-6" : "size-5"} />
+                      </span>
+                      <div>
+                        <h3 className={`font-heading font-bold text-foreground ${isFeatured ? "text-lg" : ""}`}>{s.titleAr || s.title}</h3>
+                        {s.subcategory && <p className="text-xs text-muted-foreground">{s.subcategory}</p>}
+                      </div>
                     </div>
+                    {s.isVerified && (
+                      <Badge variant="outline" className="bg-secondary/10 text-secondary border-secondary/30 gap-1">
+                        <BadgeCheck className="size-4" />
+                        موثّق
+                      </Badge>
+                    )}
                   </div>
-                  {s.isVerified && <BadgeCheck className="size-5 text-secondary" />}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <p className="text-sm text-muted-foreground line-clamp-2">{s.description}</p>
-                <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                  {s.rating > 0 && (
-                    <span className="flex items-center gap-1">
-                      <Star className="size-3 fill-accent text-accent" /> {s.rating.toFixed(1)} ({s.reviewCount})
-                    </span>
-                  )}
-                  {s.phone && <span className="flex items-center gap-1"><Phone className="size-3" /> 06XX-XX-XX</span>}
-                  {s.address && <span className="flex items-center gap-1"><MapPin className="size-3" /> {s.address.substring(0, 30)}</span>}
-                </div>
-                {s.price && <Badge variant="secondary" className="text-xs">{s.price}</Badge>}
-              </CardContent>
-            </Card>
-          ))}
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <p className="text-sm text-muted-foreground line-clamp-2">{s.description}</p>
+                  <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                    {s.rating > 0 && (
+                      <span className="flex items-center gap-1">
+                        <Star className="size-3 fill-accent text-accent" /> {s.rating.toFixed(1)} ({s.reviewCount})
+                      </span>
+                    )}
+                    {s.phone && <span className="flex items-center gap-1"><Phone className="size-3" /> 06XX-XX-XX</span>}
+                    {s.address && <span className="flex items-center gap-1"><MapPin className="size-3" /> {s.address.substring(0, 30)}</span>}
+                  </div>
+                  {s.price && <Badge variant="secondary" className="text-xs">{s.price}</Badge>}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

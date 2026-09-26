@@ -1,7 +1,6 @@
 // ===================================================================
 //  صفحة صندوق المعروف — قلب المنصة
-//  /community/fund
-//  Server Component يجمع البيانات العامة + يمرّرها لـ FundTabs (client)
+//  /community/fund  — v35.3: Hero + Bento (balance featured + KPI grid)
 // ===================================================================
 
 import { redirect } from "next/navigation";
@@ -10,17 +9,22 @@ import {
   format,
   startOfMonth,
 } from "date-fns";
+import type { ReactNode } from "react";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import {
   Home as HomeIcon,
-  ChevronLeft,
-  Heart,
+  Wallet,
+  Receipt,
+  HandCoins,
+  Users,
+  TrendingDown,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ZelligeDivider } from "@/components/shared/zellige-divider";
+import { Card, CardContent } from "@/components/ui/card";
+import { PageHero } from "@/components/community/page-hero";
 import { FundTabs, type FundTabsProps } from "@/components/community/fund-tabs";
 import type {
   ContributionMethod,
@@ -235,61 +239,112 @@ export default async function FundPage() {
 
   // إن لم يكن مسجّلاً، نسمح له برؤية الشفافية فقط
   // (يتم تعطيل الأزرار وتبديل النماذج ببوابة مصادقة)
+  const balance = transparency.currentBalance;
+  const fmt = (n: number) => new Intl.NumberFormat("ar-MA").format(n);
+
   return (
-    <div className="container mx-auto max-w-6xl px-4 py-8 space-y-6">
-      {/* رأس الصفحة */}
-      <section className="space-y-3">
-        <div className="flex items-center gap-2 text-sm">
-          <Link
-            href="/community"
-            className="flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
-          >
-            <ChevronLeft className="size-4" />
-            <span>المجتمع</span>
-          </Link>
-        </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="font-heading text-3xl font-bold text-foreground flex items-center gap-2">
-              <Heart className="size-7 text-primary" />
-              صندوق المعروف الرقمي
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground max-w-2xl">
-              صندوق تضامني رقمي بديل عن صندوق الأفراح والأتراح التقليدي.
-              شفافية كاملة، سرّية تامة للمستفيدين، وموافقة لجنة نزاهة للطلبات
-              الكبيرة.
-            </p>
-          </div>
-          {authed ? (
-            <Badge
-              variant="outline"
-              className="bg-secondary/5 text-secondary border-secondary/30"
-            >
-              <HomeIcon className="size-3.5" />
-              مسجّل كعضو
-            </Badge>
-          ) : (
-            <Button asChild size="lg" className="h-11">
-              <Link href="/login?callbackUrl=/community/fund">
-                سجّل الدخول للمساهمة
-              </Link>
-            </Button>
-          )}
-        </div>
-      </section>
-
-      <ZelligeDivider variant="diamond" />
-
-      {/* التبويبات */}
-      <FundTabs
-        transparency={transparency}
-        authed={authed}
-        treasurerName={treasurerName}
-        treasurerPhone={treasurerPhone}
-        existingContributions={existingContributions}
-        existingRequests={existingRequests}
+    <div className="flex flex-col">
+      {/* ━━━ Hero بصورة + عنوان display ━━━ */}
+      <PageHero
+        title="صندوق المعروف الرقمي"
+        subtitle="صندوق تضامني رقمي بديل عن صندوق الأفراح والأتراح التقليدي. شفافية كاملة، سرّية تامة للمستفيدين، وموافقة لجنة نزاهة للطلبات الكبيرة."
+        image="https://images.unsplash.com/photo-1601598851547-4308f1d1fa0f?auto=format&fit=crop&w=1920&q=80"
+        imageAlt="صندوق المعروف — مساهمات تضامنية"
+        badge="شفافية مطلقة"
       />
+
+      <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        {/* ━━━ Bento: بطاقة الرصيد الكبيرة (featured col-span-2 row-span-2) + 4 KPI صغيرة ━━━ */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 auto-rows-[120px]">
+          {/* البطاقة المميّزة — الرصيد الحالي */}
+          <Card className="md:col-span-2 md:row-span-2 relative overflow-hidden border-0 bg-gradient-to-br from-secondary/15 via-secondary/5 to-transparent border-s-4 border-s-secondary">
+            <CardContent className="p-6 h-full flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="grid size-9 place-items-center rounded-xl bg-secondary/15 text-secondary">
+                    <Wallet className="size-5" />
+                  </span>
+                  <span className="text-xs font-medium text-muted-foreground">
+                    الرصيد الحالي
+                  </span>
+                </div>
+                {authed ? (
+                  <Badge variant="outline" className="bg-secondary/5 text-secondary border-secondary/30">
+                    <HomeIcon className="size-3" />
+                    مسجّل كعضو
+                  </Badge>
+                ) : (
+                  <Button asChild size="sm" className="h-9">
+                    <Link href="/login?callbackUrl=/community/fund">سجّل للمساهمة</Link>
+                  </Button>
+                )}
+              </div>
+              <div>
+                <p className="font-heading font-extrabold text-secondary" style={{ fontSize: "clamp(2rem, 5vw, 3.5rem)" }}>
+                  {fmt(balance)}
+                  <span className="text-base font-normal text-muted-foreground ms-2">د.م</span>
+                </p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  مبالغ مؤكّدة بعد الصرف — محدّث لحظياً من قاعدة البيانات
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 4 KPI صغيرة */}
+          <KpiTile icon={<HandCoins className="size-5" />} label="إجمالي المساهمات" value={fmt(transparency.totalContributions)} unit="د.م" accent="primary" />
+          <KpiTile icon={<TrendingDown className="size-5" />} label="إجمالي المصروف" value={fmt(transparency.totalDisbursed)} unit="د.م" accent="accent" />
+          <KpiTile icon={<Receipt className="size-5" />} label="مساهمات (آخر 30 يوم)" value={String(transparency.recentContributions.length)} accent="primary" />
+          <KpiTile icon={<Users className="size-5" />} label="طلبات قيد المراجعة" value={String(transparency.recentRequests.length)} accent="secondary" />
+        </div>
+
+        {/* التبويبات */}
+        <FundTabs
+          transparency={transparency}
+          authed={authed}
+          treasurerName={treasurerName}
+          treasurerPhone={treasurerPhone}
+          existingContributions={existingContributions}
+          existingRequests={existingRequests}
+        />
+      </div>
     </div>
+  );
+}
+
+// ━━━ بطاقة KPI صغيرة ━━━
+function KpiTile({
+  icon, label, value, unit, accent,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+  unit?: string;
+  accent: "primary" | "secondary" | "accent";
+}) {
+  const accentClasses = {
+    primary: "bg-primary/10 text-primary",
+    secondary: "bg-secondary/10 text-secondary",
+    accent: "bg-accent/15 text-accent-foreground",
+  };
+  const valueColor = {
+    primary: "text-primary",
+    secondary: "text-secondary",
+    accent: "text-accent",
+  };
+  return (
+    <Card className="lift-on-hover">
+      <CardContent className="p-4">
+        <div className={`grid size-9 place-items-center rounded-xl mb-2 ${accentClasses[accent]}`}>
+          {icon}
+        </div>
+        <p className="text-[11px] text-muted-foreground mb-1">{label}</p>
+        <p className={`font-heading font-extrabold tabular-nums ${valueColor[accent]} text-2xl`}>
+          {value}
+          {unit && <span className="text-xs font-normal text-muted-foreground ms-1">{unit}</span>}
+        </p>
+      </CardContent>
+    </Card>
   );
 }
 

@@ -1,16 +1,17 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { PageHero } from "@/components/community/page-hero";
 import { ServicesDirectory } from "@/components/community/services-directory";
 
 export const dynamic = "force-dynamic";
 
 const CATEGORIES = [
-  { value: "PROFESSION", label: "مهن", icon: "🔧" },
-  { value: "CRAFT", label: "حرف", icon: "🎨" },
-  { value: "HEALTH", label: "صحة", icon: "🏥" },
-  { value: "EDUCATION", label: "تعليم", icon: "📚" },
-  { value: "ADVICE", label: "نصائح", icon: "💡" },
+  { value: "PROFESSION", label: "مهن" },
+  { value: "CRAFT", label: "حرف" },
+  { value: "HEALTH", label: "صحة" },
+  { value: "EDUCATION", label: "تعليم" },
+  { value: "ADVICE", label: "نصائح" },
 ];
 
 export default async function ServicesPage() {
@@ -33,10 +34,17 @@ export default async function ServicesPage() {
   }));
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="font-heading text-2xl font-bold mb-2">دليل الخدمات</h1>
-      <p className="text-sm text-muted-foreground mb-6">مهن، حرف، نصائح، وخدمات في حي سيدي يوسف بن علي</p>
-      <ServicesDirectory services={serialized} categories={CATEGORIES} />
+    <div className="flex flex-col">
+      <PageHero
+        title="دليل الخدمات"
+        subtitle="مهن، حرف، نصائح، وخدمات في حي سيدي يوسف بن علي — معلّمون، حرفيون، ومتخصّصون من جيرانك."
+        image="https://images.unsplash.com/photo-1581338834637-9aa4fdda0ae6?auto=format&fit=crop&w=1920&q=80"
+        imageAlt="دليل الخدمات — مهنيون وحرفيون"
+        badge={`${serialized.length} خدمة`}
+      />
+      <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <ServicesDirectory services={serialized} categories={CATEGORIES} />
+      </div>
     </div>
   );
 }
