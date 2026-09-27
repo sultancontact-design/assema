@@ -5,10 +5,12 @@
 
 ---
 
-## 1. الإصدارات المُنجزة (v1.0 → v35.3)
+## 1. الإصدارات المُنجزة (v1.0 → v36.1)
 
 | الإصدار | التاريخ | الميزة الرئيسية | commit | الحالة |
 |---------|---------|-----------------|--------|--------|
+| v36.1 | 2026-09-27 | Hard NOs + Recovery + pre-flight script + system reset recovery | `a89c89f` | ✅ منشور |
+| v36.0 | 2026-09-26 | PROJECT-STATE.md — توثيق شامل (12 قسم، 378 سطر) | `151bc9c` | ✅ منشور |
 | v35.3 | 2026-09-26 | Hero + Bento لـ 4 صفحات Community (fund + events + store + services) | `215a139` | ✅ منشور |
 | v35.2 | 2026-09-25 | Bento للرئيسية (Blog + Contributions + Events + Ads + gap fix) | `13eb346` | ✅ منشور |
 | v35.1 | 2026-09-25 | Dashboard Kiranism (4 KPI + 4 Recharts + Live Feed + Alerts) + FileText fix | `3c5c49a` | ✅ منشور |
@@ -373,6 +375,7 @@ public/vendor/maplibre-gl.css              — Styles
 
 ---
 
-**آخر تحديث**: v36.0 — 2026-09-26
-**آخر commit**: `215a139` (v35.3)
-**الحالة**: ✅ المنصة تعمل بكامل طاقتها (102 صفحة + 57 نموذج + 12 مهارة تصميم)
+**آخر تحديث**: v36.1 — 2026-09-27
+**آخر commit**: `a89c89f` (v36.1)
+**الحالة**: ✅ المنصة تعمل بكامل طاقتها (102 صفحة + 57 نموذج + 12 مهارة تصميم + نظام حماية)
+**Safety tag**: `v35.3-stable` (rollback بنقرة: `git checkout v35.3-stable`)

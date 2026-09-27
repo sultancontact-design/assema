@@ -5126,3 +5126,56 @@ Stage Summary:
 - ✅ Lucide icons بدل emoji
 - ✅ Real Unsplash images (4 صور مختلفة)
 - اللقطات: v35-3-events.png, v35-3-fund.png, v35-3-store.png, v35-3-services.png
+
+---
+Task ID: v36.1
+Agent: main developer
+Task: إكمال v36.0 — الخطوات 1+2+3 (Hard NOs + Recovery + pre-flight)
+
+Work Log:
+الخطوة 1: CLAUDE.md — أضفت 4 أقسام جديدة (185 سطر):
+- 🚫 Hard NOs (18 قاعدة): لا حذف ملفات + لا git reset --hard + لا rm -rf +
+  لا تغيير schema بدون migration + لا حذف مكونات مشتركة + لا حذف skills +
+  لا حذف DESIGN/CLAUDE/PROJECT-STATE + لا إعادة كتابة globals.css +
+  لا حذف design tokens + لا تغيير ألوان بدون توثيق + لا حذف FeatureFlags +
+  لا تغيير NEXTAUTH_SECRET/CRON_SECRET/DATABASE_URL + لا bun build +
+  لا localhost + لا client-side z-ai-sdk + لا port في URL
+- ✅ Hard YESs (15 قاعدة): اقرأ PROJECT-STATE + DESIGN + CLAUDE +
+  git log + git tag قبل التغييرات الكبيرة + ادفع بعد كل ملف صغير +
+  lint قبل push + حدّث PROJECT-STATE + revert عند الفشل + اسأل لا تخمن +
+  TodoWrite + worklog + تحقّق بصري + reduced-motion + skeletons
+- 🛡️ Recovery System: System Reset (git clone + bun install) +
+  Rollback (git revert HEAD --no-edit) + Vercel (promote deployment) +
+  Supabase (restore backup)
+- 📋 Pre-Flight Checklist (10 بنود)
+- 🔗 Sacred Documentation Files table (5 ملفات)
+
+الخطوة 2: git tag + pre-flight script
+- أنشأت tag: v35.3-stable (safety checkpoint قبل أي refactor)
+  * يحتوي رسالة بحالة المنصة الكاملة (12 skills + DESIGN.md + Hero + Bento + 200 users)
+  * قابل للـ rollback: git checkout v35.3-stable
+- أنشأت scripts/pre-flight.sh (executable):
+  * 8 فحوصات: ملفات مقدّسة + 12 skills + 12 مكون مشترك + 3 vendor + prisma +
+    git state + lint + production health
+  * Summary: ✅ ALL CHECKS PASSED أو ❌ SOME FAILED
+
+🚨 اكتشاف + استرداد من system reset حقيقي:
+- pre-flight اكتشف أن local HEAD = 969c293 (v15.1 — قديم!)
+- GitHub HEAD = 151bc9c (v36.0 — محدّث)
+- 12 skills MISSING + 3 vendor files MISSING + page-hero/three-d-map/dashboard-client MISSING
+- Recovery: git stash + git pull origin main --ff-only
+- النتيجة: 1619 سطر prisma + 12 skills + 3 vendor files + 57 models كلها رجعت
+- pre-flight إعادة التشغيل: ✅ ALL CHECKS PASSED
+
+الخطوة 3: commit + push + تحديث worklog
+- commit a89c89f: CLAUDE.md + scripts/pre-flight.sh
+- push إلى GitHub main (ناجح)
+
+Stage Summary:
+- ✅ CLAUDE.md محسّن بـ 18 Hard NOs + 15 Hard YESs + Recovery System
+- ✅ git tag v35.3-stable كنقطة أمان
+- ✅ scripts/pre-flight.sh (8 فحوصات، قابل للتنفيذ)
+- ✅ System reset اكتُشف + استُرجع (local v15.1 → v36.0)
+- ✅ ALL CHECKS PASSED بعد الاسترداد
+- ✅ Production HTTP 200 مؤكّد
+- ✅ 0 lint errors
