@@ -264,6 +264,7 @@ model User {
   variableRewards   VariableReward[]
   userChallenges    UserChallenge[]
   userBadges        UserBadge[]
+  leaderboardBans    LeaderboardBan[]
   activities        UserActivity[]
   following         UserRelationship[] @relation("Follower")
   followers         UserRelationship[] @relation("Following")
@@ -1616,4 +1617,42 @@ model ImageAsset {
   createdAt   DateTime @default(now())
 
   @@index([section])
+}
+
+// ===================================================================
+//  v38.0 — نماذج التحكم في المتصدرين (Leaderboard Admin)
+// ===================================================================
+
+model LeaderboardConfig {
+  id              String   @id @default(cuid())
+  period          String   @unique // WEEKLY, MONTHLY, YEARLY, ALL_TIME
+  isActive        Boolean  @default(true)
+  isVisible       Boolean  @default(true) // للعموم
+  minPoints       Int      @default(0) // حد أدنى للظهور
+  topN            Int      @default(10) // عدد المتصدرين
+  showAvatars     Boolean  @default(true)
+  showDistricts   Boolean  @default(true)
+  showBadges      Boolean  @default(true)
+  reward1st      Int      @default(500)
+  reward2nd      Int      @default(250)
+  reward3rd      Int      @default(100)
+  customMessage   String?
+  updatedBy       String?
+  updatedAt       DateTime @updatedAt
+  createdAt       DateTime @default(now())
+}
+
+model LeaderboardBan {
+  id        String    @id @default(cuid())
+  userId    String
+  reason    String
+  bannedBy  String
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId])
+  @@index([userId])
+  @@index([expiresAt])
 }
