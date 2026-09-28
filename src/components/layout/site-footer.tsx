@@ -114,11 +114,8 @@ export function SiteFooter() {
             className="inline-flex items-center gap-2 rounded-md border border-secondary/30 bg-secondary/5 px-3 py-2 text-xs text-foreground hover:bg-secondary/10 transition-colors"
           >
             <Shield className="size-4 text-secondary" />
-            <span>مسجّلة لدى CNDP وفقاً للقانون 09-08</span>
+            <span>سياسة الخصوصية</span>
           </Link>
-          <p className="text-xs text-muted-foreground text-center sm:text-end">
-            رقم الإخطار: يُنشر فور الحصول عليه من اللجنة الوطنية
-          </p>
         </div>
 
         {/* أسفل الفوتر */}
