@@ -5554,3 +5554,67 @@ Stage Summary:
 - ✅ Admin sidebar link added
 - ✅ Verified reachable by navigation (orphan page prevention)
 - ⏳ Sections 2-5 pending (user message was cut off after Section 1)
+
+---
+Task ID: v38.0-sections-2-5
+Agent: main developer
+Task: الأقسام 2-5 — Fund Admin + Engagement + Referral Pro + Wallet
+
+pre-flight: ✅ ALL CHECKS PASSED + checkpoint-v38-start tag
+
+Section 2: Fund Admin (commit c09fe48)
+- Prisma: FundAccountInfo + FundDonation + FundSettings (3 models)
+- db:push: 3 tables (9.41s)
+- Seeded: FundSettings (isOpen=true) + FundAccountInfo (bank name + RIB)
+- Pages: /admin/fund/settings + /admin/fund/account + /admin/fund/donations
+- Public: /community/fund/transparency (balance + income + expense + monthly chart + last 20)
+- APIs: PATCH /api/admin/fund/settings + PATCH /api/admin/fund/account-info + GET /api/fund/account-info
+- Admin sidebar: FUND_SUB_LINKS (نظرة عامة + الإعدادات + معلومات الحساب + التبرعات)
+
+Section 3: Engagement (in commit fce1f7b)
+- Prisma: Reaction + Follow + Like + View + Share (5 models)
+- No pages yet (schema + relations ready for future component work)
+
+Section 4: Referral Pro (in commit fce1f7b)
+- Prisma: ReferralProgram + ReferralCampaign + ReferralLink (3 models)
+- Seeded: ReferralProgram defaults (rewardReferrer=50, rewardReferred=30)
+- Page: /admin/referrals (4 KPI + top referrers leaderboard)
+
+Section 5: Wallet System (in commit fce1f7b)
+- Prisma: Wallet + WalletTransaction + PointPackage + WithdrawalRequest (4 models)
+- Seeded: 4 PointPackages (100/500/1000/5000 points with prices 20/90/170/800)
+- Pages: /wallet (user view) + /admin/wallet (admin overview with packages)
+- APIs: GET /api/wallet + GET /api/wallet/transactions
+
+Community page:
+- /community/following (following + followers in 2-column Bento)
+
+Admin sidebar additions:
+- /admin/wallet → Coins → 'المحافظ'
+- /admin/referrals → Gift → 'الإحالات'
+
+Community sidebar:
+- /community/following → Users → 'المتابعة'
+
+Deploy verification (after 115s wait):
+- /admin/fund/settings: 200 ✅
+- /admin/fund/account: 200 ✅
+- /admin/fund/donations: 200 ✅
+- /community/fund/transparency: 200 ✅
+- /wallet: 200 ✅ (after 60s extra wait)
+- /admin/wallet: 200 ✅
+- /admin/referrals: 200 ✅
+- /community/following: 200 ✅
+
+DB stats:
+- 12 new tables created (Fund 3 + Engagement 5 + Referral 3 + Wallet 4)
+- Total Prisma models: 57 → 69 (12 new in v38)
+- Seeded: FundSettings + FundAccountInfo + ReferralProgram + 4 PointPackages
+
+Stage Summary:
+- ✅ Section 2: Fund Admin (3 models + 4 pages + 3 APIs + sidebar)
+- ✅ Section 3: Engagement (5 models — schema ready for components)
+- ✅ Section 4: Referral Pro (3 models + admin page + seeded)
+- ✅ Section 5: Wallet (4 models + 2 pages + 2 APIs + 4 packages seeded)
+- ✅ All 8 new pages return HTTP 200
+- ✅ All reachable via sidebar nav (orphan prevention)
