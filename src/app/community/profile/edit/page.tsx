@@ -15,7 +15,10 @@ export default async function ProfileEditPage() {
     where: { id: user.id },
     select: {
       firstName: true, lastName: true, email: true, phone: true,
-      profession: true, skills: true, interests: true,
+      profession: true, skills: true, interests: true, avatar: true,
+      bio: true, socialInstagram: true, socialTiktok: true,
+      socialFacebook: true, socialWhatsapp: true,
+      isProfilePublic: true, allowMessages: true,
     },
   });
 
@@ -39,13 +42,14 @@ export default async function ProfileEditPage() {
           profession: dbUser.profession,
           skills: dbUser.skills,
           interests: dbUser.interests,
-          bio: null,
-          socialInstagram: null,
-          socialTiktok: null,
-          socialFacebook: null,
-          socialWhatsapp: null,
-          isPublic: true,
-          allowMessages: true,
+          bio: dbUser.bio,
+          avatar: dbUser.avatar,
+          socialInstagram: dbUser.socialInstagram,
+          socialTiktok: dbUser.socialTiktok,
+          socialFacebook: dbUser.socialFacebook,
+          socialWhatsapp: dbUser.socialWhatsapp,
+          isPublic: dbUser.isProfilePublic,
+          allowMessages: dbUser.allowMessages,
         }} />
       </div>
     </div>

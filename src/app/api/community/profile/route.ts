@@ -10,7 +10,7 @@ export async function PATCH(request: Request) {
 
   const body = await request.json().catch(() => ({}));
   const {
-    profession, skills, interests, bio,
+    profession, skills, interests, bio, avatar,
     socialInstagram, socialTiktok, socialFacebook, socialWhatsapp,
     isProfilePublic, allowMessages,
   } = body;
@@ -23,6 +23,7 @@ export async function PATCH(request: Request) {
       skills: skills || null,
       interests: interests || null,
       bio: bio || null,
+      avatar: avatar || null,
       socialInstagram: socialInstagram || null,
       socialTiktok: socialTiktok || null,
       socialFacebook: socialFacebook || null,

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { ImageUpload } from "@/components/ui/image-upload";
 import { toast } from "sonner";
 import {
   Save, User, Mail, Phone, MapPin, Briefcase, Sparkles,
@@ -31,6 +32,7 @@ interface ProfileData {
   socialWhatsapp: string | null;
   isPublic: boolean;
   allowMessages: boolean;
+  avatar: string | null;
 }
 
 export function ProfileEditClient({ initial }: { initial: ProfileData }) {
@@ -56,6 +58,25 @@ export function ProfileEditClient({ initial }: { initial: ProfileData }) {
 
   return (
     <div className="space-y-4 max-w-2xl">
+      {/* صورة الملف الشخصي */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="size-5 text-primary" />
+            صورة الملف الشخصي
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ImageUpload
+            value={data.avatar ?? ""}
+            onChange={(url) => setData({ ...data, avatar: url || null })}
+            label="صورة الملف الشخصي"
+            aspect="square"
+            maxSizeKB={300}
+          />
+        </CardContent>
+      </Card>
+
       {/* البيانات الأساسية */}
       <Card>
         <CardHeader>
