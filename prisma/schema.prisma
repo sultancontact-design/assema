@@ -230,6 +230,14 @@ model User {
   profession        String?      // "معلم"
   skills            String?      // مفصولة بفاصلة
   interests         String?
+  // v39.0: حقول الملف الشخصي الموسّعة
+  bio               String?
+  socialInstagram   String?
+  socialTiktok      String?
+  socialFacebook    String?
+  socialWhatsapp    String?
+  isProfilePublic   Boolean  @default(true)
+  allowMessages     Boolean  @default(true)
   birthDate         DateTime?
   gender            String?      // ذكر/أنثى
   // الأمان
