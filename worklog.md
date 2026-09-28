@@ -5811,3 +5811,59 @@ Verification (after deploy):
 - /wallet/topup: 200 ✅
 
 Commits: 33769b2 + 118cae6 + 2804e30
+
+---
+Task ID: v42.0
+Agent: main developer
+Task: إصلاح جذري — next.config images + react-social-media-embed + live preview
+
+pre-flight: ✅ ALL CHECKS PASSED + checkpoint-v42-start tag
+
+Root cause found: next.config.ts had NO images.remotePatterns
+→ Next.js 16 blocks ALL external image domains by default
+→ This caused: Hero images not showing + all Unsplash images blocked
+
+Task 1: Fix next.config.ts (commit ad70197)
+- Added images.remotePatterns for 7 domains:
+  * images.unsplash.com (Hero + PageHero images)
+  * ui-avatars.com (fallback avatars)
+  * i.pravatar.cc (avatar placeholders)
+  * **.tiktokcdn.com (TikTok thumbnails)
+  * **.ytimg.com (YouTube thumbnails)
+  * **.supabase.co (Supabase Storage)
+  * **.vercel.app (Vercel-hosted assets)
+
+Task 2: Video embeds with react-social-media-embed (commit ad70197)
+- Installed: react-social-media-embed@2.5.18
+- Rewrote VideoCard (src/components/video/video-card.tsx):
+  * TikTokEmbed from react-social-media-embed (was broken iframe)
+  * InstagramEmbed for INSTAGRAM
+  * YouTubeEmbed for YOUTUBE
+  * Direct <video> for other platforms
+  * All lazy-loaded (React.lazy + Suspense) for SSR safety
+  * Like + comment + bookmark + share with optimistic updates
+  * Mute/unmute button
+  * Music marquee + rotating disc (red→green→purple)
+
+Task 2b: /community/videos/add with LIVE PREVIEW (commit ad70197)
+- Rewrote as client component (was server)
+- detectPlatform() auto-detects from URL: TIKTOK/YOUTUBE/INSTAGRAM/FACEBOOK
+- Two-column layout: form (left) + live embed preview (right)
+- Preview updates instantly as user types the URL
+- Phone-like frame (border-4 border-gray-900, rounded-2xl)
+- Submit → POST /api/videos → redirect to /videos
+- Toast feedback for errors/success
+
+Task 3: Admin site-control
+- Already has interactive toggles from v41.0 (SiteControlClient)
+- 4 sections: الرئيسية + التفاعل + الفيديوهات + الأقسام
+- Toggle switches with optimistic updates + PATCH API
+
+Verification (after deploy):
+- /: 308 (redirect) ✅
+- /videos: 200 ✅ (Instagram phone frame with react-social-media-embed)
+- /community/videos/add: 200 ✅ (live preview with embed)
+- /community/profile/edit: 200 ✅ (ImageUpload)
+- /admin/site-control: 200 ✅ (interactive toggles)
+
+Commit: ad70197
