@@ -128,9 +128,15 @@ const ADS_SUB_LINKS: NavSubLink[] = [
   { href: "/admin/ads/reports", label: "التقارير", match: "reports" },
 ];
 
+const STORE_SUB_LINKS: NavSubLink[] = [
+  { href: "/admin/store", label: "المنتجات", match: "" },
+  { href: "/admin/store/orders", label: "الطلبات", match: "orders" },
+];
+
 const SETTINGS_SUB_LINKS: NavSubLink[] = [
   { href: "/admin/settings", label: "عام", match: "" },
   { href: "/admin/settings/security", label: "الأمان", match: "security" },
+  { href: "/admin/settings/security/password", label: "كلمة المرور", match: "security/password" },
   { href: "/admin/settings/security/ips", label: "قائمة IP", match: "security/ips" },
   { href: "/admin/settings/permissions", label: "صلاحيات PDF", match: "permissions" },
   { href: "/admin/settings/email", label: "البريد", match: "email" },
@@ -149,7 +155,8 @@ const NAV_LINKS: NavLinkItem[] = [
   { href: "/admin/badges", label: "الشارات", icon: Award, match: "badges" },
   { href: "/admin/challenges", label: "التحديات", icon: Target, match: "challenges" },
   { href: "/admin/rewards", label: "المكافآت", icon: Gift, match: "rewards" },
-  { href: "/admin/store", label: "المتجر", icon: ShoppingCart, match: "store" },
+  { href: "/admin/store", label: "المتجر", icon: ShoppingCart, match: "store", children: STORE_SUB_LINKS },
+  { href: "/admin/ticker", label: "الشريط المتحرّك", icon: Radio, match: "ticker" },
   { href: "/admin/messages", label: "الرسائل", icon: Mail, match: "messages" },
   { href: "/admin/discussions", label: "النقاشات", icon: MessageSquare, match: "discussions" },
   { href: "/admin/initiatives", label: "المبادرات", icon: Lightbulb, match: "initiatives" },

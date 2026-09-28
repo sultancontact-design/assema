@@ -21,6 +21,7 @@ import {
   Sparkles,
   LayoutGrid,
   ArrowLeft,
+  PenLine,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
@@ -109,12 +110,20 @@ export default async function BlogPage({ searchParams }: PageProps) {
       />
 
       <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* شريط الفلترة */}
-        <Card className="warm-shadow border-border/60 mb-6">
-          <CardContent className="p-4">
-            <BlogFilterBar total={total} filteredCount={posts.length} />
-          </CardContent>
-        </Card>
+        {/* شريط الفلترة + زر كتابة مقال */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+          <Card className="warm-shadow border-border/60 flex-1">
+            <CardContent className="p-4">
+              <BlogFilterBar total={total} filteredCount={posts.length} />
+            </CardContent>
+          </Card>
+          <Button asChild size="lg" className="h-auto">
+            <Link href="/community/blog/new">
+              <PenLine className="size-4" />
+              اكتب مقالاً
+            </Link>
+          </Button>
+        </div>
 
         {/* ━━━ Bento Grid: مقال مميّز + 6 صغيرة ━━━ */}
         {posts.length === 0 ? (
