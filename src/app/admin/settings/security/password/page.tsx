@@ -28,7 +28,7 @@ export default async function PasswordChangePage() {
     },
     orderBy: { createdAt: "desc" },
     take: 20,
-    select: { id: true, action: true, severity: true, ip: true, userAgent: true, createdAt: true },
+    select: { id: true, action: true, severity: true, ipAddress: true, userAgent: true, createdAt: true },
   });
 
   return (
@@ -84,7 +84,7 @@ export default async function PasswordChangePage() {
                           <tr key={log.id} className="hover:bg-muted/30 transition-colors">
                             <td className="p-3 text-xs font-medium text-foreground">{log.action.replace(/user\./, "").replace(/\./g, " ")}</td>
                             <td className="p-3 text-xs text-muted-foreground"><span className="inline-flex items-center gap-1"><Smartphone className="size-3" />{isMobile ? "جوال" : "حاسوب"}</span></td>
-                            <td className="p-3 text-xs text-muted-foreground tabular-nums">{log.ip ?? "—"}</td>
+                            <td className="p-3 text-xs text-muted-foreground tabular-nums">{log.ipAddress ?? "—"}</td>
                             <td className="p-3"><Badge variant="outline" className={isSuccess ? "bg-secondary/10 text-secondary border-secondary/30" : isFail ? "bg-red-100 text-red-700 dark:bg-red-900/30" : "bg-muted text-muted-foreground"}>{isSuccess ? "نجح" : isFail ? "فشل" : log.severity}</Badge></td>
                             <td className="p-3 text-xs text-muted-foreground">{formatDateArabic(log.createdAt)}</td>
                           </tr>

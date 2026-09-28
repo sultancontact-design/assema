@@ -49,7 +49,7 @@ export async function POST(request: Request) {
       entity: "User",
       entityId: user.id,
       severity: "info",
-      userId: user.id,
+      actorId: user.id,
     },
   }).catch(() => {});
 
