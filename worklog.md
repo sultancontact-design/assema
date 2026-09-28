@@ -5495,3 +5495,62 @@ Stage Summary:
 - ✅ Lucide icons: Trophy + Crown + Radio + PenLine
 - ✅ Commit f3630d3 pushed
 - اللقطة: /tmp/v37-2-nav-verified.png
+
+---
+Task ID: v38.0-section1
+Agent: main developer
+Task: القسم 1 — التحكم الكامل في المتصدرين (Leaderboard Admin)
+
+pre-flight: ✅ ALL CHECKS PASSED + checkpoint-v38-start tag pushed
+
+Prisma schema (additions only, no deletion):
+- LeaderboardConfig model (13 fields):
+  * period (unique): WEEKLY/MONTHLY/YEARLY/ALL_TIME
+  * isActive + isVisible (toggles)
+  * minPoints + topN (numeric)
+  * showAvatars + showDistricts + showBadges (toggles)
+  * reward1st + reward2nd + reward3rd (numeric)
+  * customMessage + updatedBy + updatedAt + createdAt
+- LeaderboardBan model (6 fields):
+  * userId (unique) + reason + bannedBy + expiresAt + createdAt
+  * user relation (onDelete: Cascade)
+- User model: added leaderboardBans back-relation
+- db:push executed (9.64s) — 2 new tables created
+- Seeded 4 default configs:
+  * WEEKLY: topN=10, rewards 500/250/100
+  * MONTHLY: topN=10, rewards 1000/500/250
+  * YEARLY: topN=20, rewards 5000/2500/1000
+  * ALL_TIME: topN=50, rewards 10000/5000/2500 + customMessage
+
+New page: /admin/leaderboard
+- PageHero + badge "4 فترات"
+- 4 KPI cards: active periods + visible + banned + max reward
+- Bento: 4 config cards (8-col) + ban sidebar (4-col)
+- LeaderboardAdminClient:
+  * Toggle chips: active/visible/avatars/districts/badges
+  * Numeric inputs: minPoints/topN/reward1st/reward2nd/reward3rd
+  * customMessage input
+  * Save per config → PUT /api/admin/leaderboard/config
+  * Ban form: select top-50 user + reason → POST /api/admin/leaderboard/ban
+  * Banned list with unban buttons → DELETE /api/admin/leaderboard/ban
+
+New APIs:
+- PUT /api/admin/leaderboard/config — update + auditLog
+- POST /api/admin/leaderboard/ban — upsert (unique userId) + auditLog
+- DELETE /api/admin/leaderboard/ban?id= — remove + auditLog
+
+Admin sidebar: /admin/leaderboard → Crown icon → "المتصدرين"
+
+Verification (Agent Browser):
+- curl /admin/leaderboard → HTTP 200 ✅
+- JS eval: h1="إدارة المتصدرين" (64px) + 8 KPI cards + H2 "إعدادات الفترات" ✅
+- hasUserSelect=true + hasBanBtn=true ✅
+- Screenshot: /tmp/v38-leaderboard-admin.png ✅
+
+Stage Summary:
+- ✅ LeaderboardConfig + LeaderboardBan models added + seeded
+- ✅ /admin/leaderboard admin page with full control
+- ✅ 3 APIs (config PUT + ban POST/DELETE) with auditLog
+- ✅ Admin sidebar link added
+- ✅ Verified reachable by navigation (orphan page prevention)
+- ⏳ Sections 2-5 pending (user message was cut off after Section 1)
