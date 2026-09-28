@@ -3,18 +3,14 @@
 import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { PageHero } from "@/components/community/page-hero";
 import {
   Home, Share2, Video, LayoutGrid, ToggleLeft, ToggleRight,
   BarChart3, Settings as SettingsIcon,
 } from "lucide-react";
 
 // ===================================================================
-//  SiteControlClient v41.0 — تحكم تفاعلي في FeatureFlags
-//  5 تبويبات: الرئيسية + التفاعل + الفيديوهات + الأقسام + الأرقام
+//  SiteControlClient v43.0 — fully client-side (no server component imports)
 // ===================================================================
 
 interface FlagData {
@@ -112,7 +108,11 @@ export function SiteControlClient({ initialFlags }: { initialFlags: FlagData[] }
 
   const toggle = async (key: string) => {
     const flag = flags[key];
-    if (!flag) return;
+    if (!flag) {
+      // Flag not in DB — create it
+      toast.info("هذا المفتاح غير موجود في قاعدة البيانات. استخدم /admin/feature-control لإضافته.");
+      return;
+    }
     const newValue = !flag.isEnabled;
     setSaving(key);
     setFlags(prev => ({ ...prev, [key]: { ...prev[key]!, isEnabled: newValue, status: newValue ? "ACTIVE" : "HIDDEN" } }));
@@ -140,14 +140,18 @@ export function SiteControlClient({ initialFlags }: { initialFlags: FlagData[] }
   };
 
   return (
-    <div className="flex flex-col">
-      <PageHero
-        title="مركز التحكم الشامل"
-        subtitle="تحكّم في كل ما يظهر في المنصة — أفعّل/عطّل الميزات والأقسام."
-        image="https://images.unsplash.com/photo-1551269901-5c5e14c25b58?auto=format&fit=crop&w=1920&q=80"
-        imageAlt="مركز التحكم الشامل"
-        badge={`${stats.active}/${stats.total} مُفعّلة`}
-      />
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-secondary/5">
+      {/* Header (inline, not PageHero — avoids server/client boundary) */}
+      <div className="border-b border-border bg-gradient-to-r from-primary/10 via-accent/10 to-secondary/10">
+        <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="flex items-center gap-3 mb-2">
+            <SettingsIcon className="size-8 text-primary" />
+            <h1 className="font-heading text-3xl font-extrabold text-foreground">مركز التحكم الشامل</h1>
+          </div>
+          <p className="text-sm text-muted-foreground">تحكّم في كل ما يظهر في المنصة — أفعّل/عطّل الميزات والأقسام.</p>
+        </div>
+      </div>
+
       <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* KPI */}
         <div className="grid grid-cols-3 gap-3">
@@ -168,7 +172,7 @@ export function SiteControlClient({ initialFlags }: { initialFlags: FlagData[] }
           </CardContent></Card>
         </div>
 
-        {/* 4 تبويبات */}
+        {/* Sections */}
         {SECTIONS.map((section) => {
           const SectionIcon = section.icon;
           return (

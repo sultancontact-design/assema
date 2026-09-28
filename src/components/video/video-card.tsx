@@ -1,15 +1,34 @@
 "use client";
 
 import * as React from "react";
+import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Heart, MessageCircle, Share2, Bookmark, Music, Volume2, VolumeX,
+  Heart, MessageCircle, Share2, Bookmark, Music, Volume2, VolumeX, Loader2,
 } from "lucide-react";
 
-// react-social-media-embed — lazy loaded to avoid SSR issues
-const TikTokEmbed = React.lazy(() => import("react-social-media-embed").then(m => ({ default: m.TikTokEmbed })));
-const InstagramEmbed = React.lazy(() => import("react-social-media-embed").then(m => ({ default: m.InstagramEmbed })));
-const YouTubeEmbed = React.lazy(() => import("react-social-media-embed").then(m => ({ default: m.YouTubeEmbed })));
+// react-social-media-embed — MUST use next/dynamic with ssr:false
+// (React.lazy doesn't work in Next.js server-rendered components)
+const TikTokEmbed = dynamic(
+  () => import("react-social-media-embed").then((m: any) => m.TikTokEmbed),
+  { ssr: false, loading: () => <EmbedLoader /> }
+);
+const InstagramEmbed = dynamic(
+  () => import("react-social-media-embed").then((m: any) => m.InstagramEmbed),
+  { ssr: false, loading: () => <EmbedLoader /> }
+);
+const YouTubeEmbed = dynamic(
+  () => import("react-social-media-embed").then((m: any) => m.YouTubeEmbed),
+  { ssr: false, loading: () => <EmbedLoader /> }
+);
+
+function EmbedLoader() {
+  return (
+    <div className="w-full h-full flex items-center justify-center bg-black">
+      <Loader2 className="size-8 text-white animate-spin" />
+    </div>
+  );
+}
 
 interface VideoItem {
   id: string;
@@ -53,35 +72,33 @@ export function VideoCard({ video, isActive }: { video: VideoItem; isActive: boo
 
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
-      {/* الفيديو — حسب المنصة */}
+      {/* الفيديو */}
       <div className="absolute inset-0 flex items-center justify-center">
-        <React.Suspense fallback={<div className="text-white/40 animate-pulse">جاري التحميل...</div>}>
-          {video.sourcePlatform === "TIKTOK" && (
-            <div className="w-full h-full overflow-auto" style={{ maxWidth: "100%" }}>
-              <TikTokEmbed url={video.sourceUrl} width="100%" />
-            </div>
-          )}
-          {video.sourcePlatform === "INSTAGRAM" && (
-            <div className="w-full h-full overflow-auto">
-              <InstagramEmbed url={video.sourceUrl} width="100%" />
-            </div>
-          )}
-          {video.sourcePlatform === "YOUTUBE" && (
-            <div className="w-full h-full">
-              <YouTubeEmbed url={video.sourceUrl} width="100%" height="100%" />
-            </div>
-          )}
-          {!["TIKTOK", "INSTAGRAM", "YOUTUBE"].includes(video.sourcePlatform) && (
-            <video
-              src={video.sourceUrl}
-              autoPlay={isActive}
-              loop
-              muted={muted}
-              playsInline
-              className="w-full h-full object-cover"
-            />
-          )}
-        </React.Suspense>
+        {video.sourcePlatform === "TIKTOK" && (
+          <div className="w-full h-full flex items-center justify-center overflow-y-auto">
+            <TikTokEmbed url={video.sourceUrl} width={325} />
+          </div>
+        )}
+        {video.sourcePlatform === "INSTAGRAM" && (
+          <div className="w-full h-full flex items-center justify-center overflow-y-auto">
+            <InstagramEmbed url={video.sourceUrl} width={328} />
+          </div>
+        )}
+        {video.sourcePlatform === "YOUTUBE" && (
+          <div className="w-full h-full">
+            <YouTubeEmbed url={video.sourceUrl} width="100%" height="100%" />
+          </div>
+        )}
+        {!["TIKTOK", "INSTAGRAM", "YOUTUBE"].includes(video.sourcePlatform) && (
+          <video
+            src={video.sourceUrl}
+            autoPlay={isActive}
+            loop
+            muted={muted}
+            playsInline
+            className="w-full h-full object-cover"
+          />
+        )}
       </div>
 
       {/* طبقة تعتيم */}
@@ -95,7 +112,7 @@ export function VideoCard({ video, isActive }: { video: VideoItem; isActive: boo
         {muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
       </button>
 
-      {/* معلومات — أسفل يمين */}
+      {/* معلومات */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: isActive ? 1 : 0, y: isActive ? 0 : 20 }}
@@ -125,7 +142,7 @@ export function VideoCard({ video, isActive }: { video: VideoItem; isActive: boo
         </div>
       </motion.div>
 
-      {/* أزرار التفاعل — يسار */}
+      {/* أزرار التفاعل */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: isActive ? 1 : 0, y: isActive ? 0 : 20 }}
