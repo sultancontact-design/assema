@@ -32,14 +32,21 @@ export default async function StoreOrdersPage() {
     }),
   ]);
 
-  // إحصاءات الأكثر مبيعاً
-  const topItems = await db.storeOrder.groupBy({
-    by: ["itemId"],
-    _count: { _all: true },
-    _sum: { pricePaid: true },
-    orderBy: { _count: { _all: "desc" } },
-    take: 5,
+  // إحصاءات الأكثر مبيعاً — اجلب كل الطلبات ثم اجمعها في JS (أكثر أماناً مع Prisma)
+  const allOrders = await db.storeOrder.findMany({
+    select: { itemId: true, pricePaid: true },
   });
+  const itemMap = new Map<string, { count: number; revenue: number }>();
+  for (const o of allOrders) {
+    const cur = itemMap.get(o.itemId) ?? { count: 0, revenue: 0 };
+    cur.count += 1;
+    cur.revenue += o.pricePaid;
+    itemMap.set(o.itemId, cur);
+  }
+  const topItems = Array.from(itemMap.entries())
+    .map(([itemId, stats]) => ({ itemId, _count: { _all: stats.count }, _sum: { pricePaid: stats.revenue } }))
+    .sort((a, b) => b._count._all - a._count._all)
+    .slice(0, 5);
   const topItemIds = topItems.map((t) => t.itemId);
   const topItemsData = await db.storeItem.findMany({
     where: { id: { in: topItemIds } },
