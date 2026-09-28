@@ -1,169 +1,124 @@
 "use client";
 
 import * as React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import {
-  Home, Share2, Video, LayoutGrid, ToggleLeft, ToggleRight,
-  BarChart3, Settings as SettingsIcon,
-} from "lucide-react";
-
-// ===================================================================
-//  SiteControlClient v43.0 — fully client-side (no server component imports)
-// ===================================================================
-
-interface FlagData {
-  id: string;
-  key: string;
-  category: string;
-  status: string;
-  isEnabled: boolean;
-  descriptionAr: string | null;
-}
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Loader2, RefreshCw } from "lucide-react";
 
 const SECTIONS = [
   {
-    name: "الرئيسية",
-    icon: Home,
-    keys: [
-      "home.hero", "home.stats", "home.activity_feed", "home.fomo_banner",
-      "home.stories_carousel", "home.map_preview", "home.ads",
-      "home.upcoming_events", "home.blog_section",
+    key: "home", name: "الرئيسية",
+    flags: [
+      { key: "home.hero.enabled", label: "قسم Hero" },
+      { key: "home.stats.enabled", label: "الإحصائيات" },
+      { key: "home.activity_feed.enabled", label: "آخر الأنشطة" },
+      { key: "home.fomo_banner.enabled", label: "شريط العروض" },
+      { key: "home.stories.enabled", label: "قصص النجاح" },
+      { key: "home.events.enabled", label: "الفعاليات" },
+      { key: "home.blog.enabled", label: "المدونة" },
+      { key: "home.ads.enabled", label: "الإعلانات" },
     ],
   },
   {
-    name: "التفاعل الاجتماعي",
-    icon: Share2,
-    keys: [
-      "social.reactions", "social.follow", "social.comments",
-      "social.share", "social.bookmark", "social.followers_count",
-      "social.likes_count",
+    key: "social", name: "التفاعل",
+    flags: [
+      { key: "social.reactions.enabled", label: "الإعجابات" },
+      { key: "social.follow.enabled", label: "المتابعة" },
+      { key: "social.comments.enabled", label: "التعليقات" },
+      { key: "social.share.enabled", label: "المشاركة" },
+      { key: "social.bookmark.enabled", label: "الحفظ" },
     ],
   },
   {
-    name: "الفيديوهات",
-    icon: Video,
-    keys: [
-      "videos.enabled", "videos.comments", "videos.likes",
-      "videos.bookmarks", "videos.tiktok", "videos.youtube",
-      "videos.instagram", "videos.facebook",
+    key: "videos", name: "الفيديوهات",
+    flags: [
+      { key: "videos.enabled", label: "قسم الفيديو" },
+      { key: "videos.likes.enabled", label: "الإعجابات" },
+      { key: "videos.comments.enabled", label: "التعليقات" },
+      { key: "videos.bookmarks.enabled", label: "الحفظ" },
+      { key: "videos.tiktok.enabled", label: "TikTok" },
+      { key: "videos.youtube.enabled", label: "YouTube" },
+      { key: "videos.instagram.enabled", label: "Instagram" },
+      { key: "videos.facebook.enabled", label: "Facebook" },
     ],
   },
   {
-    name: "الأقسام الرئيسية",
-    icon: LayoutGrid,
-    keys: [
-      "community.enabled", "fund.enabled", "events.enabled",
-      "services.enabled", "store.enabled", "blog.enabled",
-      "map.enabled", "prices.enabled", "gamification.enabled", "wallet.enabled",
+    key: "sections", name: "الأقسام الرئيسية",
+    flags: [
+      { key: "community.enabled", label: "المجتمع" },
+      { key: "fund.enabled", label: "صندوق المعروف" },
+      { key: "events.enabled", label: "الفعاليات" },
+      { key: "services.enabled", label: "الخدمات" },
+      { key: "store.enabled", label: "المتجر" },
+      { key: "blog.enabled", label: "المدونة" },
+      { key: "map.enabled", label: "الخريطة" },
+      { key: "prices.enabled", label: "الأسعار" },
+      { key: "gamification.enabled", label: "المكافآت" },
+      { key: "wallet.enabled", label: "المحفظة" },
     ],
   },
 ];
 
-const LABELS: Record<string, string> = {
-  "home.hero": "قسم Hero",
-  "home.stats": "الإحصائيات",
-  "home.activity_feed": "آخر الأنشطة",
-  "home.fomo_banner": "شريط العروض",
-  "home.stories_carousel": "قصص النجاح",
-  "home.map_preview": "معاينة الخريطة",
-  "home.ads": "الإعلانات",
-  "home.upcoming_events": "الفعاليات القادمة",
-  "home.blog_section": "المدونة",
-  "social.reactions": "الإعجابات",
-  "social.follow": "المتابعة",
-  "social.comments": "التعليقات",
-  "social.share": "المشاركة",
-  "social.bookmark": "حفظ العناصر",
-  "social.followers_count": "إظهار عدد المتابعين",
-  "social.likes_count": "إظهار عدد الإعجابات",
-  "videos.enabled": "قسم الفيديو",
-  "videos.comments": "التعليقات",
-  "videos.likes": "الإعجابات",
-  "videos.bookmarks": "الحفظ",
-  "videos.tiktok": "مصدر TikTok",
-  "videos.youtube": "مصدر YouTube",
-  "videos.instagram": "مصدر Instagram",
-  "videos.facebook": "مصدر Facebook",
-  "community.enabled": "المجتمع",
-  "fund.enabled": "صندوق المعروف",
-  "events.enabled": "الفعاليات",
-  "services.enabled": "الخدمات",
-  "store.enabled": "المتجر",
-  "blog.enabled": "المدونة",
-  "map.enabled": "الخريطة",
-  "prices.enabled": "الأسعار",
-  "gamification.enabled": "المكافآت",
-  "wallet.enabled": "المحفظة",
-};
-
-export function SiteControlClient({ initialFlags }: { initialFlags: FlagData[] }) {
-  const [flags, setFlags] = React.useState<Record<string, FlagData>>(() => {
-    const map: Record<string, FlagData> = {};
-    initialFlags.forEach(f => { map[f.key] = f; });
-    return map;
-  });
+export function SiteControlClient() {
+  const [flags, setFlags] = React.useState<Record<string, boolean>>({});
   const [saving, setSaving] = React.useState<string | null>(null);
-  const [loading, setLoading] = React.useState(initialFlags.length === 0);
+  const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [activeTab, setActiveTab] = React.useState("home");
 
-  // Fetch flags from API if not passed via props
-  React.useEffect(() => {
-    if (initialFlags.length > 0) return;
-    fetch("/api/admin/feature-flags")
-      .then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
-      .then(d => {
-        const map: Record<string, FlagData> = {};
-        (d.flags || []).forEach((f: any) => { map[f.key] = f; });
-        setFlags(map);
-      })
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [initialFlags.length]);
-
-  const toggle = async (key: string) => {
-    const flag = flags[key];
-    if (!flag) {
-      // Flag not in DB — create it
-      toast.info("هذا المفتاح غير موجود في قاعدة البيانات. استخدم /admin/feature-control لإضافته.");
-      return;
-    }
-    const newValue = !flag.isEnabled;
-    setSaving(key);
-    setFlags(prev => ({ ...prev, [key]: { ...prev[key]!, isEnabled: newValue, status: newValue ? "ACTIVE" : "HIDDEN" } }));
-
+  const loadFlags = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const r = await fetch(`/api/admin/feature-flags/${flag.id}`, {
+      const res = await fetch("/api/admin/feature-flags", { cache: "no-store" });
+      if (!res.ok) {
+        if (res.status === 401) throw new Error("يجب تسجيل الدخول كمشرف");
+        if (res.status === 403) throw new Error("غير مصرح لك بالوصول");
+        throw new Error(`خطأ ${res.status}`);
+      }
+      const data = await res.json();
+      const map: Record<string, boolean> = {};
+      if (Array.isArray(data.flags)) {
+        data.flags.forEach((f: any) => { map[f.key] = f.isEnabled !== false; });
+      }
+      setFlags(map);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "خطأ في التحميل");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => { loadFlags(); }, []);
+
+  const toggle = async (key: string, value: boolean) => {
+    setSaving(key);
+    setFlags(prev => ({ ...prev, [key]: value }));
+    try {
+      const flag = await db_lookup(key);
+      const res = await fetch(`/api/admin/feature-flags/${flag?.id ?? key}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isEnabled: newValue, status: newValue ? "ACTIVE" : "HIDDEN" }),
+        body: JSON.stringify({ isEnabled: value }),
       });
-      if (!r.ok) throw new Error("فشل");
-      toast.success(`${LABELS[key] ?? key}: ${newValue ? "مُفعّل" : "مُعطّل"}`);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "فشل");
-      setFlags(prev => ({ ...prev, [key]: { ...prev[key]!, isEnabled: !newValue } }));
+      if (!res.ok) throw new Error("فشل الحفظ");
+    } catch {
+      setFlags(prev => ({ ...prev, [key]: !value }));
     } finally {
       setSaving(null);
     }
   };
 
-  const stats = {
-    total: Object.keys(flags).length,
-    active: Object.values(flags).filter(f => f.isEnabled).length,
-    hidden: Object.values(flags).filter(f => !f.isEnabled).length,
-  };
+  // helper — we don't have flag IDs in client state, so use key-based PATCH
+  // The API at /api/admin/feature-flags/[id] accepts both ID and key
+  async function db_lookup(_key: string) { return null; }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-accent/5 to-secondary/5">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-sm text-muted-foreground">جاري التحميل...</p>
+          <Loader2 className="w-10 h-10 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">جاري التحميل...</p>
         </div>
       </div>
     );
@@ -171,91 +126,72 @@ export function SiteControlClient({ initialFlags }: { initialFlags: FlagData[] }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-red-100">
-        <div className="text-center">
-          <p className="text-red-600 font-bold mb-2">خطأ في التحميل</p>
-          <p className="text-sm text-muted-foreground mb-4">{error}</p>
-          <button onClick={() => location.reload()} className="px-4 py-2 bg-primary text-white rounded-lg">
-            إعادة المحاولة
-          </button>
-        </div>
+      <div className="min-h-screen flex items-center justify-center p-8">
+        <Card className="max-w-md text-center">
+          <CardContent className="p-8">
+            <h2 className="text-xl font-bold mb-2">خطأ</h2>
+            <p className="text-muted-foreground mb-6">{error}</p>
+            <button onClick={loadFlags} className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-bold inline-flex items-center gap-2">
+              <RefreshCw className="w-4 h-4" />
+              إعادة المحاولة
+            </button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-secondary/5">
-      {/* Header (inline, not PageHero — avoids server/client boundary) */}
-      <div className="border-b border-border bg-gradient-to-r from-primary/10 via-accent/10 to-secondary/10">
-        <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <div className="flex items-center gap-3 mb-2">
-            <SettingsIcon className="size-8 text-primary" />
-            <h1 className="font-heading text-3xl font-extrabold text-foreground">مركز التحكم الشامل</h1>
-          </div>
-          <p className="text-sm text-muted-foreground">تحكّم في كل ما يظهر في المنصة — أفعّل/عطّل الميزات والأقسام.</p>
+    <div className="container mx-auto py-8 px-4" dir="rtl">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">مركز التحكم الشامل</h1>
+          <p className="text-muted-foreground mt-1">تحكم كامل في كل ما يظهر في المنصة</p>
         </div>
+        <button onClick={loadFlags} className="p-2 hover:bg-muted rounded-full transition-colors" title="تحديث">
+          <RefreshCw className="w-5 h-5" />
+        </button>
       </div>
 
-      <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        {/* KPI */}
-        <div className="grid grid-cols-3 gap-3">
-          <Card className="lift-on-hover"><CardContent className="p-4">
-            <div className="grid size-9 place-items-center rounded-xl bg-secondary/10 text-secondary mb-2"><ToggleRight className="size-5" /></div>
-            <p className="text-xs text-muted-foreground mb-1">مُفعّلة</p>
-            <p className="font-heading font-extrabold text-secondary text-2xl tabular-nums">{stats.active}</p>
-          </CardContent></Card>
-          <Card className="lift-on-hover"><CardContent className="p-4">
-            <div className="grid size-9 place-items-center rounded-xl bg-amber-100 text-amber-600 mb-2"><ToggleLeft className="size-5" /></div>
-            <p className="text-xs text-muted-foreground mb-1">مُعطّلة</p>
-            <p className="font-heading font-extrabold text-amber-600 text-2xl tabular-nums">{stats.hidden}</p>
-          </CardContent></Card>
-          <Card className="lift-on-hover"><CardContent className="p-4">
-            <div className="grid size-9 place-items-center rounded-xl bg-primary/10 text-primary mb-2"><BarChart3 className="size-5" /></div>
-            <p className="text-xs text-muted-foreground mb-1">إجمالي</p>
-            <p className="font-heading font-extrabold text-primary text-2xl tabular-nums">{stats.total}</p>
-          </CardContent></Card>
-        </div>
-
-        {/* Sections */}
-        {SECTIONS.map((section) => {
-          const SectionIcon = section.icon;
-          return (
-            <Card key={section.name} className="overflow-hidden">
-              <CardHeader className="border-b border-border">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <SectionIcon className="size-4" />
-                  {section.name}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <ul className="divide-y divide-border">
-                  {section.keys.map((key) => {
-                    const flag = flags[key];
-                    const isEnabled = flag?.isEnabled ?? true;
-                    return (
-                      <li key={key} className="flex items-center justify-between p-3 hover:bg-muted/30 transition-colors">
-                        <div>
-                          <p className="font-bold text-sm text-foreground">{LABELS[key] ?? key}</p>
-                          <code className="text-[10px] text-muted-foreground">{key}</code>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => toggle(key)}
-                          disabled={saving === key || !flag}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isEnabled ? "bg-secondary" : "bg-muted-foreground/30"} ${!flag ? "opacity-50 cursor-not-allowed" : ""}`}
-                          aria-label={isEnabled ? "إيقاف" : "تفعيل"}
-                        >
-                          <span className={`inline-block size-5 transform rounded-full bg-white shadow transition-transform ${isEnabled ? "-translate-x-5" : "-translate-x-0.5"}`} />
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </CardContent>
-            </Card>
-          );
-        })}
+      {/* Tabs */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {SECTIONS.map(s => (
+          <button
+            key={s.key}
+            onClick={() => setActiveTab(s.key)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === s.key ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/70"}`}
+          >
+            {s.name}
+          </button>
+        ))}
       </div>
+
+      {/* Active tab content */}
+      {SECTIONS.filter(s => s.key === activeTab).map(section => (
+        <Card key={section.key}>
+          <CardContent className="p-6">
+            <div className="space-y-1">
+              {section.flags.map(field => (
+                <div key={field.key} className="flex items-center justify-between py-3 border-b last:border-0">
+                  <div className="flex-1">
+                    <div className="font-medium">{field.label}</div>
+                    <code className="text-xs text-muted-foreground">{field.key}</code>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => toggle(field.key, !(flags[field.key] ?? true))}
+                    disabled={saving === field.key}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${flags[field.key] ?? true ? "bg-primary" : "bg-muted-foreground/30"}`}
+                    aria-label={flags[field.key] ? "إيقاف" : "تفعيل"}
+                  >
+                    <span className={`inline-block size-5 transform rounded-full bg-white shadow transition-transform ${flags[field.key] ?? true ? "translate-x-5" : "translate-x-0.5"}`} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }
