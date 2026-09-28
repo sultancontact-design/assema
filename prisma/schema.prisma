@@ -281,6 +281,12 @@ model User {
   referralLinks      ReferralLink[]
   wallet             Wallet?
   withdrawalRequests WithdrawalRequest[]
+  bookmarks           Bookmark[]
+  comments            Comment[]
+  videos              Video[]
+  videoLikes          VideoLike[]
+  videoComments       VideoComment[]
+  videoBookmarks      VideoBookmark[]
   activities        UserActivity[]
   following         UserRelationship[] @relation("Follower")
   followers         UserRelationship[] @relation("Following")
@@ -1909,4 +1915,135 @@ model WithdrawalRequest {
 
   @@index([status])
   @@index([userId])
+}
+
+// ===================================================================
+//  v39.0 Section 2 — نماذج التفاعل الإضافية (Bookmark + Comment)
+// ===================================================================
+
+model Bookmark {
+  id         String   @id @default(cuid())
+  userId     String
+  targetType String
+  targetId   String
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, targetType, targetId])
+  @@index([targetType, targetId])
+}
+
+model Comment {
+  id         String   @id @default(cuid())
+  userId     String
+  targetType String
+  targetId   String
+  content    String
+  parentId   String?
+  isApproved Boolean  @default(true)
+  likes      Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([targetType, targetId])
+  @@index([parentId])
+}
+
+// ===================================================================
+//  v39.0 Section 3 — نماذج الفيديو (TikTok-Style)
+// ===================================================================
+
+model Video {
+  id             String   @id @default(cuid())
+  userId         String
+  title          String
+  description    String?
+  sourceUrl      String
+  sourcePlatform String   // TIKTOK, YOUTUBE, INSTAGRAM, FACEBOOK
+  thumbnailUrl   String?
+  duration       Int?
+  views          Int      @default(0)
+  likes          Int      @default(0)
+  comments       Int      @default(0)
+  shares         Int      @default(0)
+  category       String?
+  isApproved     Boolean  @default(true)
+  isFeatured     Boolean  @default(false)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  videoLikes    VideoLike[]
+  videoComments VideoComment[]
+  videoBookmarks VideoBookmark[]
+
+  @@index([userId])
+  @@index([category])
+  @@index([createdAt])
+  @@index([isFeatured])
+}
+
+model VideoLike {
+  id        String   @id @default(cuid())
+  videoId   String
+  userId    String
+  createdAt DateTime @default(now())
+
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  user User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([videoId, userId])
+}
+
+model VideoComment {
+  id        String   @id @default(cuid())
+  videoId   String
+  userId    String
+  content   String
+  parentId  String?
+  likes     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([videoId])
+}
+
+model VideoBookmark {
+  id        String   @id @default(cuid())
+  videoId   String
+  userId    String
+  createdAt DateTime @default(now())
+
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([videoId, userId])
+}
+
+// ===================================================================
+//  v39.0 Section 4 — إعدادات الفيديو
+// ===================================================================
+
+model VideoSettings {
+  id                String   @id @default(cuid())
+  isEnabled         Boolean  @default(true)
+  requireApproval   Boolean  @default(true)
+  maxVideosPerUser  Int      @default(50)
+  allowYouTube      Boolean  @default(true)
+  allowTikTok       Boolean  @default(true)
+  allowInstagram    Boolean  @default(true)
+  allowFacebook     Boolean  @default(false)
+  defaultCategory   String?
+  allowComments     Boolean  @default(true)
+  allowLikes        Boolean  @default(true)
+  allowShare        Boolean  @default(true)
+  allowBookmark     Boolean  @default(true)
+  updatedAt         DateTime @updatedAt
+  createdAt         DateTime @default(now())
 }
