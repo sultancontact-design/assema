@@ -232,6 +232,7 @@ model User {
   interests         String?
   // v39.0: حقول الملف الشخصي الموسّعة
   bio               String?
+  coverImage        String?  // صورة الغلاف (Instagram-style)
   socialInstagram   String?
   socialTiktok      String?
   socialFacebook    String?

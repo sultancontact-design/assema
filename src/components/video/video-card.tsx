@@ -7,9 +7,15 @@ import {
   Heart, MessageCircle, Share2, Bookmark, Music, Volume2, VolumeX,
   ExternalLink, Loader2,
 } from "lucide-react";
-import { detectPlatform } from "@/lib/video-platforms";
+import { detectPlatform, getEmbedUrl } from "@/lib/video-platforms";
 
-// react-player lazy loaded (supports YouTube, Facebook, Vimeo, Twitter, Twitch, direct files, etc.)
+// vidflowx — universal video player (supports ALL platforms + direct files)
+const VideoPlayer = dynamic(() => import("vidflowx").then((m: any) => m.VideoPlayer || m.default), {
+  ssr: false,
+  loading: () => <VideoLoader />,
+});
+
+// react-player fallback (for platforms vidflowx might not support)
 const ReactPlayer = dynamic(() => import("react-player"), {
   ssr: false,
   loading: () => <VideoLoader />,
@@ -43,12 +49,9 @@ export function VideoCard({ video, isActive }: { video: VideoItem; isActive: boo
   const [bookmarked, setBookmarked] = React.useState(false);
   const [likesCount, setLikesCount] = React.useState(video.likes || 0);
   const [muted, setMuted] = React.useState(true);
-  const [playing, setPlaying] = React.useState(false);
   const [showComments, setShowComments] = React.useState(false);
 
   const platform = detectPlatform(video.sourceUrl);
-
-  React.useEffect(() => { setPlaying(isActive); }, [isActive]);
 
   const handleLike = async () => {
     const newLiked = !liked;
@@ -76,56 +79,40 @@ export function VideoCard({ video, isActive }: { video: VideoItem; isActive: boo
   const renderVideo = () => {
     // TikTok → iframe embed
     if (platform === "TIKTOK") {
-      const videoId = video.sourceUrl.match(/\/video\/(\d+)/)?.[1];
-      if (!videoId) return <FallbackEmbed url={video.sourceUrl} />;
+      const embedUrl = getEmbedUrl(video.sourceUrl, platform);
       return (
-        <iframe
-          src={`https://www.tiktok.com/embed/v2/${videoId}`}
-          className="w-full h-full border-0"
-          allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-          allowFullScreen
-          sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
-        />
+        <iframe src={embedUrl} className="w-full h-full border-0" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen
+          sandbox="allow-scripts allow-same-origin allow-presentation allow-popups" />
       );
     }
 
     // Instagram → iframe embed
     if (platform === "INSTAGRAM") {
-      const match = video.sourceUrl.match(/instagram\.com\/(reel|p|tv)\/([^/?]+)/);
-      if (!match) return <FallbackEmbed url={video.sourceUrl} />;
+      const embedUrl = getEmbedUrl(video.sourceUrl, platform);
       return (
-        <iframe
-          src={`https://www.instagram.com/${match[1]}/${match[2]}/embed/`}
-          className="w-full h-full border-0"
-          allow="autoplay; encrypted-media; fullscreen"
-          allowFullScreen
-          scrolling="no"
-        />
+        <iframe src={embedUrl} className="w-full h-full border-0" allow="autoplay; encrypted-media; fullscreen" allowFullScreen scrolling="no" />
       );
     }
 
-    // كل المنصات الأخرى → react-player
-    if (platform !== "UNKNOWN") {
+    // كل المنصات الأخرى → vidflowx (universal player)
+    if (platform !== "IFRAME") {
       return (
-        <ReactPlayer
-          url={video.sourceUrl}
-          playing={playing && isActive}
+        <VideoPlayer
+          src={video.sourceUrl}
+          autoPlay={isActive}
           muted={muted}
-          loop
           controls
-          width="100%"
-          height="100%"
-          playsinline
-          config={{
-            youtube: { playerVars: { modestbranding: 1, rel: 0 } },
-            file: { attributes: { crossOrigin: "anonymous" } },
-          }}
+          style={{ width: "100%", height: "100%" }}
+          onError={() => console.warn("vidflowx error:", video.sourceUrl)}
         />
       );
     }
 
-    // UNKNOWN → iframe مباشر
-    return <FallbackEmbed url={video.sourceUrl} />;
+    // IFRAME → محاولة iframe مباشر (لأي موقع)
+    return (
+      <iframe src={video.sourceUrl} className="w-full h-full border-0" allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+        allowFullScreen sandbox="allow-scripts allow-same-origin allow-presentation allow-popups allow-forms" />
+    );
   };
 
   return (
@@ -133,21 +120,15 @@ export function VideoCard({ video, isActive }: { video: VideoItem; isActive: boo
       <div className="absolute inset-0">{renderVideo()}</div>
 
       {/* زر فتح المصدر */}
-      <a
-        href={video.sourceUrl}
-        target="_blank"
-        rel="noopener noreferrer"
+      <a href={video.sourceUrl} target="_blank" rel="noopener noreferrer"
         className="absolute top-4 end-4 z-30 p-2 bg-black/60 backdrop-blur-md rounded-full text-white hover:bg-black/80 transition-colors"
-        title="فتح في نافذة جديدة"
-      >
+        title="فتح في نافذة جديدة">
         <ExternalLink className="w-4 h-4" />
       </a>
 
       {/* كتم الصوت */}
-      <button
-        onClick={() => setMuted(!muted)}
-        className="absolute top-4 start-4 z-30 p-3 bg-black/50 backdrop-blur-md rounded-full text-white hover:bg-black/70 transition-colors"
-      >
+      <button onClick={() => setMuted(!muted)}
+        className="absolute top-4 start-4 z-30 p-3 bg-black/50 backdrop-blur-md rounded-full text-white hover:bg-black/70 transition-colors">
         {muted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
       </button>
 
@@ -202,15 +183,17 @@ export function VideoCard({ video, isActive }: { video: VideoItem; isActive: boo
           <Share2 className="w-8 h-8" style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }} />
           <span className="text-xs font-medium">{video.shares || 0}</span>
         </button>
-        <motion.div animate={{ rotate: 360 }} transition={{ duration: 3, repeat: Infinity, ease: "linear" }} className="w-12 h-12 rounded-full bg-gradient-to-br from-[#FE2C55] via-[#25F4EE] to-[#8B5CF6] flex items-center justify-center">
+        <motion.div animate={{ rotate: 360 }} transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+          className="w-12 h-12 rounded-full bg-gradient-to-br from-[#FE2C55] via-[#25F4EE] to-[#8B5CF6] flex items-center justify-center">
           <Music className="w-5 h-5 text-white" />
         </motion.div>
       </div>
 
-      {/* لوحة التعليقات */}
+      {/* تعليقات */}
       <AnimatePresence>
         {showComments && (
-          <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 30 }} className="absolute bottom-0 inset-x-0 h-[60%] bg-background rounded-t-2xl z-30 overflow-y-auto" dir="rtl">
+          <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 30 }}
+            className="absolute bottom-0 inset-x-0 h-[60%] bg-background rounded-t-2xl z-30 overflow-y-auto" dir="rtl">
             <div className="p-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-base">{video.comments || 0} تعليق</h3>
@@ -224,19 +207,6 @@ export function VideoCard({ video, isActive }: { video: VideoItem; isActive: boo
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
-  );
-}
-
-function FallbackEmbed({ url }: { url: string }) {
-  return (
-    <div className="w-full h-full bg-black flex items-center justify-center">
-      <div className="text-white text-center p-6">
-        <p className="text-lg mb-4">تعذّر تضمين الفيديو مباشرة</p>
-        <a href={url} target="_blank" rel="noopener noreferrer" className="inline-block px-6 py-3 bg-gradient-to-r from-[#FE2C55] to-[#8B5CF6] rounded-full font-bold">
-          فتح في المصدر الأصلي
-        </a>
-      </div>
     </div>
   );
 }
