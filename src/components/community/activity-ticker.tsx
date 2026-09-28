@@ -37,6 +37,11 @@ const ACTIVITY_ICONS: Record<string, React.ComponentType<{ className?: string }>
 
 function ActivityPill({ item }: { item: ActivityItem }) {
   const Icon = ACTIVITY_ICONS[item.type] ?? ACTIVITY_ICONS.default;
+  // نزع أي emoji من بداية الوصف (البيانات من الـ API قد تحتوي على emoji)
+  const cleanDesc = item.description
+    .replace(/^[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]+\s*/u, "")
+    .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]/gu, "")
+    .trim();
   return (
     <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-card/90 ps-3 pe-4 py-1.5 text-sm shadow-sm backdrop-blur">
       {/* أيقونة Lucide داخل دائرة زليج */}
@@ -46,7 +51,7 @@ function ActivityPill({ item }: { item: ActivityItem }) {
       >
         <Icon className="size-3.5" />
       </span>
-      <span className="text-foreground font-medium">{item.description}</span>
+      <span className="text-foreground font-medium">{cleanDesc || item.description}</span>
       <span className="text-muted-foreground text-xs">· {item.timeAgo}</span>
     </span>
   );
