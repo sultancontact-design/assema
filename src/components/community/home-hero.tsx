@@ -6,6 +6,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card3D } from "@/components/ui/3d-card";
 
 // ===================================================================
 //  HomeHero v35.0 — Editorial Bento (anti-AI-slop)
@@ -117,19 +118,20 @@ export function HomeHero() {
             variants={prefersReduced ? undefined : itemVariants}
             className="lg:col-span-5 lg:col-start-8"
           >
-            <div className="rounded-2xl border border-border/60 bg-background/85 backdrop-blur-md p-6 shadow-xl">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium text-muted-foreground">
-                  صندوق المعروف — الإجمالي المُؤكَّد
-                </span>
-                <span className="size-1.5 rounded-full bg-secondary animate-pulse" />
-              </div>
-              <div className="font-heading font-extrabold text-foreground tabular-nums" style={{ fontSize: "clamp(2rem, 4vw, 3.25rem)" }}>
-                <LiveFundTotal />
-              </div>
-              <div className="mt-1 text-sm text-muted-foreground">
-                درهم مغربي · مُحدَّث لحظياً من قاعدة البيانات
-              </div>
+            <Card3D className="rounded-2xl" intensity={6}>
+              <div className="rounded-2xl border border-border/60 bg-background/85 backdrop-blur-md p-6 shadow-xl">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    صندوق المعروف — الإجمالي المُؤكَّد
+                  </span>
+                  <span className="size-1.5 rounded-full bg-secondary animate-pulse" />
+                </div>
+                <div className="font-heading font-extrabold text-foreground tabular-nums" style={{ fontSize: "clamp(2rem, 4vw, 3.25rem)" }}>
+                  <LiveFundTotal />
+                </div>
+                <div className="mt-1 text-sm text-muted-foreground">
+                  درهم مغربي · مُحدَّث لحظياً من قاعدة البيانات
+                </div>
               <div className="mt-4 pt-4 border-t border-border/50 grid grid-cols-2 gap-4">
                 <div>
                   <div className="text-xs text-muted-foreground">الأسر النشطة</div>
@@ -145,6 +147,7 @@ export function HomeHero() {
                 </div>
               </div>
             </div>
+            </Card3D>
           </motion.div>
         </motion.div>
       </div>
