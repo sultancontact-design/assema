@@ -880,7 +880,7 @@ function RegisterForm() {
                         الشروط والأحكام
                       </Link>{" "}
                       و{" "}
-                      <Link href="/privacy" className="text-primary hover:underline underline-offset-4">
+                      <Link href="/privacy-policy" className="text-primary hover:underline underline-offset-4">
                         سياسة الخصوصية
                       </Link>
                       <span className="text-destructive"> *</span>
