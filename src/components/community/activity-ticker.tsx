@@ -1,11 +1,11 @@
 "use client";
 
 // ===================================================================
-//  ActivityTicker — شريط النشاطات الحيّة (RTL)
+//  ActivityTicker v37.0 — شريط النشاطات الحيّة (RTL، no emoji)
 //  - يجلب من /api/public/activity-feed (بدون مصادقة)
 //  - شريط أفقي متحرّك RTL: يبدأ من اليمين ويتّجه نحو اليسار
-//  - يُظهر 5-8 نشاطات حديثة كبصيلات: "🤲 أحمد ساهم بـ50 د.م"
-//  - إيموجي لكل نوع نشاط (🔥 👥 🎉 🤲 🏆 🎉 💝 ✨)
+//  - يُظهر 5-8 نشاطات حديثة كبصيلات: «أحمد ساهم بـ50 د.م»
+//  - أيقونات Lucide لكل نوع نشاط (HandCoins, CalendarPlus, Award, Flame)
 //  - تدرّج إخفاء على الحافّتين (يمين/يسار)
 //  - framer-motion للحركة الناعمة (ease linear، repeat Infinity)
 //  - استطلاع كل 30 ثانية لجلب النشاطات الجديدة
@@ -23,7 +23,7 @@ export interface ActivityItem {
   timeAgo: string;
 }
 
-// خريطة أيقونات Lucide لكل نوع
+// خريطة أيقونات Lucide لكل نوع (بديل الـ emoji)
 const ACTIVITY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   CONTRIBUTION: HandCoins,
   LOGIN: Users,
@@ -35,27 +35,10 @@ const ACTIVITY_ICONS: Record<string, React.ComponentType<{ className?: string }>
   default: Sparkles,
 };
 
-// خريطة إيموجي لكل نوع — لإضفاء الحيوية على البصيلات
-const ACTIVITY_EMOJI: Record<string, string> = {
-  CONTRIBUTION: "🤲",
-  LOGIN: "👋",
-  EVENT_REGISTER: "🎉",
-  GROUP_JOIN: "👥",
-  BADGE_EARNED: "🏆",
-  STREAK_MILESTONE: "🔥",
-  FUND_REQUEST: "💝",
-  default: "✨",
-};
-
 function ActivityPill({ item }: { item: ActivityItem }) {
   const Icon = ACTIVITY_ICONS[item.type] ?? ACTIVITY_ICONS.default;
-  const emoji = ACTIVITY_EMOJI[item.type] ?? ACTIVITY_EMOJI.default;
   return (
     <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-card/90 ps-3 pe-4 py-1.5 text-sm shadow-sm backdrop-blur">
-      {/* إيموجي حيوي بارز */}
-      <span className="text-base shrink-0" aria-hidden="true">
-        {emoji}
-      </span>
       {/* أيقونة Lucide داخل دائرة زليج */}
       <span
         className="grid size-6 place-items-center rounded-full bg-primary/10 text-primary shrink-0"
@@ -180,5 +163,5 @@ export function ActivityTicker() {
   );
 }
 
-// نصدّر الثوابت الثانوية لإعادة الاستعمال (اختياري)
-export { ACTIVITY_EMOJI, ACTIVITY_ICONS };
+// نصدّر الأيقونات لإعادة الاستعمال (اختياري)
+export { ACTIVITY_ICONS };
