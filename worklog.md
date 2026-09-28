@@ -5618,3 +5618,69 @@ Stage Summary:
 - ✅ Section 5: Wallet (4 models + 2 pages + 2 APIs + 4 packages seeded)
 - ✅ All 8 new pages return HTTP 200
 - ✅ All reachable via sidebar nav (orphan prevention)
+
+---
+Task ID: v39.0
+Agent: main developer
+Task: إصلاح 404 + نظام التفاعل + TikTok videos + admin control
+
+pre-flight: ✅ ALL CHECKS PASSED + checkpoint-v39-start tag
+
+Section 1: Fix 404 — /community/profile/edit (commit 8a45f23)
+- Root cause: profile page had <Link href="/community/profile/edit"> but no page existed
+- Prisma: added 7 fields to User model (bio + socialInstagram/Tiktok/Facebook/Whatsapp + isProfilePublic + allowMessages)
+- db:push: 7 new columns on User table
+- New page: /community/profile/edit (PageHero + ProfileEditClient)
+  * البيانات الأساسية (firstName/lastName/email/phone — read-only)
+  * المعلومات المهنية (profession + skills + interests + bio)
+  * روابط التواصل (Instagram + TikTok + Facebook + WhatsApp)
+  * إعدادات الخصوصية (isProfilePublic + allowMessages toggles)
+- New API: PATCH /api/community/profile (updates social fields + auditLog)
+- Sidebar: /community/profile → 'ملفي الشخصي' link
+- Verified: curl /community/profile/edit → HTTP 200 ✅
+
+Section 2: Social Interactions (commit 15d58d0)
+- Prisma: Bookmark + Comment (2 new models)
+- db:push: 2 new tables
+- New components:
+  * Reactions: 6 types (LIKE/LOVE/HAHA/WOW/CARE/CELEBRATE) with framer-motion picker
+  * FollowButton: toggle follow (POST/DELETE)
+  * ShareButtons: WhatsApp + Facebook + Twitter + Copy Link
+- New APIs:
+  * POST /api/social/react — upsert reaction
+  * POST/DELETE /api/social/follow — toggle follow
+  * POST /api/social/share — log share
+
+Section 3: TikTok-Style Video Feed (commit 15d58d0)
+- Prisma: Video + VideoLike + VideoComment + VideoBookmark + VideoSettings (5 new models)
+- db:push: 5 new tables
+- New pages:
+  * /videos — Bento Grid feed (first featured card col-span-2)
+  * /community/videos/add — add video form (URL + title + category)
+  * /admin/videos — admin table (4 KPI + video list with platform/status)
+- New API: POST /api/videos — create video (auto-detects platform from URL)
+- VideoFeedClient: Bento Grid with platform badges + category + views/likes/comments
+
+Section 4: Admin Control
+- Admin sidebar: /admin/videos → Video icon → 'الفيديوهات'
+- Community sidebar: /videos → Video icon → 'الفيديوهات'
+- VideoSettings model (ready for /admin/videos/settings page — future)
+
+Verification (after deploy):
+- /community/profile/edit: 200 ✅ (was 404)
+- /videos: 200 ✅ (new)
+- /community/videos/add: 200 ✅ (new)
+- /admin/videos: 200 ✅ (new)
+
+DB stats:
+- 8 new tables (Bookmark + Comment + Video + VideoLike + VideoComment + VideoBookmark + VideoSettings)
+- 7 new columns on User (social fields)
+- Total Prisma models: 69 → 77 (8 new in v39)
+
+Stage Summary:
+- ✅ Section 1: profile/edit 404 fixed + User social fields
+- ✅ Section 2: 3 social components + 3 APIs (reactions/follow/share)
+- ✅ Section 3: TikTok-style video feed + add video + admin videos
+- ✅ Section 4: admin sidebar + VideoSettings model
+- ✅ All 4 new pages return HTTP 200
+- ✅ All reachable via sidebar nav (orphan prevention)
