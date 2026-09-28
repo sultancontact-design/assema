@@ -5179,3 +5179,66 @@ Stage Summary:
 - ✅ ALL CHECKS PASSED بعد الاسترداد
 - ✅ Production HTTP 200 مؤكّد
 - ✅ 0 lint errors
+
+---
+Task ID: v37.0
+Agent: main developer
+Task: 4 مهام متبقية (blog Bento + 3D card + ticker emoji + BEFORE/AFTER)
+
+pre-flight: ✅ ALL CHECKS PASSED (before starting)
+
+BEFORE screenshots captured:
+- /tmp/v37-before-home.png (homepage before 3D card + ticker fix)
+- /tmp/v37-before-blog.png (blog old design: 2-col uniform grid + emoji)
+
+Task 1: /blog — Hero + Bento (commit 87f6973)
+- PageHero: صورة Marrakech books + badge "{total} مقالة"
+- Bento Grid 3-col × auto-rows-[200px]:
+  - first article featured: md:col-span-2 md:row-span-2 (h-72 cover + مميّز badge)
+  - 6 small articles: h-24 cover + compact content
+- استبدل cat.icon emoji بـ CATEGORY_ICONS Lucide map:
+  - HEALTH: Heart, FINANCE: Wallet, RELIGIOUS: Sparkles
+  - PARENTING: Users, EDUCATION: GraduationCap, COMMUNITY: Users
+- Featured article: ArrowLeft CTA "اقرأ المقال"
+- حذف ZelligeDivider + text-center header (replaced by Hero)
+- JS eval أكّد: h1=64px, heroImgs=1, cardCount=10, featuredCount=1
+
+Task 2: Card3D component (commit 6806e2c)
+- New file: src/components/ui/3d-card.tsx (Aceternity-inspired)
+- mouse-tracking 3D tilt (rotateX/rotateY via useMotionValue + useSpring)
+- spring physics: stiffness 150, damping 20, mass 0.1
+- glare highlight effect (radial-gradient following cursor)
+- respects prefers-reduced-motion (disables tilt + glare)
+- perspective-1000 + transformStyle preserve-3d
+- intensity prop (default 8°), disableTilt prop
+- rules-of-hooks compliant (all hooks called unconditionally)
+- Applied to home-hero.tsx KPI card (intensity={6})
+- JS eval أكّد: card3dCount=1 على الإنتاج
+
+Task 3: Ticker emoji removal (commits 5ced937 + 3343bf9)
+- حذف ACTIVITY_EMOJI map بالكامل (8 emojis: 🤲👋🎉👥🏆🔥💝✨)
+- حذف emoji <span> من ActivityPill
+- تحديث export (only ACTIVITY_ICONS)
+- اكتشفت أن API descriptions تحتوي emoji (🏆أدار العجلة)
+- أضفت emoji-stripping regex في ActivityPill (نزع emoji من البداية + أي emoji آخر)
+- JS eval أكّد: tickerHasEmoji=false, firstPill="أدار العجلة — حصل على 5 نقاط" (no 🏆)
+
+Task 4: BEFORE/AFTER screenshots
+- BEFORE (2 لقطات): home + blog
+- AFTER (5 لقطات): home + blog + dashboard + fund + events
+- كل لقطة محفوظة في /tmp/v37-*.png
+
+AFTER verification (JS eval):
+- /blog: h1=64px, heroImgs=1, cardCount=10, featuredCount=1 ✅
+- / (home): card3dCount=1, tickerHasEmoji=false, pillCount=20 ✅
+- /community/fund: HTTP 200 (auth-gated, login successful) ✅
+- /community/events: HTTP 200 (auth-gated) ✅
+- /admin/dashboard: HTTP 200 (auth-gated, SUPER_ADMIN) ✅
+
+Stage Summary:
+- ✅ Task 1: /blog Hero + Bento (featured article + 6 small, Lucide icons)
+- ✅ Task 2: Card3D component (3D tilt + glare) applied to Hero KPI
+- ✅ Task 3: 0 emoji in ticker (8 removed from map + API descriptions stripped)
+- ✅ Task 4: 7 screenshots (2 BEFORE + 5 AFTER) في /tmp/
+- اللقطات: v37-before-home, v37-before-blog, v37-after-home, v37-after-blog,
+  v37-after-dashboard, v37-after-fund, v37-after-events
