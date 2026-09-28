@@ -177,6 +177,7 @@ const NAV_LINKS: NavLinkItem[] = [
   { href: "/admin/contributions", label: "مساهمات المستخدمين", icon: Inbox, match: "contributions" },
   { href: "/admin/cndp", label: "طلبات CNDP", icon: ShieldCheck, match: "cndp" },
   { href: "/admin/feature-control", label: "مركز التحكم", icon: Flag, match: "feature-control" },
+  { href: "/admin/site-control", label: "التحكم الشامل", icon: SettingsIcon, match: "site-control" },
   { href: "/admin/content", label: "إدارة المحتوى", icon: FileText, match: "content" },
   { href: "/admin/data", label: "إدارة البيانات", icon: DatabaseBackup, match: "data" },
   { href: "/admin/district-monitor", label: "مراقبة الأحياء", icon: MapPin, match: "district-monitor" },

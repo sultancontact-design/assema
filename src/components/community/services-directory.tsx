@@ -63,7 +63,7 @@ export function ServicesDirectory({ services, categories }: { services: ServiceI
 
       {showAdd && (
         <Card><CardContent className="p-4 space-y-3">
-          <p className="text-sm text-muted-foreground">لإضافة خدمة، تواصل مع إدارة الحي. النموذج الكامل متاح قريباً.</p>
+          <p className="text-sm text-muted-foreground">لإضافة خدمة، تواصل مع إدارة الحي على admin@syba-community.ma</p>
           <Button variant="outline" size="sm" onClick={() => setShowAdd(false)}>إغلاق</Button>
         </CardContent></Card>
       )}

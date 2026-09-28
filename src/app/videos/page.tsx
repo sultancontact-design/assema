@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { VideoFeedClient } from "@/components/video/video-feed-client";
+import { VideoFeed } from "@/components/video/video-feed";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "فيديوهات الحي" };
@@ -21,9 +21,8 @@ export default async function VideosPage() {
     id: v.id, title: v.title, description: v.description,
     sourceUrl: v.sourceUrl, sourcePlatform: v.sourcePlatform, thumbnailUrl: v.thumbnailUrl,
     views: v.views, likes: v.likes, comments: v.comments, shares: v.shares,
-    category: v.category, createdAt: v.createdAt.toISOString(),
-    user: { fullName: v.user.fullName },
+    category: v.category, user: { fullName: v.user.fullName },
   }));
 
-  return <VideoFeedClient initialVideos={serialized} />;
+  return <VideoFeed initialVideos={serialized} />;
 }

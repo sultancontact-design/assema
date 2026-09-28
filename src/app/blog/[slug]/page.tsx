@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { ZelligeDivider } from "@/components/shared/zellige-divider";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ShareButtons } from "@/components/community/share-buttons";
+import { ArticleSocialActions } from "@/components/social/article-social-actions";
 import {
   BLOG_CATEGORIES,
   BLOG_CATEGORY_LABELS,
@@ -224,6 +225,14 @@ export default async function BlogPostPage({ params }: PageProps) {
       </div>
 
       <ZelligeDivider variant="wave" className="opacity-60 my-8" />
+
+      {/* ─────────── تفاعل اجتماعي: Reactions + Bookmark + Share ─────────── */}
+      <ArticleSocialActions
+        targetType="ARTICLE"
+        targetId={post.id}
+        url={`/blog/${post.slug}`}
+        title={post.title}
+      />
 
       {/* ─────────── أزرار المشاركة ─────────── */}
       <section aria-labelledby="share-heading" className="mb-10">

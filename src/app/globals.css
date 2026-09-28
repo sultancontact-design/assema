@@ -812,3 +812,29 @@ html { scroll-behavior: smooth; }
   animation: fade-stagger 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   opacity: 0;
 }
+
+/* ===================================================================
+   v40.0 — TikTok-Style Video Feed
+   =================================================================== */
+:root {
+  --tiktok-pink: #FE2C55;
+  --tiktok-cyan: #25F4EE;
+  --tiktok-purple: #8B5CF6;
+  --tiktok-black: #000000;
+}
+
+.tiktok-gradient {
+  background: linear-gradient(135deg, #FE2C55 0%, #8B5CF6 100%);
+}
+
+.video-feed-container {
+  background: #000;
+  scroll-snap-type: y mandatory;
+  overflow-y: scroll;
+  height: 100vh;
+  scrollbar-width: none;
+}
+
+.video-feed-container::-webkit-scrollbar {
+  display: none;
+}
