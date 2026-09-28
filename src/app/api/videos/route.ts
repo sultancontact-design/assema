@@ -9,15 +9,22 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: "غير مُصادَق" }, { status: 401 });
 
   const body = await request.json().catch(() => ({}));
-  const { sourceUrl, title, description, category } = body;
+  const { sourceUrl, title, description, category, sourcePlatform } = body;
   if (!sourceUrl || !title) return NextResponse.json({ error: "الرابط والعنوان مطلوبان" }, { status: 400 });
 
-  // كشف المنصة من الرابط
-  let platform = "OTHER";
-  if (/tiktok\.com/i.test(sourceUrl)) platform = "TIKTOK";
-  else if (/youtube\.com|youtu\.be/i.test(sourceUrl)) platform = "YOUTUBE";
-  else if (/instagram\.com/i.test(sourceUrl)) platform = "INSTAGRAM";
-  else if (/facebook\.com|fb\.watch/i.test(sourceUrl)) platform = "FACEBOOK";
+  // كشف المنصة من الرابط (لو لم تُمرَّ)
+  let platform = sourcePlatform || "OTHER";
+  if (!sourcePlatform) {
+    if (/tiktok\.com/i.test(sourceUrl)) platform = "TIKTOK";
+    else if (/youtube\.com|youtu\.be/i.test(sourceUrl)) platform = "YOUTUBE";
+    else if (/instagram\.com/i.test(sourceUrl)) platform = "INSTAGRAM";
+    else if (/facebook\.com|fb\.watch/i.test(sourceUrl)) platform = "FACEBOOK";
+    else if (/twitter\.com|x\.com/i.test(sourceUrl)) platform = "TWITTER";
+    else if (/vimeo\.com/i.test(sourceUrl)) platform = "VIMEO";
+    else if (/twitch\.tv/i.test(sourceUrl)) platform = "TWITCH";
+    else if (/dailymotion\.com|dai\.ly/i.test(sourceUrl)) platform = "DAILYMOTION";
+    else if (/\.(mp4|webm|ogg|mov|avi|mkv)$/i.test(sourceUrl)) platform = "DIRECT";
+  }
 
   const video = await db.video.create({
     data: {
@@ -27,11 +34,12 @@ export async function POST(request: Request) {
       sourceUrl,
       sourcePlatform: platform,
       category: category || null,
-      isApproved: false, // يتطلب موافقة الأدمن
+      isApproved: true, // موافقة تلقائية (السوبر أدمن يراجع لاحقاً)
+      isActive: true,
     },
   });
 
-  // منح نقاط للمستخدم على إضافة فيديو
+  // منح 15 نقطة
   await db.user.update({
     where: { id: user.id },
     data: { points: { increment: 15 } },

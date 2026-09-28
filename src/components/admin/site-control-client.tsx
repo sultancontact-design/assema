@@ -105,6 +105,25 @@ export function SiteControlClient({ initialFlags }: { initialFlags: FlagData[] }
     return map;
   });
   const [saving, setSaving] = React.useState<string | null>(null);
+  const [loading, setLoading] = React.useState(initialFlags.length === 0);
+  const [error, setError] = React.useState<string | null>(null);
+
+  // Fetch flags from API if not passed via props
+  React.useEffect(() => {
+    if (initialFlags.length > 0) return;
+    fetch("/api/admin/feature-flags")
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then(d => {
+        const map: Record<string, FlagData> = {};
+        (d.flags || []).forEach((f: any) => { map[f.key] = f; });
+        setFlags(map);
+      })
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [initialFlags.length]);
 
   const toggle = async (key: string) => {
     const flag = flags[key];
@@ -138,6 +157,31 @@ export function SiteControlClient({ initialFlags }: { initialFlags: FlagData[] }
     active: Object.values(flags).filter(f => f.isEnabled).length,
     hidden: Object.values(flags).filter(f => !f.isEnabled).length,
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-accent/5 to-secondary/5">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-sm text-muted-foreground">جاري التحميل...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-red-100">
+        <div className="text-center">
+          <p className="text-red-600 font-bold mb-2">خطأ في التحميل</p>
+          <p className="text-sm text-muted-foreground mb-4">{error}</p>
+          <button onClick={() => location.reload()} className="px-4 py-2 bg-primary text-white rounded-lg">
+            إعادة المحاولة
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-secondary/5">
