@@ -5242,3 +5242,66 @@ Stage Summary:
 - ✅ Task 4: 7 screenshots (2 BEFORE + 5 AFTER) في /tmp/
 - اللقطات: v37-before-home, v37-before-blog, v37-after-home, v37-after-blog,
   v37-after-dashboard, v37-after-fund, v37-after-events
+
+---
+Task ID: v37.0-sections-5-3-1
+Agent: main developer
+Task: 7 أقسام شاملة — تم إنجاز 3 (5 + 3 + 1)، الباقي معلّق
+
+pre-flight: ✅ ALL CHECKS PASSED + checkpoint-v37-start tag
+
+القسم 5: Footer Cleanup (commit af60582) ✅
+- حذف "مسجّلة لدى CNDP وفقاً للقانون 09-08" من label
+- حذف "رقم الإخطار: يُنشر فور الحصول عليه من اللجنة الوطنية" paragraph
+- استبدال label بـ "سياسة الخصوصية" (link محفوظ)
+- الدليل: JS eval على الإنتاج hasCndp=false + hasCopyright=true ✅
+
+القسم 3: Ticker (commit 233c898) ✅
+- activity-ticker.tsx: أضفت paused state + hover/touch handlers
+  - onMouseEnter/Leave + onTouchStart/End على container
+  - motion.div animationPlayState = paused/running
+  - repeatDelay 999999 عند الإيقاف (hack لـ framer-motion)
+- /admin/ticker (صفحة جديدة):
+  - PageHero + 4 KPI cards (إجمالي/أنواع/حالة/سرعة)
+  - جدول آخر 20 نشاط عمومي مع type badges ملونة
+  - ألوان لكل نوع: CONTRIBUTION أخضر، EVENT_REGISTER برتقالي، LOGIN ذهبي، إلخ
+- الدليل: JS eval heading="إدارة الشريط المتحرّك" + 4 KPI + 23 rows ✅
+  - activity-feed API: يُرجع JSON صحيح ✅
+
+القسم 1: Blog CMS — Writer Flow (commit c3ad59e) ✅
+- /community/blog/new (صفحة جديدة، auth-gated)
+  - PageHero بصورة Marrakech + badge "مساهمة مجتمعية"
+  - يجلب الفئات المتاحة من المقالات المنشورة
+- BlogWriterClient (مكوّن جديد):
+  - TipTap editor كامل (bold/italic/headings/lists/links/images)
+  - title input (120 char + counter)
+  - excerpt input (200 char)
+  - category select (6 فئات)
+  - SEO section (metaDescription 160 + metaKeywords)
+  - auto-save localStorage كل 5s + timestamp
+  - reading time estimate
+  - Save as draft button (→ /api/community/blog/draft)
+  - Submit for review button (→ /api/community/blog/submit)
+  - validation: title + content >= 200 chars
+- APIs جديدة:
+  - POST /api/community/blog/draft (status: DRAFT، upsert)
+  - POST /api/community/blog/submit (status: PENDING_REVIEW + 15 points + activity log)
+- الدليل: JS eval heading="اكتب مقالاً" + hasEditor=true (TipTap) ✅
+  - curl /community/blog/new → HTTP 200 ✅
+
+اللقطات (3):
+- /tmp/v37-s1-blog-writer.png (TipTap editor + title + SEO)
+- /tmp/v37-s3-ticker-admin.png (4 KPI + 23 activity rows)
+- /tmp/v37-s5-footer.png (no CNDP, copyright retained)
+
+Pending (4 أقسام لم تُنجَز بعد بسبب حجم المهمة):
+- القسم 2: Rewards System (7 levels + 20 badges + 4 challenges + leaderboard + spin wheel)
+- القسم 4: Store (purchase system + admin CRUD + orders table)
+- القسم 6: Security (password/email change + 2FA + sessions + login history + IP allowlist)
+- القسم 7: Polish (fund/events/services/prices/groups — already Hero+Bento from v35.3)
+
+Stage Summary:
+- ✅ 3/7 أقسام مكتملة + مُثبَتة بصرياً (footer + ticker + blog writer)
+- ✅ 5 commits مدفوعة (af60582 + 233c898 + c3ad59e)
+- ✅ checkpoint-v37-start tag للـ rollback
+- ⏳ 4 أقسام معلّقة (تتطلّب جلسات إضافية)

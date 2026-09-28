@@ -9,6 +9,7 @@
 
 | الإصدار | التاريخ | الميزة الرئيسية | commit | الحالة |
 |---------|---------|-----------------|--------|--------|
+| v37.0 | 2026-09-28 | /blog Hero+Bento + Card3D + ticker emoji + footer cleanup + ticker admin + blog writer | `c3ad59e` | ✅ منشور |
 | v37.0 | 2026-09-28 | /blog Hero+Bento + Card3D + ticker emoji removal | `3343bf9` | ✅ منشور |
 | v36.1 | 2026-09-27 | Hard NOs + Recovery + pre-flight script + system reset recovery | `a89c89f` | ✅ منشور |
 | v36.0 | 2026-09-26 | PROJECT-STATE.md — توثيق شامل (12 قسم، 378 سطر) | `151bc9c` | ✅ منشور |
@@ -357,12 +358,12 @@ public/vendor/maplibre-gl.css              — Styles
 
 ## 11. المهام المُعلّقة (Pending)
 
-- [ ] **المهمة 2 من v35.3**: تثبيت Aceternity/Magic UI (npx shadcn add — يتطلّب network)
-- [ ] **المهمة 4 من v35.3**: تطبيق DESIGN.md على `/blog` (Bento للمقالات)
-- [ ] **المهمة 5 من v35.3**: لقطات BEFORE/AFTER منظّمة
+- [ ] **القسم 2 من v37.0**: Rewards System (7 levels + 20 badges + 4 challenges + leaderboard + spin wheel + point connections)
+- [ ] **القسم 4 من v37.0**: Store purchase system + admin CRUD + orders table + inventory
+- [ ] **القسم 6 من v37.0**: Security (password/email change + 2FA TOTP + sessions + login history + IP allowlist)
+- [ ] **القسم 7 من v37.0**: Polish fund/events/services/prices/groups (already Hero+Bento from v35.3, need final emoji sweep)
+- [ ] **Aceternity/Magic UI**: تثبيت (npx shadcn add — يتطلّب network)
 - [ ] CMS: 43 عنصر (المطلوب 200+)
-- [ ] Ticker: 30 emoji (activity feed items)
-- [ ] Ethics page: ما زالت بحالة v27 (لها لغة "تحذير")
 
 ---
 
