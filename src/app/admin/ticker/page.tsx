@@ -118,7 +118,7 @@ export default async function TickerAdminPage() {
       </Card>
 
       <div className="mt-6 rounded-lg border border-accent/30 bg-accent/5 p-4 text-sm text-foreground">
-        <p className="font-bold mb-1">إعدادات متقدّمة قريباً</p>
+        <p className="font-bold mb-1">إعدادات إضافية</p>
         <p className="text-muted-foreground">
           إضافة أخبار مخصّصة + ترتيب drag & drop + تاريخ البدء/الانتهاء — ستُضاف في النسخة القادمة.
           حالياً الشريط يعرض آخر 10 نشاطات عمومية تلقائياً، مع إيقاف عند hover/touch.

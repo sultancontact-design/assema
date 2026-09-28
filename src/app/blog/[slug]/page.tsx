@@ -257,7 +257,7 @@ export default async function BlogPostPage({ params }: PageProps) {
           <EmptyState
             icon={BookOpen}
             title="لا توجد مقالات ذات صلة بعد"
-            message="ما زلنا نكتب مقالات لهذه الفئة. عُد قريباً."
+            message="لا توجد مقالات أخرى في هذه الفئة بعد."
           />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

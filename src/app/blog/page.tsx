@@ -130,7 +130,7 @@ export default async function BlogPage({ searchParams }: PageProps) {
           <EmptyState
             icon={BookOpen}
             title="لا توجد مقالات بعد"
-            message="ما زلنا نعمل على مقالات توعوية لهذا القسم. عُد قريباً، أو ساهم بمقال إذا كنت كاتباً أو خبيراً."
+            message="ما زلنا نعمل على مقالات توعوية لهذا القسم. ساهم بمقال إذا كنت كاتباً أو خبيراً."
             divider
           />
         ) : (
