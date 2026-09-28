@@ -265,6 +265,7 @@ model User {
   userChallenges    UserChallenge[]
   userBadges        UserBadge[]
   leaderboardBans    LeaderboardBan[]
+  fundDonations      FundDonation[]
   activities        UserActivity[]
   following         UserRelationship[] @relation("Follower")
   followers         UserRelationship[] @relation("Following")
@@ -1655,4 +1656,61 @@ model LeaderboardBan {
   @@unique([userId])
   @@index([userId])
   @@index([expiresAt])
+}
+
+// ===================================================================
+//  v38.0 Section 2 — نماذج صندوق المعروف (Fund Admin)
+// ===================================================================
+
+model FundAccountInfo {
+  id              String   @id @default(cuid())
+  bankName        String?
+  accountHolder   String?
+  rib             String?
+  iban            String?
+  swift           String?
+  paypalEmail     String?
+  cashplusNumber  String?
+  inwiMoney       String?
+  orangeMoney     String?
+  customNote      String?
+  isVisible       Boolean  @default(true)
+  updatedBy       String?
+  updatedAt       DateTime @updatedAt
+  createdAt       DateTime @default(now())
+}
+
+model FundDonation {
+  id            String   @id @default(cuid())
+  userId        String?
+  amount        Float
+  currency      String   @default("MAD")
+  method        String   // BANK_TRANSFER, CASHPLUS, PAYPAL, CASH, INWI_MONEY
+  reference     String?
+  receiptUrl    String?
+  status        String   @default("PENDING") // PENDING, CONFIRMED, REJECTED
+  confirmedBy   String?
+  confirmedAt   DateTime?
+  rejectionNote String?
+  createdAt     DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([method])
+}
+
+model FundSettings {
+  id                 String   @id @default(cuid())
+  isOpen             Boolean  @default(true)
+  minDonation        Float    @default(10)
+  maxDonation        Float    @default(10000)
+  allowAnonymous     Boolean  @default(true)
+  requireReceipt     Boolean  @default(true)
+  publicTransparency Boolean  @default(true)
+  thankYouMessage    String?
+  updatedBy          String?
+  updatedAt          DateTime @updatedAt
+  createdAt          DateTime @default(now())
 }

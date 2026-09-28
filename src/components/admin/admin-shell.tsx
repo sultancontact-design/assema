@@ -134,6 +134,13 @@ const STORE_SUB_LINKS: NavSubLink[] = [
   { href: "/admin/store/orders", label: "الطلبات", match: "orders" },
 ];
 
+const FUND_SUB_LINKS: NavSubLink[] = [
+  { href: "/admin/fund", label: "نظرة عامة", match: "" },
+  { href: "/admin/fund/settings", label: "الإعدادات", match: "settings" },
+  { href: "/admin/fund/account", label: "معلومات الحساب", match: "account" },
+  { href: "/admin/fund/donations", label: "التبرعات", match: "donations" },
+];
+
 const SETTINGS_SUB_LINKS: NavSubLink[] = [
   { href: "/admin/settings", label: "عام", match: "" },
   { href: "/admin/settings/security", label: "الأمان", match: "security" },
@@ -147,7 +154,7 @@ const NAV_LINKS: NavLinkItem[] = [
   { href: "/admin", label: "الرئيسية", icon: LayoutDashboard, match: "" },
   { href: "/admin/users", label: "المستخدمون", icon: UsersIcon, match: "users" },
   { href: "/admin/families", label: "العائلات", icon: Users2, match: "families" },
-  { href: "/admin/fund", label: "الصندوق", icon: HeartHandshake, match: "fund" },
+  { href: "/admin/fund", label: "الصندوق", icon: HeartHandshake, match: "fund", children: FUND_SUB_LINKS },
   { href: "/admin/events", label: "الفعاليات", icon: CalendarDays, match: "events" },
   { href: "/admin/complaints", label: "الشكاوى", icon: MessageSquareWarning, match: "complaints" },
   { href: "/admin/ads", label: "الإعلانات", icon: Megaphone, match: "ads", children: ADS_SUB_LINKS },
