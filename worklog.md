@@ -5437,3 +5437,61 @@ Stage Summary:
 - ✅ 2 bugs جذرية اكتُشفت + أُصلِحت أثناء التحقّق
 - ✅ كل لقطة محفوظة في /tmp/v37-verify-*.png
 - اللقطات: gamification + leaderboard + store-orders + password
+
+---
+Task ID: v37.2
+Agent: main developer
+Task: إصلاح مشكلة الصفحات اليتيمة — إضافة روابط تنقّل لكل صفحات v37
+
+Problem: v37 pages existed (HTTP 200) but had NO links in navigation
+→ orphan pages → users couldn't reach them by clicking
+
+Detection:
+- find src/app -name "page.tsx" → 108 routes
+- grep href in collapsible-sidebar.tsx → 16 community links (missing 3 new)
+- grep href in admin-shell.tsx → 40+ admin links (missing 3 new)
+
+Orphan pages identified:
+1. /community/gamification — no sidebar link
+2. /community/leaderboard — no sidebar link
+3. /community/map-3d — sidebar had /community/map (redirects)
+4. /community/blog/new — no link (only direct URL)
+5. /admin/ticker — no admin sidebar link
+6. /admin/store/orders — no admin sidebar link
+7. /admin/settings/security/password — no admin sidebar link
+
+Fixes (commit f3630d3):
+
+collapsible-sidebar.tsx (community):
+- Added Trophy + Crown to imports
+- Added { href: "/community/gamification", label: "المكافآت", icon: Trophy }
+- Added { href: "/community/leaderboard", label: "المتصدرون", icon: Crown }
+- Fixed { href: "/community/map" } → { href: "/community/map-3d" }
+
+admin-shell.tsx (admin):
+- Added STORE_SUB_LINKS array: [المنتجات + الطلبات]
+- Added children: STORE_SUB_LINKS to /admin/store nav item
+- Added { href: "/admin/ticker", label: "الشريط المتحرّك", icon: Radio }
+- Added /admin/settings/security/password to SETTINGS_SUB_LINKS → 'كلمة المرور'
+
+blog/page.tsx:
+- Added PenLine to imports
+- Added 'اكتب مقالاً' Button → /community/blog/new (next to filter bar)
+
+Verification (Agent Browser click-through on production):
+✅ /community/gamification — clicked 'المكافآت' in sidebar → reached page
+✅ /community/leaderboard — clicked 'المتصدرون' → reached page
+✅ /community/map-3d — clicked 'الخريطة' → reached page (no more redirect)
+✅ /community/blog/new — clicked 'اكتب مقالاً' button on /blog → reached page
+✅ /admin/ticker — visible in admin sidebar → 'الشريط المتحرّك'
+✅ /admin/store/orders — visible after expanding 'المتجر' sub-menu → 'الطلبات'
+✅ /admin/settings/security/password — visible after expanding 'الإعدادات' → 'كلمة المرور'
+
+All 7 orphan pages now have nav links + verified reachable by click.
+
+Stage Summary:
+- ✅ 7 orphan pages fixed (3 community + 1 blog button + 3 admin)
+- ✅ All reachable by normal clicking (not just direct URL)
+- ✅ Lucide icons: Trophy + Crown + Radio + PenLine
+- ✅ Commit f3630d3 pushed
+- اللقطة: /tmp/v37-2-nav-verified.png
