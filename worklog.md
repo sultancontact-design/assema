@@ -5684,3 +5684,65 @@ Stage Summary:
 - ✅ Section 4: admin sidebar + VideoSettings model
 - ✅ All 4 new pages return HTTP 200
 - ✅ All reachable via sidebar nav (orphan prevention)
+
+---
+Task ID: v40.0
+Agent: main developer
+Task: إصلاح 404 + تفاعل شامل + TikTok vertical feed + admin control + قريباً cleanup
+
+pre-flight: ✅ ALL CHECKS PASSED + checkpoint-v40-start tag
+
+Task 1: Fix all 404 links (commit faf9ecf)
+- Scanned 46 internal links from src/**/*.tsx
+- Found 4 broken: /privacy + /wallet/topup + /wallet/withdraw + /wallet/transfer
+- Fixed /privacy → /privacy-policy (register page)
+- Created /wallet/topup (PointPackage selection grid)
+- Created /wallet/withdraw (withdrawal form, min 100 DH, 5% fee)
+- Created /wallet/transfer (transfer form, min 50)
+- All 4 now return HTTP 200
+
+Task 2: Apply social interactions to blog article (commit c2559ca)
+- New component: ArticleSocialActions (Reactions + Bookmark + Share wrapper)
+- New component: BookmarkButton
+- New API: POST/DELETE /api/social/bookmark
+- Applied to /blog/[slug] page (ArticleSocialActions after content)
+- 6 reaction types + bookmark + 4 share platforms
+
+Task 3: TikTok-style vertical video feed (commit c2559ca)
+- Rewrote /videos page → full-screen vertical snap scroll
+- New component: VideoFeed (h-screen + snap-y mandatory + scroll detection)
+- New component: VideoCard (TikTok-style):
+  * like + comment + bookmark + share on left
+  * user avatar + title + description + music marquee on right
+  * rotating music disc
+  * comment sheet (bottom slide-up via AnimatePresence)
+  * TikTok iframe embed for TIKTOK platform
+  * thumbnail fallback for other platforms
+- New component: VideoFeedSkeleton
+- New APIs: /api/videos/[id]/like + bookmark + share
+- New API: POST /api/social/view (view tracking)
+- CSS: TikTok color vars + video-feed-container (hidden scrollbar)
+- /videos page: server fetches videos → VideoFeed client component
+
+Task 4: /admin/site-control (commit c2559ca)
+- PageHero + badge '{count} ميزة'
+- 4 KPI cards: active + hidden + disabled + categories
+- Feature flags grouped by category (cards with lists)
+- Each flag: key + descriptionAr + status badge
+- Admin sidebar: /admin/site-control → 'التحكم الشامل'
+
+Task 5: Clean up 'قريباً' (commit c2559ca)
+- services-directory.tsx: 'النموذج الكامل متاح قريباً' → 'تواصل مع admin@syba-community.ma'
+- Other 'قريباً' instances are natural Arabic (meaning 'soon' in context), kept
+
+Verification (after deploy):
+- /wallet/topup: 200 ✅
+- /wallet/withdraw: 200 ✅
+- /wallet/transfer: 200 ✅
+- /videos: 200 ✅ (TikTok vertical feed)
+- /community/videos/add: 200 ✅
+- /admin/videos: 200 ✅
+- /admin/site-control: 200 ✅
+- /blog/10-tips-budget-ramadan: 200 ✅ (with ArticleSocialActions)
+
+Commits: faf9ecf + c2559ca
