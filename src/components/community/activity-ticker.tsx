@@ -104,6 +104,9 @@ export function ActivityTicker() {
     return () => window.clearInterval(interval);
   }, [fetchFeed]);
 
+  // حالة الإيقاف عند hover/touch
+  const [paused, setPaused] = React.useState(false);
+
   // محتوى التحميل
   if (items === null) {
     return (
@@ -127,10 +130,14 @@ export function ActivityTicker() {
 
   return (
     <div
-      className="relative overflow-hidden rounded-lg border border-border bg-muted/30 px-1 py-2"
+      className="relative overflow-hidden rounded-lg border border-border bg-muted/30 px-1 py-2 group"
       role="marquee"
       aria-label="آخر نشاطات الحي"
       aria-live="polite"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onTouchStart={() => setPaused(true)}
+      onTouchEnd={() => setPaused(false)}
     >
       {/* تدرّج للإخفاء عند الحافّتين — حافّة اليمين (start في RTL) */}
       <div
@@ -152,7 +159,11 @@ export function ActivityTicker() {
           ease: "linear",
           repeat: Infinity,
           repeatType: "loop",
+          // إيقاف عند hover/touch (play state)
+          repeatDelay: paused ? 999999 : 0,
         }}
+        // إيقاف فوري عند hover عبر animation-play-state
+        style={{ animationPlayState: paused ? "paused" : "running" }}
       >
         {loop.map((item, idx) => (
           <ActivityPill key={`${idx}-${item.description}`} item={item} />
