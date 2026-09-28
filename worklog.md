@@ -5382,3 +5382,58 @@ Stage Summary:
 - ✅ القسم 6: Security (password change + login history)
 - ⏳ القسم 7: Polish (5 community pages — already Hero+Bento from v35.3)
 - 3 commits: 9bc0a09 + 15c1ddf + 6afde28
+
+---
+Task ID: v37.0-visual-verification
+Agent: main developer
+Task: التحقّق البصري النهائي للأقسام الجديدة (4 صفحات)
+
+Work Log:
+pre-flight: ✅ ALL CHECKS PASSED
+
+سجّلت الدخول كـ admin@syba-community.ma على desktop 1440×900
+زرت كل صفحة من الأربعة + screenshot + JS eval:
+
+1. /community/gamification ✅
+   - h1="نظام المكافآت" (64px)
+   - Hero image present
+   - 23 Card3D wrappers (KPI card + 20 badges)
+   - 6 H2 sections: مبتدئ + رحلة المستويات + المكافآت اليومية + مجموعة الشارات + التحديات النشطة + لوحة المتصدرين
+   - 12 lift-on-hover cards
+
+2. /community/leaderboard ✅
+   - h1="لوحة المتصدرين" (64px)
+   - Hero image present
+   - 53 list items (top 10 users + 5 district leaders)
+   - H2 sections: أفضل 10 أعضاء + ترتيب الأحياء
+   - medal emojis present (🥇🥈🥉)
+
+3. /admin/store/orders ✅ (بعد إصلاح Prisma groupBy)
+   - h1="طلبات المتجر" (64px)
+   - Hero image present
+   - 4 KPI cards (lift-on-hover)
+   - H2 sections: آخر 50 طلب + الأكثر مبيعاً
+   - table with 1 row (1 order in DB)
+   - Bug fix: groupBy orderBy syntax → JS aggregation (commit 6b6f23b)
+
+4. /admin/settings/security/password ✅ (بعد إصلاح AuditLog fields)
+   - h1="الأمان — كلمة المرور" (64px)
+   - Hero image present
+   - 3 password inputs (current + new + confirm)
+   - H2: "سجل الدخول (آخر 20)"
+   - 16 login history rows (from AuditLog)
+   - Bug fix: ipAddress (not ip) + actorId (not userId) in auditLog.create (commit b903626)
+
+Bugs found + fixed during visual verification:
+1. Store orders page: Prisma groupBy with orderBy: { _count: { _all: "desc" } } caused
+   Server Components render error on Vercel. Fixed by fetching all orders + aggregating
+   in JS with a Map.
+2. Password page: AuditLog model has `ipAddress` (not `ip`) and `actorId` (not `userId`).
+   The select query used `ip` (doesn't exist) → Prisma validation error → Server Components
+   render error. Fixed both select + render + API create.
+
+Stage Summary:
+- ✅ 4/4 صفحات جديدة مُثبَتة بصرياً (gamification + leaderboard + store orders + password)
+- ✅ 2 bugs جذرية اكتُشفت + أُصلِحت أثناء التحقّق
+- ✅ كل لقطة محفوظة في /tmp/v37-verify-*.png
+- اللقطات: gamification + leaderboard + store-orders + password
