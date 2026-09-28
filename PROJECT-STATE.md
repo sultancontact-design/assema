@@ -9,6 +9,7 @@
 
 | الإصدار | التاريخ | الميزة الرئيسية | commit | الحالة |
 |---------|---------|-----------------|--------|--------|
+| v37.0 | 2026-09-29 | Rewards system + Leaderboard + Store orders + Security password | `6afde28` | ✅ منشور |
 | v37.0 | 2026-09-28 | /blog Hero+Bento + Card3D + ticker emoji + footer cleanup + ticker admin + blog writer | `c3ad59e` | ✅ منشور |
 | v37.0 | 2026-09-28 | /blog Hero+Bento + Card3D + ticker emoji removal | `3343bf9` | ✅ منشور |
 | v36.1 | 2026-09-27 | Hard NOs + Recovery + pre-flight script + system reset recovery | `a89c89f` | ✅ منشور |
@@ -377,7 +378,7 @@ public/vendor/maplibre-gl.css              — Styles
 
 ---
 
-**آخر تحديث**: v37.0 — 2026-09-28
-**آخر commit**: `3343bf9` (v37.0)
-**الحالة**: ✅ المنصة تعمل بكامل طاقتها (102 صفحة + 57 نموذج + 12 مهارة تصميم + نظام حماية + Card3D)
+**آخر تحديث**: v37.0 — 2026-09-29
+**آخر commit**: `6afde28` (v37.0 — Rewards + Leaderboard + Store orders + Security)
+**الحالة**: ✅ المنصة تعمل بكامل طاقتها (106+ صفحات + 57 نموذج + 12 مهارة تصميم + نظام حماية + Card3D + نظام مكافآت)
 **Safety tag**: `v35.3-stable` (rollback بنقرة: `git checkout v35.3-stable`)

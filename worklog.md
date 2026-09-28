@@ -5305,3 +5305,80 @@ Stage Summary:
 - ✅ 5 commits مدفوعة (af60582 + 233c898 + c3ad59e)
 - ✅ checkpoint-v37-start tag للـ rollback
 - ⏳ 4 أقسام معلّقة (تتطلّب جلسات إضافية)
+
+---
+Task ID: v37.0-sections-2-4-6
+Agent: main developer
+Task: إكمال 3 أقسام متبقية من v37.0 (Rewards + Store orders + Security)
+
+pre-flight: ✅ ALL CHECKS PASSED + checkpoint-v37-start tag موجود
+
+القسم 2: Rewards System (commit 9bc0a09) ✅
+- /community/gamification (صفحة جديدة):
+  - PageHero بصورة + badge "{points} نقطة · مستوى {level}"
+  - 7 مستويات (مبتدئ 0-100 → ناشط 101-300 → مساهم 301-700 → داعم 701-1500 → قائد 1501-3000 → سفير 3001-6000 → حكيم الحي 6001+)
+  - بطاقة المستوى الحالي (Card3D + progress bar + نقاط متبقّية للتالي)
+  - بطاقة الترتيب (#X من أصل Y)
+  - رحلة المستويات (7 بطاقات صغيرة، المستوى الحالي ring-2 + "أنت هنا")
+  - المكافآت اليومية: Spin Wheel (Card3D + POST /api/community/rewards/spin-wheel) + Mystery Box
+  - 20 شارة Bento (Card3D على المكتسبة):
+    * rarity config: legendary (amber) / epic (purple) / rare (sky) / common (gray)
+    * earned: Award icon + colored border + bg
+    * unearned: Lock icon + dashed border + opacity-70
+    * progress: "X / 20 مكتسبة"
+  - 4 تحديات (border-s-4): type icon (Zap/Flame/Trophy) + pointsReward + daysLeft countdown
+  - Top 10 Leaderboard: medal emojis (🥇🥈🥉) + avatars + current user highlighted
+
+- /community/leaderboard (صفحة جديدة):
+  - PageHero + badge "{totalUsers} عضو"
+  - بطاقة ترتيب المستخدم الحالي (border-s-4)
+  - Bento: Top 10 (8-col) + district leaders (4-col)
+  - Top 10: medal emojis + circular avatars + level + district name
+  - District leaders: rank + name + member count
+
+القسم 4: Store Orders (commit 15c1ddf) ✅
+- /admin/store/orders (صفحة جديدة):
+  - PageHero + badge "{count} طلب"
+  - 4 KPI cards: total orders + total revenue (points) + avg order + active products
+  - Bento: orders table (8-col) + top sellers (4-col)
+  - orders table: product icon + name + type + buyer name + district + price + status badge + date
+  - top sellers: rank + icon + name + order count
+- نظام الشراء موجود مسبقاً (POST /api/store/items/[id]/purchase):
+  - atomic transaction: decrement points + create StoreOrder + PointsLedger + stock decrement
+
+القسم 6: Security (commit 6afde28) ✅
+- /admin/settings/security/password (صفحة جديدة):
+  - PageHero + badge "إعدادات أمنية"
+  - Bento: password form (8-col) + security status (4-col)
+  - ChangePasswordClient:
+    * current + new + confirm fields (eye toggle for each)
+    * strength meter (4 levels: ضعيفة جداً → قوية) + progress bar
+    * validation checklist: 12+ chars + uppercase + number + symbol
+    * matches check (new === confirm)
+    * POST /api/admin/settings/security/password
+  - security status card: password set + 2FA status + last login
+  - 2FA prompt (if not enabled) → /admin/settings/security
+  - login history table (last 20 AuditLog):
+    * action + device (mobile/desktop via UA) + IP + status badge + date
+
+- API: POST /api/admin/settings/security/password (route جديدة):
+  * validates: currentPassword + newPassword required
+  * newPassword: 12+ chars + uppercase + number + symbol
+  * bcrypt.compare(currentPassword, dbUser.passwordHash)
+  * bcrypt.hash(newPassword, 10) + db.user.update
+  * AuditLog: user.password.change
+
+Deploy verification (بعد انتظار Vercel):
+- /community/gamification → HTTP 200 ✅
+- /community/leaderboard → HTTP 200 ✅
+- /admin/store/orders → HTTP 200 ✅
+- /admin/settings/security/password → HTTP 200 (login redirect) ✅
+
+DB stats: 20 badges + 4 challenges + top user = هشام الفاسي (199 نقطة، مستوى 4)
+
+Stage Summary:
+- ✅ القسم 2: Rewards (7 levels + 20 badges + 4 challenges + leaderboard + daily rewards)
+- ✅ القسم 4: Store orders (table + KPIs + top sellers)
+- ✅ القسم 6: Security (password change + login history)
+- ⏳ القسم 7: Polish (5 community pages — already Hero+Bento from v35.3)
+- 3 commits: 9bc0a09 + 15c1ddf + 6afde28
