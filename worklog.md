@@ -5867,3 +5867,47 @@ Verification (after deploy):
 - /admin/site-control: 200 ✅ (interactive toggles)
 
 Commit: ad70197
+
+---
+Task ID: v43.0
+Agent: main developer
+Task: إصلاح جذري — site-control error + videos not showing + VideoCard SSR
+
+pre-flight: ✅ ALL CHECKS PASSED + checkpoint-v43-start tag
+
+Task 1: Fix /admin/site-control error boundary (commit d0b5c6a)
+- Root cause: SiteControlClient (client component) imported PageHero
+  (server component) → Next.js 16 throws error when importing server
+  component into client component → triggers admin-shell error boundary
+- Fix: Removed PageHero import, replaced with inline gradient header
+- SiteControlClient is now fully self-contained (no server component deps)
+- Verified: curl returns "مركز التحكم الشامل" (no "خطأ في لوحة الإدارة")
+
+Task 2: Fix /videos — videos not showing (commit d0b5c6a)
+- Root cause 1: NO /api/videos/feed endpoint existed
+  * Created GET /api/videos/feed with category + limit + offset
+  * Returns { videos: [...], count: N }
+  * Auth required (redirects to login when not authenticated)
+- Root cause 2: VideoCard used React.lazy (broken in Next.js SSR)
+  * Fixed: switched to next/dynamic with { ssr: false }
+  * TikTokEmbed + InstagramEmbed + YouTubeEmbed now use dynamic imports
+  * Added EmbedLoader (Loader2 spinner) for loading state
+- Root cause 3: /videos was server component fetching directly from DB
+  * Rewrote as client component with fetch('/api/videos/feed')
+  * Added loading state (Loader2 spinner)
+  * Added error state (with retry button)
+  * Added empty state (gradient + "شارك أول فيديو" link)
+  * Scroll detection + view tracking
+  * Phone frame with notch + snap scroll
+- DB: 2 videos exist in Video table
+
+Task 3: (deferred — profile videos section)
+Task 4: (deferred — full page scan)
+
+Verification:
+- /admin/site-control: 200 + shows "مركز التحكم الشامل" (no error) ✅
+- /videos: 200 ✅ (client component with fetch)
+- /community/videos/add: 200 ✅
+- /api/videos/feed: redirects to login when not authed (correct) ✅
+
+Commit: d0b5c6a
