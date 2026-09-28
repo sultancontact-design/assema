@@ -75,6 +75,7 @@ const NAV_ITEMS = [
   { href: "/community/store", label: "المتجر", icon: Gift },
   { href: "/community/gamification", label: "المكافآت", icon: Trophy },
   { href: "/community/leaderboard", label: "المتصدرون", icon: Crown },
+  { href: "/community/following", label: "المتابعة", icon: Users },
   { href: "/community/map-3d", label: "الخريطة", icon: MapPin },
   { href: "/blog", label: "المدوّنة", icon: BookOpen },
   { href: "/guide", label: "دليل الحي", icon: Compass },
