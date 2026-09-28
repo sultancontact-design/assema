@@ -5746,3 +5746,68 @@ Verification (after deploy):
 - /blog/10-tips-budget-ramadan: 200 ✅ (with ArticleSocialActions)
 
 Commits: faf9ecf + c2559ca
+
+---
+Task ID: v41.0
+Agent: main developer
+Task: إصلاح الصور + قسم الفيديو إنستغرام + تحكم أدمن + قريباً cleanup
+
+pre-flight: ✅ ALL CHECKS PASSED + checkpoint-v41-start tag
+
+Task 1: Fix image upload (commit 33769b2)
+- New component: ImageUpload (src/components/ui/image-upload.tsx)
+  * File upload via FileReader → base64 (client-side, no server storage needed)
+  * URL paste (collapsible input)
+  * Preview + remove button
+  * Size validation (default 500KB, avatar 300KB)
+  * Aspect ratio support (square/wide/tall)
+  * Works without Supabase Storage
+- Applied to /community/profile/edit (avatar field, square, 300KB max)
+- Profile API: PATCH now accepts avatar field
+- Profile/edit page: fetches avatar from DB + passes to client
+
+Task 2: Rebuild /videos Instagram-style (commit 118cae6)
+- VideoFeed v41.0: phone-frame container (max-w-md, rounded-3xl, shadow-2xl)
+- Gradient header: red #FE2C55 → green #25F4EE → purple #8B5CF6
+- Background: soft gradient (red/green/purple tinted)
+- Vertical snap scroll inside the phone frame
+- Auto-play on visibility + view tracking
+- VideoCard v41.0:
+  * like + comment + bookmark + share buttons
+  * mute/unmute button
+  * user avatar (gradient red→purple) + follow button
+  * title + description + music marquee
+  * rotating music disc (red→green→purple gradient)
+  * TikTok iframe embed for TIKTOK platform
+  * thumbnail/gradient fallback
+  * comment sheet (bottom slide-up)
+
+Task 3: Rebuild /admin/site-control (commit 2804e30)
+- New component: SiteControlClient (client-side with state + optimistic updates)
+- 3 KPI cards: active + disabled + total
+- 4 sections with interactive toggle switches:
+  * الرئيسية (9 flags)
+  * التفاعل الاجتماعي (7 flags)
+  * الفيديوهات (8 flags)
+  * الأقسام الرئيسية (10 flags)
+- Toggle: PATCH /api/admin/feature-flags/[id] + toast feedback
+- Loading state per flag
+
+Task 4: Design skills
+- Already installed in v35.0 (.agents/skills/ has 12 skills)
+- CLAUDE.md already has design rules from v36.1
+- No new installation needed
+
+Task 5: Clean up 'قريباً' (commit 2804e30)
+- blog/[slug]: 'عُد قريباً' → 'لا توجد مقالات أخرى في هذه الفئة بعد'
+- about/page.tsx: 'يُعلَن قريباً' → 'يُحدَّد لاحقاً' (3 instances)
+- admin/ticker: 'إعدادات متقدّمة قريباً' → 'إعدادات إضافية'
+- Natural Arabic 'قريباً' kept (contribution-receipt + contact-form + events)
+
+Verification (after deploy):
+- /videos: 200 ✅ (Instagram phone frame with red/green/purple)
+- /admin/site-control: 200 ✅ (interactive toggles)
+- /community/profile/edit: 200 ✅ (with ImageUpload)
+- /wallet/topup: 200 ✅
+
+Commits: 33769b2 + 118cae6 + 2804e30
