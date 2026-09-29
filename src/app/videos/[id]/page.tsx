@@ -55,7 +55,7 @@ export default async function VideoDetailPage({ params }: PageProps) {
           {embed?.type === "video" ? (
             <video src={embed.embed} controls autoPlay loop playsInline className="w-full h-full object-contain" />
           ) : embed ? (
-            <iframe src={embed.embed} className="w-full h-full border-0" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen loading="lazy" />
+            <iframe src={embed.embed} className="w-full h-full border-0" allow="autoplay; encrypted-media; fullscreen; picture-in-picture; web-share" allowFullScreen loading="lazy" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-white">
               <a href={video.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-primary underline">فتح في المصدر</a>

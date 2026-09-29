@@ -28,7 +28,7 @@ export function getEmbedUrl(url: string): { embed: string; type: "iframe" | "vid
   const platform = detectPlatform(url);
   if (platform === "YOUTUBE") {
     const match = url.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([^&?/]+)/);
-    if (match) return { embed: `https://www.youtube.com/embed/${match[1]}?autoplay=0&rel=0&modestbranding=1`, type: "iframe" };
+    if (match) return { embed: `https://www.youtube.com/embed/${match[1]}?autoplay=1&rel=0&modestbranding=1`, type: "iframe" };
   }
   if (platform === "TIKTOK") {
     const match = url.match(/\/video\/(\d+)/);

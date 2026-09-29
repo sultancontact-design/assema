@@ -37,13 +37,13 @@ export default async function ProfilePage() {
       where: { userId: user.id, isActive: true },
       orderBy: { createdAt: "desc" },
       take: 12,
-      select: { id: true, title: true, thumbnailUrl: true, sourcePlatform: true, likes: true, comments: true, createdAt: true },
+      select: { id: true, title: true, sourceUrl: true, sourcePlatform: true, thumbnailUrl: true, likes: true, comments: true, views: true, createdAt: true },
     }),
     db.blogPost.findMany({
       where: { authorId: user.id, status: "published" },
       orderBy: { createdAt: "desc" },
       take: 12,
-      select: { id: true, title: true, slug: true, coverImage: true, views: true },
+      select: { id: true, title: true, slug: true, coverImage: true, content: true, excerpt: true, category: true, views: true },
     }),
   ]);
 
