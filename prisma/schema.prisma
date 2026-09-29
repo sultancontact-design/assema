@@ -164,6 +164,11 @@ model District {
   boundarySvg String?
   isActive    Boolean  @default(true)
   isDefault   Boolean  @default(false)
+  // v56.0: Multi-city link
+  cityId      String?
+  cityRef     City?   @relation(fields: [cityId], references: [id])
+  latitude    Float?
+  longitude   Float?
 
   families    Family[]
   users       User[]
@@ -241,6 +246,18 @@ model User {
   allowMessages     Boolean  @default(true)
   followersCount    Int      @default(0)
   followingCount    Int      @default(0)
+  // v56.0: Multi-city
+  cityId            String?
+  city              City?    @relation(fields: [cityId], references: [id])
+  countryId         String?
+  country           Country? @relation(fields: [countryId], references: [id])
+  diasporaCityId    String?
+  diasporaCity      DiasporaCity? @relation(fields: [diasporaCityId], references: [id])
+  originCityId      String?
+  detectedCity      String?
+  latitude          Float?
+  longitude         Float?
+  lastLocationUpdate DateTime?
   birthDate         DateTime?
   gender            String?      // ذكر/أنثى
   // الأمان
@@ -2133,4 +2150,65 @@ model FeedItem {
   @@index([type])
   @@index([districtId])
   @@index([createdAt])
+}
+
+// ===================================================================
+//  v56.0 — Multi-City Architecture (Region + City + Country + Diaspora)
+// ===================================================================
+
+model Region {
+  id        String  @id @default(cuid())
+  name      String
+  nameAr    String
+  slug      String  @unique
+  cities    City[]
+  createdAt DateTime @default(now())
+}
+
+model City {
+  id          String   @id @default(cuid())
+  name        String
+  nameAr      String
+  nameFr      String?
+  slug        String   @unique
+  regionId    String?
+  region      Region?  @relation(fields: [regionId], references: [id])
+  population  Int?
+  latitude    Float?
+  longitude   Float?
+  coverImage  String?
+  description String?
+  isActive    Boolean  @default(true)
+  isFeatured  Boolean  @default(false)
+  districts   District[]
+  users       User[]
+  createdAt   DateTime @default(now())
+
+  @@index([regionId])
+  @@index([slug])
+}
+
+model Country {
+  id          String   @id @default(cuid())
+  name        String
+  nameAr      String
+  nameFr      String?
+  code        String   @unique
+  flag        String?
+  isDiaspora  Boolean   @default(true)
+  diasporaCities DiasporaCity[]
+  users       User[]
+  createdAt   DateTime @default(now())
+}
+
+model DiasporaCity {
+  id          String   @id @default(cuid())
+  countryId   String
+  country     Country  @relation(fields: [countryId], references: [id])
+  name        String
+  nameAr      String
+  slug        String
+  users       User[]
+
+  @@unique([countryId, slug])
 }
