@@ -6126,3 +6126,37 @@ Verification:
 - /community/profile: 200 ✅
 
 Commit: c33ad28
+
+---
+Task ID: v47.0
+Agent: main developer
+Task: comments system + follow + social-boost admin + 94 fake templates
+
+pre-flight: ✅ ALL CHECKS PASSED + checkpoint-v47-start tag
+
+Task 1: Comments system
+- Prisma: Comment model updated (isEdited/isPinned/isFake/updatedAt)
+- Prisma: CommentLike + FakeCommentTemplate + AdminCommentBoost added
+- Prisma: User.followersCount + followingCount added
+- db:push executed
+- New APIs: GET/POST /api/comments + POST /api/comments/[id]/like + DELETE /api/comments/[id]
+- New component: CommentsSection (input + nested replies + like + delete + pin badge)
+- Verified: curl /api/comments → 200 + {"comments":[],"total":0} ✅
+
+Task 2: Follow system
+- New APIs: POST /api/follow + GET /api/follow/status
+- Rewrote FollowButton: gradient bg + hover 'unfollow' + optimistic update
+- Uses existing Follow model with targetType='USER'
+- Increments/decrements User.followersCount + followingCount
+
+Task 3: Admin social-boost
+- New page: /admin/social-boost (4 tabs: USER/VIDEO/POST/COMMENTS)
+- New API: GET/POST /api/admin/fake-comments
+  * GET: list templates (94 seeded)
+  * POST: create N comments from templates on random users
+- Seeded: 94 fake comment templates (Arabic + Moroccan dialect)
+- Admin sidebar: /admin/social-boost → Sparkles icon
+- Verified: curl /api/admin/fake-comments → 403 (correct — needs admin) ✅
+- Verified: /admin/social-boost → 200 ✅
+
+Commit: b4d1d9d
