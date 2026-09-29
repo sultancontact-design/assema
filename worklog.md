@@ -6203,3 +6203,37 @@ Verification (after deploy):
 DB: 152 FakeCommentTemplate records (all active)
 
 Commits: d18d436 + 4d279ac
+
+---
+Task ID: v49.0
+Agent: main developer
+Task: 40 comments in DB + CommentsSection in VideoCard drawer
+
+pre-flight: ✅ ALL CHECKS PASSED + checkpoint-v49-start tag
+
+Task 1: 40 real comments added to DB
+- 30 comments on video cmukwmfu80001i3041y9gu823 (تدريب رياضي حماسي)
+- 10 comments on video cmukxa9jc0001l804alti06dm (اغاني حماسيه)
+- All isFake=true, isApproved=true, random likes 0-25
+- DB: 40 total comments
+- curl verified: /api/comments?targetType=VIDEO&targetId=cmuk... → 200 + 30 comments ✅
+  * First: "فخور بك" (11 likes)
+  * Second: "استمر" (13 likes)
+  * Third: "مفيد جداً" (14 likes)
+
+Task 2: CommentsSection in VideoCard
+- Added showComments state
+- Comment button toggles drawer (was just a static icon before)
+- Drawer: slide-up bottom sheet (60% height, bg-black/95, rounded-t-2xl)
+- Inside drawer: <CommentsSection targetType=VIDEO targetId={video.id} />
+- Compact dark-theme layout for video overlay
+
+Task 3: Blog article CommentsSection (from v48.0)
+- /blog/[slug] has CommentsSection after share section ✅
+
+Verification:
+- /api/comments?targetType=VIDEO&targetId=cmuk... → 200 + 30 comments ✅
+- /videos → 200 ✅
+- /blog/10-tips-budget-ramadan → 200 ✅
+
+Commit: d965b6a
