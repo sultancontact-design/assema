@@ -6361,3 +6361,49 @@ Verification:
 - Vercel 494 cookie error prevents browser testing (infrastructure limit, not code bug)
 
 Commit: 023ba5b
+
+---
+Task ID: v55.0
+Agent: main developer
+Task: unified social network — feed + user profiles + families + discover
+
+pre-flight: ✅ ALL CHECKS PASSED + checkpoint-v55-start tag
+
+Task 1: Central Feed (/feed)
+- Prisma: FeedItem model added (userId + type + content + mediaUrls + likes/comments/shares/views + visibility + districtId)
+- User: added feedItems back-relation
+- db:push executed
+- Backfill: 15 FeedItems created from existing content (2 videos + 10 posts + 3 events)
+- API: GET /api/feed (public, cursor pagination, filter ALL/FOLLOWING) + POST /api/feed (create) + POST /api/feed/[id]/like
+- Components: FeedClient (infinite scroll + filter tabs + composer) + FeedComposer + FeedItem (unified card)
+- Page: /feed with PageHero + FeedClient
+- Verified: /api/feed → 200 + returns 15 items with real data ✅
+
+Task 2: User Profiles (/u/[userId])
+- Server component fetches user + videos + posts
+- Instagram-style: cover + avatar + stats + bio + follow button
+- ProfileGrid for content
+- Fixed JSX syntax error (extra `}` on line 64)
+
+Task 3: Family Profiles (/families/[id])
+- Server component fetches family + members + stats
+- 3 KPI cards: points + contributions + members
+- Member list with avatars + roles
+
+Task 4: Discover (/discover)
+- Suggested users from same district (not following)
+- Family directory (6 families)
+- Trending feed items (by likes)
+- All with follow links
+
+Task 5: Sidebar updates
+- Added /feed → "الحي الآن" (top of sidebar)
+- Added /discover → "اكتشف"
+
+Verification (after deploy):
+- /feed → 200 ✅
+- /discover → 200 ✅
+- /api/feed → 200 + returns 15 items ✅
+- /families → 404 (needs specific family ID — correct for index)
+
+Commits: bc8ccf1
