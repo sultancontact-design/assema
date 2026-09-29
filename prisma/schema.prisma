@@ -239,6 +239,8 @@ model User {
   socialWhatsapp    String?
   isProfilePublic   Boolean  @default(true)
   allowMessages     Boolean  @default(true)
+  followersCount    Int      @default(0)
+  followingCount    Int      @default(0)
   birthDate         DateTime?
   gender            String?      // ذكر/أنثى
   // الأمان
@@ -1942,14 +1944,19 @@ model Comment {
   targetId   String
   content    String
   parentId   String?
-  isApproved Boolean  @default(true)
   likes      Int      @default(0)
+  isApproved Boolean  @default(true)
+  isEdited   Boolean  @default(false)
+  isPinned   Boolean  @default(false)
+  isFake     Boolean  @default(false)
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([targetType, targetId])
   @@index([parentId])
+  @@index([createdAt])
 }
 
 // ===================================================================
@@ -2061,4 +2068,39 @@ model StatsAdjustment {
 
   @@index([targetType, targetId])
   @@index([adminId])
+}
+
+// ===================================================================
+//  v47.0 — نماذج التعليقات المحسّنة + القوالب الجاهزة
+// ===================================================================
+
+model CommentLike {
+  id        String   @id @default(cuid())
+  commentId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  @@unique([commentId, userId])
+}
+
+model FakeCommentTemplate {
+  id         String   @id @default(cuid())
+  content    String
+  targetType String?
+  category   String?
+  usageCount Int      @default(0)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+}
+
+model AdminCommentBoost {
+  id         String   @id @default(cuid())
+  adminId    String
+  targetType String
+  targetId   String
+  count      Int
+  reason     String?
+  createdAt  DateTime @default(now())
+
+  @@index([targetType, targetId])
 }
