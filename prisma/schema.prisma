@@ -2048,3 +2048,17 @@ model VideoSettings {
   updatedAt         DateTime @updatedAt
   createdAt         DateTime @default(now())
 }
+
+model StatsAdjustment {
+  id          String   @id @default(cuid())
+  adminId     String
+  targetType  String
+  targetId    String
+  field       String
+  amount      Int
+  reason      String?
+  createdAt   DateTime @default(now())
+
+  @@index([targetType, targetId])
+  @@index([adminId])
+}
