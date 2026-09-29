@@ -1,15 +1,14 @@
 "use client";
 import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
 import {
-  Gift, Coins, ShoppingCart, Snowflake, Award, Sparkles, Percent,
+  Gift, Coins, Snowflake, Award, Sparkles, Percent,
   Monitor, Package, ArrowLeft,
 } from "lucide-react";
 import Link from "next/link";
+import { PurchaseButton } from "@/components/store/purchase-button";
 
 interface StoreItem { id: string; name: string; description: string; icon: string; pricePoints: number; type: string; stock: number | null }
 
@@ -33,28 +32,20 @@ const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
 export function StoreClient({ userPoints, embedded = false }: { userPoints: number | null; embedded?: boolean }) {
   const [items, setItems] = React.useState<StoreItem[] | null>(null);
   const [points, setPoints] = React.useState(userPoints ?? 0);
-  const [buying, setBuying] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     fetch("/api/store/items").then(r => r.json()).then(d => setItems(d.items ?? [])).catch(() => setItems([]));
   }, []);
 
-  const buy = async (item: StoreItem) => {
-    if (points < item.pricePoints) { toast.error("رصيد غير كافٍ"); return; }
-    if (!confirm(`شراء "${item.name}" مقابل ${item.pricePoints} نقطة؟`)) return;
-    setBuying(item.id);
-    try {
-      const r = await fetch("/api/store/items/" + item.id + "/purchase", { method: "POST" });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || "فشل الشراء");
-      toast.success("تم الشراء بنجاح");
-      setPoints(p => p - item.pricePoints);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "فشل الشراء");
-    } finally {
-      setBuying(null);
-    }
-  };
+  // v58.0: استمع لحدث points:updated من PurchaseButton لتحديث الرصيد المحلي
+  React.useEffect(() => {
+    const handler = (e: Event) => {
+      const newBalance = (e as CustomEvent<number>).detail;
+      setPoints(newBalance);
+    };
+    window.addEventListener("points:updated", handler);
+    return () => window.removeEventListener("points:updated", handler);
+  }, []);
 
   const header = (
     <header className="mb-6 flex items-center justify-between flex-wrap gap-3">
@@ -132,9 +123,14 @@ export function StoreClient({ userPoints, embedded = false }: { userPoints: numb
                     <span className="flex items-center gap-1 text-sm font-bold text-amber-600">
                       <Coins className="size-4" />{item.pricePoints}
                     </span>
-                    <Button onClick={() => buy(item)} disabled={!affordable || buying === item.id} size="sm" className="h-9">
-                      {buying === item.id ? "..." : <><ShoppingCart className="size-4" />شراء</>}
-                    </Button>
+                    <PurchaseButton
+                      itemId={item.id}
+                      itemName={item.name}
+                      price={item.pricePoints}
+                      userPoints={points}
+                      onSuccess={(newBalance) => setPoints(newBalance)}
+                      variant={isFeatured ? "default" : "compact"}
+                    />
                   </div>
                 </CardContent>
               </Card>
