@@ -6455,3 +6455,93 @@ DB:
 - Districts with cityId: 5 (linked to Marrakech)
 
 Commit: 7a35a96
+
+---
+Task ID: v57.0
+Agent: Main (Z.ai Code)
+Task: تشخيص + إصلاح endpoints الجغرافية وصفحات المدن (v57.0)
+
+Work Log:
+- تشخيص 7 endpoints بـcurl على الإنتاج (assema-sultancontact-design.vercel.app):
+  * /api/geo/detect → 200 ✅ (returns country/city/lat/lon from x-vercel-ip headers)
+  * /api/geo/regions → 200 ✅ (returns 12 regions + cities nested)
+  * /api/geo/cities → 200 ✅ (returns 50+ cities)
+  * /api/users/list → 200 ✅ (returns users with district info)
+  * /api/feed → 200 ✅ (returns FeedItem list)
+  * /casablanca → 404 ❌ (مسار غير صحيح — يجب /c/casablanca)
+  * /c/marrakech → 404 ❌ (صفحة /c/[citySlug] مفقودة)
+- فحص Prisma schema: النماذج Region, City, Country, DiasporaCity موجودة + User.cityId/countryId/diasporaCityId + District.cityId كلها موجودة
+- فحص الملفات الموجودة:
+  * /api/geo/detect, /api/geo/regions, /api/geo/cities, /api/geo/countries — كلها تعمل
+  * /api/geo/districts و /api/geo/diaspora-cities — مفقودان
+  * مجلد src/app/c/ — مفقود تماماً (لا توجد صفحة مدينة)
+- كتابة src/app/api/geo/districts/route.ts:
+  * GET /api/geo/districts?cityId=...&citySlug=...
+  * استعلام مرن: WHERE cityId == resolvedCityId OR city == resolvedCityName
+  * يدعم المطابقة النصية القديمة (city string field) + المفتاح الجديد cityId
+- كتابة src/app/api/geo/diaspora-cities/route.ts:
+  * GET /api/geo/diaspora-cities?countryId=...
+  * يعيد مدن المهجر في بلد محدّد مع بيانات البلد
+- كتابة src/app/c/[citySlug]/page.tsx (صفحة المدينة الكاملة):
+  * Hero Card مع badges (region/city/featured) + description + population
+  * 4 KPIs: أحياء/أعضاء/أسر/مساهمات
+  * شبكة الأحياء (3 أعمدة على desktop) مع hover effects + isDefault badge
+  * قائمة Top 5 أعضاء (Avatar + name + profession + points)
+  * قائمة 3 فعاليات قادمة (date badge + title + location)
+  * قسم آخر 5 منشورات في المدينة (مع user.fullName)
+  * زر "عودة للرئيسية" في الأسفل
+- كتابة src/app/c/[citySlug]/[districtSlug]/page.tsx (صفحة الحي ضمن مدينة):
+  * تحقق مزدوج: citySlug + districtSlug مع التأكد أن الحي تابع للمدينة
+  * مطابقة مرنة: district.cityId == city.id OR district.city == city.name
+  * Hero مع JoinDistrictButton + زر العودة للمدينة
+  * 4 KPIs: أعضاء/أسر/مساهمات/رصيد الصندوق
+  * Progress bar لنسبة المشاركة المجتمعية
+  * Top 5 أعضاء + 3 فعاليات قادمة
+- تحديث src/app/api/auth/register/route.ts:
+  * إضافة حقول جديدة في RegisterPayload: cityId, countryId, diasporaCityId, districtId, originCityId, isDiaspora
+  * استخراج القيم (toOptionalString)
+  * منطق الحصول على الحي: إن مرّ districtId نستعمله بعد التحقق، وإلا fallback إلى sidi-youssef-ben-ali
+  * إن مرّ cityId: نتحقق من وجود المدينة + نربط الحي بتلك المدينة (cityId + city field)
+  * إضافة cityId/countryId/diasporaCityId/originCityId في user.create()
+- كتابة scripts/set-admin-city.ts:
+  * يستعمل PrismaClient مباشرة مع DATABASE_URL للإنتاج
+  * يبحث عن مدينة مراكش بـslug
+  * يحدّث cityId للمستخدم admin@syba-community.ma
+  * يربط الحي sidi-youssef-ben-ali بمدينة مراكش (إن لم يكن مربوطاً)
+  * يربط كل الأحياء اليتيمة (cityId=null + city=="مراكش") بمدينة مراكش
+  * يطبع إحصاءات نهائية (users/districts/regions/cities/countries/diasporaCities)
+- تشغيل السكربت على Supabase الإنتاج:
+  * DATABASE_URL='postgresql://postgres.uigwfpddaawiwvsxmggj:assema%40Admin2024@aws-0-eu-west-2.pooler.supabase.com:6543/postgres?pgbouncer=true'
+  * النتيجة: ✅ admin user cityId = cmum7cvud000dqvrqxkzdsc2p (مراكش)
+  * النتيجة: ✅ الحي sidi-youssef-ben-ali مربوط بالفعل بمراكش
+  * النتيجة: ✅ 12 regions / 50 cities / 1 country / 3 diasporaCities / 5 districts linked to marrakech
+- فحص ESLint: 0 errors, 9 warnings (جميعها pre-existing في ملفات قديمة)
+
+Stage Summary:
+- ✅ صفحة المدينة /c/[citySlug] أُنشئت (Server Component, force-dynamic, SEO metadata)
+- ✅ صفحة الحي /c/[citySlug]/[districtSlug] أُنشئت (مطابقة مرنة + JoinDistrictButton)
+- ✅ /api/geo/districts أُنشئ (cityId/citySlug query params + OR fallback)
+- ✅ /api/geo/diaspora-cities أُنشئ
+- ✅ /api/auth/register محدّث ليقبل cityId/countryId/diasporaCityId/districtId
+- ✅ admin user cityId = مراكش في Supabase الإنتاج
+- ✅ District.cityId مُربوط بمراكش في Supabase الإنتاج
+- ✅ إحصاءات DB: 12 region / 50 city / 1 country / 3 diaspora / 5 districts linked
+
+Curl results (pre-push, on production):
+| Endpoint | HTTP | Response (مختصر) | يعمل؟ |
+|----------|------|-------------------|-------|
+| /api/geo/detect | 200 | {"success":true,"country":"HK",...} | ✅ |
+| /api/geo/regions | 200 | {"regions":[{"name":"Dakhla-OuedEdDahab",...}]} | ✅ |
+| /api/geo/cities | 200 | {"cities":[{"nameAr":"آسفي","slug":"safi",...}]} | ✅ |
+| /api/users/list | 200 | {"users":[{"fullName":"بلال الناصري",...}]} | ✅ |
+| /api/feed | 200 | {"success":true,"items":[...]} | ✅ |
+| /casablanca | 404 | صفحة Next.js default 404 | ❌ (مسار غير صحيح) |
+| /c/marrakech | 404 | صفحة Next.js default 404 (قبل الإصلاح) | ❌ (سيُصلَح بعد push) |
+
+الملفات المنتجة:
+- src/app/api/geo/districts/route.ts (66 سطر)
+- src/app/api/geo/diaspora-cities/route.ts (28 سطر)
+- src/app/c/[citySlug]/page.tsx (~360 سطر)
+- src/app/c/[citySlug]/[districtSlug]/page.tsx (~330 سطر)
+- src/app/api/auth/register/route.ts (تحديث +45 سطر)
+- scripts/set-admin-city.ts (115 سطر)

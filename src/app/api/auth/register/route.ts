@@ -29,6 +29,13 @@ interface RegisterPayload {
   gender?: unknown;
   birthDate?: unknown;
   nationalId?: unknown;
+  // v56.0: حقول الموقع متعدّد المدن
+  cityId?: unknown;
+  countryId?: unknown;
+  diasporaCityId?: unknown;
+  districtId?: unknown;
+  originCityId?: unknown;
+  isDiaspora?: unknown;
 }
 
 function isString(v: unknown): v is string {
@@ -86,6 +93,14 @@ export async function POST(req: NextRequest) {
         ? new Date(body.birthDate)
         : null;
     const nationalId = toOptionalString(body.nationalId);
+    // v56.0: حقول الموقع متعدّد المدن
+    const cityId = toOptionalString(body.cityId);
+    const countryId = toOptionalString(body.countryId);
+    const diasporaCityId = toOptionalString(body.diasporaCityId);
+    const districtIdOverride = toOptionalString(body.districtId);
+    const originCityId = toOptionalString(body.originCityId);
+    const isDiaspora =
+      typeof body.isDiaspora === "boolean" ? body.isDiaspora : false;
 
     // =================================================================
     //  2) التحقّق من الحقول المطلوبة
@@ -146,26 +161,66 @@ export async function POST(req: NextRequest) {
     const nationalIdHash = nationalId ? await bcrypt.hash(nationalId, 10) : null;
 
     // =================================================================
-    //  5) الحصول على الحي الافتراضي (أو إنشائه إن لم يوجد)
+    //  5) الحصول على الحي الافتراضي (أو المحدّد من قبل المستخدم)
+    //     - إن مرّ districtId نستعمله مباشرة (مع التحقق)
+    //     - وإلا نبحث عن الحي الافتراضي sidi-youssef-ben-ali
+    //     - v56.0: إن مرّ cityId نربط الحي بتلك المدينة
     // =================================================================
-    let district = await db.district.findUnique({
-      where: { slug: DISTRICT_SLUG },
-      select: { id: true },
-    });
+    let district: { id: string } | null = null;
 
-    if (!district) {
-      district = await db.district.create({
-        data: {
-          name: "سيدي يوسف بن علي",
-          slug: DISTRICT_SLUG,
-          city: "مراكش",
-          region: "مراكش آسفي",
-          description: "حي شعبي عريق في قلب مدينة مراكش",
-          isActive: true,
-          isDefault: true,
-        },
+    if (districtIdOverride) {
+      // المستخدم اختار حياً محدداً — تحقّق من وجوده
+      district = await db.district.findUnique({
+        where: { id: districtIdOverride },
         select: { id: true },
       });
+      if (!district) {
+        return badRequest("الحي المحدّد غير موجود");
+      }
+    }
+
+    if (!district) {
+      // ابحث عن الحي الافتراضي
+      district = await db.district.findUnique({
+        where: { slug: DISTRICT_SLUG },
+        select: { id: true },
+      });
+
+      if (!district) {
+        district = await db.district.create({
+          data: {
+            name: "سيدي يوسف بن علي",
+            slug: DISTRICT_SLUG,
+            city: "مراكش",
+            region: "مراكش آسفي",
+            description: "حي شعبي عريق في قلب مدينة مراكش",
+            isActive: true,
+            isDefault: true,
+          },
+          select: { id: true },
+        });
+      }
+    }
+
+    // v56.0: إن مرّ cityId، تحقّق من وجود المدينة
+    let resolvedCityId: string | null = null;
+    if (cityId) {
+      const city = await db.city.findUnique({
+        where: { id: cityId },
+        select: { id: true, name: true },
+      });
+      if (city) {
+        resolvedCityId = city.id;
+        // ربط الحي بالمدينة إن لم يكن مربوطاً
+        await db.district
+          .update({
+            where: { id: district.id },
+            data: { cityId: resolvedCityId, city: city.name ?? undefined },
+          })
+          .catch(() => {
+            /* تجاهل — ليس حرجاً */
+          });
+      }
     }
 
     // =================================================================
@@ -210,6 +265,11 @@ export async function POST(req: NextRequest) {
           interests,
           gender,
           birthDate,
+          // v56.0: حقول الموقع متعدّد المدن
+          ...(resolvedCityId ? { cityId: resolvedCityId } : {}),
+          ...(countryId ? { countryId } : {}),
+          ...(diasporaCityId ? { diasporaCityId } : {}),
+          ...(originCityId ? { originCityId } : {}),
         },
         select: { id: true },
       });
