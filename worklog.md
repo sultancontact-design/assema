@@ -6276,3 +6276,50 @@ Verification:
 - /blog/10-tips-budget-ramadan → 200 ✅
 
 Commit: caf908e
+
+---
+Task ID: v52.0
+Agent: main developer
+Task: members page + video detail + followers/following + APIs
+
+pre-flight: ✅ ALL CHECKS PASSED + checkpoint-v52-start tag
+
+Task 1: Follow button (API from v47.0)
+- POST /api/follow + GET /api/follow/status already working
+- FollowButton component already exists
+
+Task 2: /community/members — user directory
+- Client page with search + grid of user cards
+- Each card: avatar + name + district + followers + level + follow button
+- Optimistic follow toggle
+- API: GET /api/users/list (50 users, search, filter by district)
+- Verified: 200 + returns 50 users ✅
+
+Task 3: /videos/[id] — full interactive video page
+- Server component: db queries + redirect + layout
+- Video player (iframe or direct video)
+- Title + description + views + date + platform badge
+- User info card with FollowButtonInline (separate client component)
+- ArticleSocialActions (reactions + bookmark + share)
+- CommentsSection (comments + reply + like)
+- 'More videos by same user' grid
+- Fixed: split "use client" into separate file (was causing build error)
+- Verified: 200 ✅
+
+Task 4: Followers + Following pages
+- /community/profile/followers — list of followers
+- /community/profile/following — list of who I follow
+- Both: avatar + name + district + level + follow/unfollow button
+- APIs: GET /api/follow/followers + GET /api/follow/following
+- Verified: 200 (pages) + 401 (APIs need auth) ✅
+
+Bug fix: videos/[id] page had "use client" in middle of server component
+→ Vercel build failed → all new pages 404
+→ Split FollowButtonClient into src/components/social/follow-button-inline.tsx
+→ Server component stays pure (no "use client" inside)
+→ After fix: all pages 200 ✅
+
+All buttons work with optimistic updates (no reload).
+Touch targets ≥ 44px.
+
+Commits: f58634c + f5851d1
