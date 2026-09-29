@@ -284,6 +284,7 @@ model User {
   referralLinks      ReferralLink[]
   wallet             Wallet?
   withdrawalRequests WithdrawalRequest[]
+  feedItems          FeedItem[]
   bookmarks           Bookmark[]
   comments            Comment[]
   videos              Video[]
@@ -2105,4 +2106,31 @@ model AdminCommentBoost {
   createdAt  DateTime @default(now())
 
   @@index([targetType, targetId])
+}
+
+// ===================================================================
+//  v55.0 — Feed الموحّد (Social Network)
+// ===================================================================
+
+model FeedItem {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String   // POST, VIDEO, EVENT, CONTRIBUTION, FUND_REQUEST, SERVICE, INITIATIVE, STATUS
+  targetId    String?
+  content     String?
+  mediaUrls   String   @default("[]") // JSON array
+  likes       Int      @default(0)
+  comments    Int      @default(0)
+  shares      Int      @default(0)
+  views       Int      @default(0)
+  visibility  String   @default("DISTRICT")
+  districtId  String?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([districtId])
+  @@index([createdAt])
 }

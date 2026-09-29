@@ -66,6 +66,8 @@ import {
 // ===================================================================
 const NAV_ITEMS = [
   { href: "/", label: "الرئيسية", icon: Home },
+  { href: "/feed", label: "الحي الآن", icon: Users },
+  { href: "/discover", label: "اكتشف", icon: Compass },
   { href: "/community", label: "المجتمع", icon: Users },
   { href: "/community/profile", label: "ملفي الشخصي", icon: Home },
   { href: "/community/fund", label: "صندوق المعروف", icon: Heart },
