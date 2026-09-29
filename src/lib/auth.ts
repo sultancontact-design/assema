@@ -180,6 +180,8 @@ export const authOptions: NextAuthOptions = {
         });
 
         // إرجاع الكائن الذي يُخزَّن في الـJWT
+        // v58.0: لا نُخزّن avatar في الـJWT — كان يسبب 54KB base64 في كل cookie
+        // الـ avatar يُجلب من DB عند الحاجة في الـsession callback
         return {
           id: user.id,
           email: user.email,
@@ -190,7 +192,6 @@ export const authOptions: NextAuthOptions = {
           isFamilyHead: user.isFamilyHead,
           status: user.status,
           phone: user.phone,
-          avatar: user.avatar,
         } as const;
       },
     }),
@@ -270,6 +271,7 @@ export const authOptions: NextAuthOptions = {
           },
         });
 
+        // v58.0: لا نُخزّن avatar في الـJWT
         return {
           id: user.id,
           email: user.email,
@@ -280,7 +282,6 @@ export const authOptions: NextAuthOptions = {
           isFamilyHead: user.isFamilyHead,
           status: user.status,
           phone: user.phone,
-          avatar: user.avatar,
         } as const;
       },
     }),
@@ -288,6 +289,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       // عند الدخول الأول: نسخ بيانات المستخدم إلى الـtoken
+      // v58.0: نحذف avatar من الـJWT لتقليل حجم الـcookie
       if (user) {
         const u = user as typeof user & {
           id: string;
@@ -297,7 +299,6 @@ export const authOptions: NextAuthOptions = {
           isFamilyHead: boolean;
           status: string;
           phone: string;
-          avatar: string | null;
         };
         token.id = u.id;
         token.role = u.role;
@@ -306,23 +307,36 @@ export const authOptions: NextAuthOptions = {
         token.isFamilyHead = u.isFamilyHead;
         token.status = u.status;
         token.phone = u.phone;
-        token.avatar = u.avatar;
+        // ✅ لا token.avatar — يُجلب من DB في session callback
       }
       return token;
     },
     async session({ session, token }) {
       // نسخ بيانات الـtoken إلى الـsession
+      // v58.0: جلب avatar من DB بدلاً من تخزينه في JWT (يُجنّب 54KB+ في كل cookie)
       if (session.user) {
+        const userId = token.id as string;
+        // جلب avatar من DB (column واحد فقط، لا يُخزَّن في JWT)
+        let avatar: string | null = null;
+        try {
+          const u = await db.user.findUnique({
+            where: { id: userId },
+            select: { avatar: true },
+          });
+          avatar = u?.avatar ?? null;
+        } catch {
+          // تجاهل — الـavatar NULL آمن
+        }
         session.user = {
           ...session.user,
-          id: token.id as string,
+          id: userId,
           role: token.role as Role,
           districtId: token.districtId as string,
           familyId: token.familyId as string | null,
           isFamilyHead: token.isFamilyHead as boolean,
           status: token.status as string,
           phone: token.phone as string,
-          avatar: token.avatar as string | null,
+          avatar,
         } as typeof session.user;
       }
       return session;
