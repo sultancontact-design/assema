@@ -1,6 +1,7 @@
 "use client";
+
 import * as React from "react";
-import { Heart, Reply, Trash2, Send, Loader2, Pin } from "lucide-react";
+import { Heart, Reply, Trash2, Send, Loader2, Pin, MessageCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 
@@ -25,7 +26,8 @@ export function CommentsSection({ targetType, targetId, currentUserId }: { targe
     try {
       const res = await fetch(`/api/comments?targetType=${targetType}&targetId=${targetId}`);
       const d = await res.json();
-      setComments(d.comments || []); setTotal(d.total || 0);
+      setComments(d.comments || []);
+      setTotal(d.total || 0);
     } catch {} finally { setLoading(false); }
   };
 
@@ -35,7 +37,10 @@ export function CommentsSection({ targetType, targetId, currentUserId }: { targe
     if (!content.trim() || content.length < 2) return;
     setPosting(true);
     try {
-      const res = await fetch("/api/comments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ targetType, targetId, content, parentId }) });
+      const res = await fetch("/api/comments", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetType, targetId, content, parentId }),
+      });
       if (res.ok) { setNewComment(""); setReplyContent(""); setReplyingTo(null); load(); }
     } catch {} finally { setPosting(false); }
   };
@@ -62,54 +67,81 @@ export function CommentsSection({ targetType, targetId, currentUserId }: { targe
   };
 
   return (
-    <section className="mt-8 border-t pt-6" dir="rtl">
-      <h2 className="text-xl font-bold mb-4">التعليقات ({total})</h2>
+    <div dir="rtl" className="space-y-3">
+      {/* Input */}
       {currentUserId ? (
-        <div className="flex gap-3 mb-6">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-purple-600 flex-shrink-0" />
-          <div className="flex-1">
-            <textarea value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="أضف تعليقاً..." rows={2} className="w-full p-3 border rounded-lg bg-background resize-none" maxLength={2000} />
-            <div className="flex justify-between items-center mt-2">
-              <span className="text-xs text-muted-foreground">{newComment.length}/2000</span>
-              <Button onClick={() => post(newComment)} disabled={posting || newComment.length < 2} size="sm">{posting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} نشر</Button>
-            </div>
-          </div>
+        <div className="flex gap-2">
+          <textarea
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            placeholder="أضف تعليقاً..."
+            rows={2}
+            className="flex-1 p-2.5 border rounded-lg bg-background resize-none text-sm"
+            maxLength={2000}
+          />
+          <Button onClick={() => post(newComment)} disabled={posting || newComment.length < 2} size="sm" className="self-end">
+            {posting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          </Button>
         </div>
-      ) : (<div className="p-4 bg-muted rounded-lg text-center mb-6"><p className="text-sm text-muted-foreground"><a href="/login" className="text-primary font-bold">سجّل الدخول</a> للتعليق</p></div>)}
-      {loading ? (<div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>)
-      : comments.length === 0 ? (<p className="text-center text-muted-foreground py-8">لا توجد تعليقات بعد. كن أول من يعلق!</p>)
-      : (<div className="space-y-4">
+      ) : (
+        <div className="p-3 bg-muted rounded-lg text-center text-sm text-muted-foreground">
+          <a href="/login" className="text-primary font-bold">سجّل الدخول</a> للتعليق
+        </div>
+      )}
+
+      {/* List */}
+      {loading ? (
+        <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-white" /></div>
+      ) : comments.length === 0 ? (
+        <p className="text-center text-white/60 text-sm py-4">لا توجد تعليقات بعد</p>
+      ) : (
+        <div className="space-y-3 max-h-[50vh] overflow-y-auto">
           <AnimatePresence>
             {comments.map((c) => (
-              <motion.div key={c.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex gap-3">
-                <img src={c.user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.user.name)}&background=FE2C55&color=fff`} className="w-10 h-10 rounded-full flex-shrink-0" alt="" />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-bold text-sm">{c.user.name}</span>
-                    {c.isFake && <span className="text-[10px] px-2 py-0.5 bg-amber-500/20 text-amber-700 rounded-full">مميز</span>}
-                    {c.isPinned && <Pin className="w-3 h-3 text-primary" />}
-                    <span className="text-xs text-muted-foreground">{timeAgo(c.createdAt)}</span>
+              <motion.div key={c.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-2">
+                <img
+                  src={c.user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.user.name)}&background=FE2C55&color=fff&size=64`}
+                  className="w-8 h-8 rounded-full flex-shrink-0"
+                  alt=""
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="font-bold text-xs text-white">{c.user.name}</span>
+                    {c.isFake && <span className="text-[8px] px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded-full">مميز</span>}
+                    {c.isPinned && <Pin className="w-2.5 h-2.5 text-primary" />}
+                    <span className="text-[10px] text-white/40">{timeAgo(c.createdAt)}</span>
                   </div>
-                  <p className="text-sm mb-2 whitespace-pre-wrap">{c.content}</p>
-                  <div className="flex items-center gap-3 text-xs">
-                    <button onClick={() => like(c.id)} className="flex items-center gap-1 text-muted-foreground hover:text-red-500"><Heart className="w-3 h-3" />{c.likes}</button>
-                    <button onClick={() => setReplyingTo(replyingTo === c.id ? null : c.id)} className="flex items-center gap-1 text-muted-foreground hover:text-primary"><Reply className="w-3 h-3" />رد</button>
-                    {(currentUserId === c.user.id || currentUserId) && <button onClick={() => del(c.id)} className="flex items-center gap-1 text-muted-foreground hover:text-destructive"><Trash2 className="w-3 h-3" /></button>}
+                  <p className="text-xs text-white/90 mb-1">{c.content}</p>
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => like(c.id)} className="flex items-center gap-1 text-[10px] text-white/50 hover:text-red-400">
+                      <Heart className="w-2.5 h-2.5" />{c.likes}
+                    </button>
+                    <button onClick={() => setReplyingTo(replyingTo === c.id ? null : c.id)} className="text-[10px] text-white/50 hover:text-primary">
+                      <Reply className="w-2.5 h-2.5 inline" /> رد
+                    </button>
+                    {currentUserId && (
+                      <button onClick={() => del(c.id)} className="text-[10px] text-white/50 hover:text-red-400">
+                        <Trash2 className="w-2.5 h-2.5" />
+                      </button>
+                    )}
                   </div>
                   {replyingTo === c.id && (
-                    <div className="mt-3 flex gap-2">
-                      <textarea value={replyContent} onChange={(e) => setReplyContent(e.target.value)} placeholder="اكتب رداً..." rows={2} className="flex-1 p-2 border rounded-lg text-sm bg-background resize-none" />
+                    <div className="mt-2 flex gap-1">
+                      <textarea value={replyContent} onChange={(e) => setReplyContent(e.target.value)} placeholder="رد..." rows={1} className="flex-1 p-1.5 border rounded text-xs bg-background resize-none" />
                       <Button size="sm" onClick={() => post(replyContent, c.id)} disabled={posting || replyContent.length < 2}><Send className="w-3 h-3" /></Button>
                     </div>
                   )}
                   {c.replies && c.replies.length > 0 && (
-                    <div className="mt-3 space-y-3 pe-4 border-e-2 border-muted">
+                    <div className="mt-2 space-y-2 pe-2 border-e border-white/10">
                       {c.replies.map((r) => (
-                        <div key={r.id} className="flex gap-2">
-                          <img src={r.user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(r.user.name)}&background=8B5CF6&color=fff`} className="w-7 h-7 rounded-full flex-shrink-0" alt="" />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1"><span className="font-bold text-xs">{r.user.name}</span><span className="text-xs text-muted-foreground">{timeAgo(r.createdAt)}</span></div>
-                            <p className="text-xs">{r.content}</p>
+                        <div key={r.id} className="flex gap-1.5">
+                          <img src={r.user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(r.user.name)}&background=8B5CF6&color=fff&size=64`} className="w-6 h-6 rounded-full flex-shrink-0" alt="" />
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-[10px] text-white">{r.user.name}</span>
+                              <span className="text-[8px] text-white/40">{timeAgo(r.createdAt)}</span>
+                            </div>
+                            <p className="text-[10px] text-white/80">{r.content}</p>
                           </div>
                         </div>
                       ))}
@@ -119,7 +151,9 @@ export function CommentsSection({ targetType, targetId, currentUserId }: { targe
               </motion.div>
             ))}
           </AnimatePresence>
-        </div>)}
-    </section>
+        </div>
+      )}
+      {total > 0 && <p className="text-center text-[10px] text-white/40">{total} تعليق</p>}
+    </div>
   );
 }

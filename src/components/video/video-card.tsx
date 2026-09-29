@@ -1,8 +1,9 @@
 "use client";
 import * as React from "react";
 import { Heart, MessageCircle, Share2, Bookmark, Music, Volume2, VolumeX, ExternalLink } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { detectPlatform, getEmbedUrl } from "@/lib/video-embed";
+import { CommentsSection } from "@/components/social/comments-section";
 
 export function VideoCard({ video, isActive }: { video: any; isActive: boolean }) {
   const [liked, setLiked] = React.useState(false);
@@ -10,6 +11,7 @@ export function VideoCard({ video, isActive }: { video: any; isActive: boolean }
   const [likesCount, setLikesCount] = React.useState(video.likes || 0);
   const [sharesCount, setSharesCount] = React.useState(video.shares || 0);
   const [muted, setMuted] = React.useState(true);
+  const [showComments, setShowComments] = React.useState(false);
   const videoRef = React.useRef<HTMLVideoElement>(null);
 
   const embed = getEmbedUrl(video.sourceUrl);
@@ -77,11 +79,31 @@ export function VideoCard({ video, isActive }: { video: any; isActive: boolean }
 
       <div className="absolute bottom-24 start-4 flex flex-col gap-5 z-20">
         <button onClick={handleLike} className="flex flex-col items-center gap-1 text-white hover:scale-110 transition-transform"><Heart className={`w-8 h-8 ${liked ? "fill-red-500 text-red-500" : ""}`} style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }} /><span className="text-xs font-medium">{likesCount}</span></button>
-        <button className="flex flex-col items-center gap-1 text-white hover:scale-110 transition-transform"><MessageCircle className="w-8 h-8" style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }} /><span className="text-xs font-medium">{video.comments || 0}</span></button>
+        <button onClick={() => setShowComments(!showComments)} className="flex flex-col items-center gap-1 text-white hover:scale-110 transition-transform"><MessageCircle className="w-8 h-8" style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }} /><span className="text-xs font-medium">{video.comments || 0}</span></button>
         <button onClick={handleBookmark} className="flex flex-col items-center gap-1 text-white hover:scale-110 transition-transform"><Bookmark className={`w-8 h-8 ${bookmarked ? "fill-amber-400 text-amber-400" : ""}`} style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }} /><span className="text-xs font-medium">حفظ</span></button>
         <button onClick={handleShare} className="flex flex-col items-center gap-1 text-white hover:scale-110 transition-transform"><Share2 className="w-8 h-8" style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }} /><span className="text-xs font-medium">{sharesCount}</span></button>
         <motion.div animate={{ rotate: 360 }} transition={{ duration: 3, repeat: Infinity, ease: "linear" }} className="w-12 h-12 rounded-full bg-gradient-to-br from-[#FE2C55] via-[#25F4EE] to-[#8B5CF6] flex items-center justify-center"><Music className="w-5 h-5 text-white" /></motion.div>
       </div>
+
+      {/* Comments Drawer */}
+      <AnimatePresence>
+        {showComments && (
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 30 }}
+            className="absolute bottom-0 inset-x-0 h-[60%] bg-black/95 backdrop-blur-md rounded-t-2xl z-30 overflow-y-auto p-4"
+            dir="rtl"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-bold text-white text-sm">التعليقات</h3>
+              <button onClick={() => setShowComments(false)} className="text-white/60 text-xl">×</button>
+            </div>
+            <CommentsSection targetType="VIDEO" targetId={video.id} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
