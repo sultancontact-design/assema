@@ -3,7 +3,6 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { ProfileTabs } from "@/components/profile/profile-tabs";
-import { ProfileGrid } from "@/components/profile/profile-grid";
 import {
   Instagram, Facebook, MessageCircle, Youtube, Globe, MapPin,
   Calendar, Link as LinkIcon, Pencil, Settings,
@@ -144,11 +143,8 @@ export default async function ProfilePage() {
           </div>
         </div>
 
-        {/* Tabs */}
-        <ProfileTabs />
-
-        {/* Grid */}
-        <ProfileGrid videos={videos} posts={posts} />
+        {/* Tabs + Grid (merged component) */}
+        <ProfileTabs videos={videos} posts={posts} />
       </div>
     </div>
   );
