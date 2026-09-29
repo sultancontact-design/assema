@@ -145,18 +145,18 @@ export function GroupCard({
       transition={{ duration: 0.3, ease: "easeOut" }}
       className="h-full"
     >
-      <Card className="warm-shadow border-border bg-card h-full flex flex-col overflow-hidden transition-all hover:border-primary/30 hover:shadow-lg">
+      <Card className="card-2026 border-border bg-card h-full flex flex-col overflow-hidden">
         {/* Real photograph header */}
-        <div className="relative h-44 overflow-hidden">
+        <div className="relative h-48 overflow-hidden">
           <img
             src={group.imageUrl}
             alt={group.name}
-            className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+            className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
             loading="lazy"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
           <div className="absolute top-3 end-3 flex flex-col gap-1.5">
-            <Badge className="bg-white/20 backdrop-blur-md text-white border-0 text-[10px]">
+            <Badge className="glass border-0 text-white text-[10px]">
               {group.category}
             </Badge>
             {group.isPrivate && (
@@ -167,7 +167,7 @@ export function GroupCard({
             )}
           </div>
           <div className="absolute bottom-3 inset-x-3">
-            <CardTitle className="font-heading text-xl font-bold text-white">
+            <CardTitle className="font-heading text-2xl font-bold text-white drop-shadow-lg">
               {group.name}
             </CardTitle>
           </div>

@@ -51,8 +51,8 @@ export default async function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
-      {/* Cover Image */}
-      <div className="relative h-40 md:h-56 bg-gradient-to-r from-[#FE2C55] via-[#25F4EE] to-[#8B5CF6]">
+      {/* Cover Image — 2026 Aurora gradient (replaces noisy TikTok colors) */}
+      <div className="relative h-40 md:h-56 gradient-aurora">
         {dbUser.coverImage && (
           <img src={dbUser.coverImage} alt="غلاف" className="w-full h-full object-cover" />
         )}
