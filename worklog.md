@@ -6237,3 +6237,42 @@ Verification:
 - /blog/10-tips-budget-ramadan → 200 ✅
 
 Commit: d965b6a
+
+---
+Task ID: v50.0
+Agent: main developer
+Task: real thumbnails for videos + posts in profile grid
+
+pre-flight: ✅ ALL CHECKS PASSED + checkpoint-v50-start tag
+
+Fix 1: Video thumbnails via thum.io (commit caf908e)
+- Updated getThumbnail() in video-embed.ts:
+  * YouTube → img.youtube.com/vi/ID/hqdefault.jpg
+  * Vimeo → vumbnail.com/ID.jpg
+  * TikTok/Instagram/Facebook/Twitter → image.thum.io/get/width/400/crop/600/URL
+    (free screenshot service, no API key needed)
+  * Dailymotion → dailymotion.com/thumbnail/video/ID
+  * Streamable → thum.io fallback
+- next.config.ts: added image.thum.io + vumbnail.com + img.youtube.com
+
+Fix 2: Post thumbnails with fallback chain (commit caf908e)
+- New: getCategoryImage() — returns Unsplash image by category
+  (HEALTH→medical, FINANCE→money, RELIGIOUS→mosque, etc.)
+- New: extractFirstImage() — regex extracts first <img src> from HTML
+- ProfileGrid fallback: coverImage → extractFirstImage → getCategoryImage
+- onError handler: falls back to category image
+
+Fix 3: ProfileGrid improvements (commit caf908e)
+- Platform badge (top-right) for videos
+- Play icon (top-left) for videos
+- Type badge (مقال) for posts
+- Hover overlay: likes + comments (videos) / likes + views (posts)
+- aspect-square + object-cover + lazy loading
+- onError handler on all images
+
+Verification:
+- /community/profile → 200 ✅
+- /videos → 200 ✅
+- /blog/10-tips-budget-ramadan → 200 ✅
+
+Commit: caf908e
