@@ -6066,3 +6066,63 @@ Note: Vercel 494 cookie-size error on /community/profile in browser
 (not a code bug — page works via curl HTTP 200)
 
 Commit: c93aa8c
+
+---
+Task ID: v46.0
+Agent: main developer
+Task: pure iframe embeds + thumbnails + Instagram profile + stats-boost admin
+
+pre-flight: ✅ ALL CHECKS PASSED + checkpoint-v46-start tag
+
+Task 1: Video works with PURE IFRAMES (no vidflowx/react-player)
+- Root cause: vidflowx/react-player fail on Vercel due to SSR + dynamic import issues
+- Fix: use pure HTML iframes (native, no libraries, works everywhere)
+- New: src/lib/video-embed.ts:
+  * detectPlatform() — 12 platforms
+  * getEmbedUrl() — returns {embed, type} for each:
+    YouTube → youtube.com/embed/ID?autoplay=0
+    TikTok → tiktok.com/embed/v2/ID
+    Instagram → instagram.com/reel/ID/embed/
+    Facebook → facebook.com/plugins/video.php?href=URL
+    Vimeo → player.vimeo.com/video/ID
+    Dailymotion → dailymotion.com/embed/video/ID
+    Twitch → player.twitch.tv/?video=ID&parent=hostname
+    Twitter → platform.twitter.com/embed/Tweet.html?id=ID
+    Streamable → streamable.com/e/ID
+    Direct → <video> tag
+    Unknown → iframe direct
+  * getThumbnail() — YouTube + Vimeo thumbnails
+- Rewrote VideoCard: pure iframe OR <video> tag (NO dynamic imports!)
+- Rewrote /videos page: full-screen + header + bottom navigation bar
+- Verified in browser: hasVideos=true, snapItems=2, hasIframes=2, hasBottomNav=true, hasError=false ✅
+
+Task 2: Thumbnails for videos + posts
+- ProfileGrid updated:
+  * YouTube thumbnails via img.youtube.com/vi/ID/maxresdefault.jpg
+  * Vimeo thumbnails via vumbnail.com
+  * Platform badge + play icon overlay
+  * Hover: likes + comments count
+  * Posts: cover image OR title placeholder
+
+Task 3: Instagram-style profile (already from v45.0)
+- Cover image + avatar + stats + tabs + grid
+
+Task 4: Admin stats-boost
+- Prisma: StatsAdjustment model (adminId + targetType + targetId + field + amount + reason) + db:push
+- New: /admin/stats-boost page (tabs: USER/VIDEO/POST)
+  * Search targets by name/title
+  * Select field (points/likes/comments/shares/views)
+  * Set amount + reason
+  * Boost button → POST /api/admin/stats-boost
+- New: POST /api/admin/stats-boost (increments User.points / Video.likes/etc)
+- New: GET /api/admin/stats-targets (search users/videos/posts)
+- Admin sidebar: /admin/stats-boost → TrendingUp icon → "تحكم الإحصائيات"
+- All operations logged in AuditLog + StatsAdjustment
+
+Verification:
+- /api/videos/feed: 200 + 2 videos ✅
+- /videos: 200 + 2 iframes + 2 snap items + bottom nav ✅
+- /admin/stats-boost: 200 (redirects to login — needs auth) ✅
+- /community/profile: 200 ✅
+
+Commit: c33ad28
