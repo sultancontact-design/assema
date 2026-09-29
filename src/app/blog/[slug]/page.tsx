@@ -26,6 +26,8 @@ import { ZelligeDivider } from "@/components/shared/zellige-divider";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ShareButtons } from "@/components/community/share-buttons";
 import { ArticleSocialActions } from "@/components/social/article-social-actions";
+import { CommentsSection } from "@/components/social/comments-section";
+import { getCurrentUser } from "@/lib/auth";
 import {
   BLOG_CATEGORIES,
   BLOG_CATEGORY_LABELS,
@@ -56,6 +58,7 @@ export async function generateMetadata({ params }: PageProps) {
 
 export default async function BlogPostPage({ params }: PageProps) {
   const { slug } = await params;
+  const currentUser = await getCurrentUser();
 
   // 1) جلب المقال
   const post = await db.blogPost.findUnique({
@@ -246,6 +249,13 @@ export default async function BlogPostPage({ params }: PageProps) {
           variant="default"
         />
       </section>
+
+      {/* ─────────── التعليقات ─────────── */}
+      <CommentsSection
+        targetType="ARTICLE"
+        targetId={post.id}
+        currentUserId={currentUser?.id}
+      />
 
       {/* ─────────── مقالات ذات صلة ─────────── */}
       <section aria-labelledby="related-heading">

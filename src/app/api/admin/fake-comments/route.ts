@@ -7,8 +7,8 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const admin = await getCurrentUser();
-    if (!admin || admin.role !== "SUPER_ADMIN")
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!admin) return NextResponse.json({ error: "يجب تسجيل الدخول" }, { status: 401 });
+    if (admin.role !== "SUPER_ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const templates = await db.fakeCommentTemplate.findMany({
       where: { isActive: true },
@@ -24,8 +24,8 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const admin = await getCurrentUser();
-    if (!admin || admin.role !== "SUPER_ADMIN")
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!admin) return NextResponse.json({ error: "يجب تسجيل الدخول" }, { status: 401 });
+    if (admin.role !== "SUPER_ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const body = await request.json().catch(() => ({}));
     const { targetType, targetId, count } = body;
