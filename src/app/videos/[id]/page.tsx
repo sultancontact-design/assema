@@ -1,15 +1,13 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { VideoCard } from "@/components/video/video-card";
 import { CommentsSection } from "@/components/social/comments-section";
 import { ArticleSocialActions } from "@/components/social/article-social-actions";
 import Link from "next/link";
 import { ChevronLeft, ExternalLink } from "lucide-react";
 import { detectPlatform, getEmbedUrl } from "@/lib/video-embed";
-import { PageHero } from "@/components/community/page-hero";
-import { Card, CardContent } from "@/components/ui/card";
 import { formatNumber, formatDateArabic } from "@/lib/constants";
+import { FollowButtonInline } from "@/components/social/follow-button-inline";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +34,6 @@ export default async function VideoDetailPage({ params }: PageProps) {
     );
   }
 
-  // More videos by same user
   const moreVideos = await db.video.findMany({
     where: { userId: video.userId, isActive: true, id: { not: video.id } },
     orderBy: { createdAt: "desc" },
@@ -50,12 +47,10 @@ export default async function VideoDetailPage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-background" dir="rtl">
       <div className="w-full max-w-3xl mx-auto px-4 py-6">
-        {/* Back */}
         <Link href="/videos" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4">
           <ChevronLeft className="size-4" />العودة للفيديوهات
         </Link>
 
-        {/* Video player */}
         <div className="relative w-full aspect-[9/16] max-h-[70vh] mx-auto rounded-2xl overflow-hidden bg-black">
           {embed?.type === "video" ? (
             <video src={embed.embed} controls autoPlay loop playsInline className="w-full h-full object-contain" />
@@ -68,12 +63,10 @@ export default async function VideoDetailPage({ params }: PageProps) {
           )}
         </div>
 
-        {/* External link */}
         <a href={video.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-2 text-xs text-muted-foreground hover:text-primary">
           <ExternalLink className="size-3" />{platform} · فتح في المصدر
         </a>
 
-        {/* Title + stats */}
         <div className="mt-4">
           <h1 className="text-xl font-bold mb-2">{video.title}</h1>
           {video.description && <p className="text-sm text-muted-foreground mb-3">{video.description}</p>}
@@ -84,7 +77,6 @@ export default async function VideoDetailPage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* User info + follow */}
         <div className="flex items-center gap-3 p-3 rounded-xl border border-border mb-6">
           <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-primary to-accent shrink-0">
             {video.user.avatar ? <img src={video.user.avatar} alt={video.user.fullName} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-white font-bold">{video.user.fullName.slice(0,1)}</div>}
@@ -93,21 +85,16 @@ export default async function VideoDetailPage({ params }: PageProps) {
             <p className="font-bold text-sm">{video.user.fullName}</p>
             <p className="text-xs text-muted-foreground">{video.user.district?.nameAr ?? video.user.district?.name ?? "—"}</p>
           </div>
-          {user.id !== video.user.id && (
-            <FollowButtonClient targetId={video.user.id} currentUserId={user.id} />
-          )}
+          {user.id !== video.user.id && <FollowButtonInline targetId={video.user.id} />}
         </div>
 
-        {/* Social actions */}
         <ArticleSocialActions targetType="VIDEO" targetId={video.id} url={`/videos/${video.id}`} title={video.title} />
 
-        {/* Comments */}
         <div className="mt-6">
           <h2 className="text-lg font-bold mb-4">التعليقات</h2>
           <CommentsSection targetType="VIDEO" targetId={video.id} currentUserId={user.id} />
         </div>
 
-        {/* More videos */}
         {moreVideos.length > 0 && (
           <div className="mt-8">
             <h2 className="text-lg font-bold mb-4">فيديوهات أخرى لـ {video.user.fullName}</h2>
@@ -125,35 +112,5 @@ export default async function VideoDetailPage({ params }: PageProps) {
         )}
       </div>
     </div>
-  );
-}
-
-// Inline FollowButton (client component)
-"use client";
-import * as React from "react";
-import { UserPlus, UserCheck } from "lucide-react";
-
-function FollowButtonClient({ targetId, currentUserId }: { targetId: string; currentUserId: string }) {
-  const [following, setFollowing] = React.useState(false);
-  const [loading, setLoading] = React.useState(false);
-
-  React.useEffect(() => {
-    fetch(`/api/follow/status?targetId=${targetId}`).then(r => r.json()).then(d => setFollowing(d.following)).catch(() => {});
-  }, [targetId]);
-
-  const toggle = async () => {
-    setLoading(true);
-    const was = following;
-    setFollowing(!was);
-    try {
-      await fetch("/api/follow", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ followingId: targetId }) });
-    } catch { setFollowing(was); }
-    finally { setLoading(false); }
-  };
-
-  return (
-    <button onClick={toggle} disabled={loading} className={`h-9 px-4 rounded-full text-xs font-bold min-h-[44px] flex items-center gap-1.5 ${following ? "bg-muted text-foreground border border-border" : "bg-gradient-to-r from-[#FE2C55] to-[#8B5CF6] text-white"}`}>
-      {following ? <><UserCheck className="size-3" />متابَع</> : <><UserPlus className="size-3" />متابعة</>}
-    </button>
   );
 }
