@@ -6407,3 +6407,51 @@ Verification (after deploy):
 - /families → 404 (needs specific family ID — correct for index)
 
 Commits: bc8ccf1
+
+---
+Task ID: v56.0
+Agent: main developer
+Task: multi-city architecture + geo detection + responsive fix
+
+pre-flight: ✅ ALL CHECKS PASSED + checkpoint-v56-start tag
+
+Diagnosis (Task 0):
+| Problem | HTTP | Root cause |
+|---------|------|------------|
+| /u/[userId] | 200 ✅ | Already fixed in v55 (was 404 before deploy completed) |
+| /families/[id] | 200 ✅ | Already fixed in v55 |
+| /api/store/items | 200 ✅ | Working |
+| Store purchase | 200 (POST needs auth) | API exists: POST /api/store/items/[id]/purchase |
+
+Task 1: Multi-city Prisma models
+- 4 new models: Region, City, Country, DiasporaCity
+- User: added cityId, countryId, diasporaCityId, originCityId, detectedCity, lat, lng
+- District: added cityId, lat, lng
+- db:push executed (11.46s)
+- Seed: 12 regions + 50 cities + 5 districts linked to Marrakech + 1 country + 3 diaspora cities (partial — needs re-run for all 13 countries)
+
+Task 2: Geo detection APIs (4 new)
+- GET /api/geo/detect — IP geolocation via Vercel headers (x-vercel-ip-country/city/region/lat/lng)
+- GET /api/geo/regions — 12 Moroccan regions with cities
+- GET /api/geo/cities — cities (filter by regionId)
+- GET /api/geo/countries — diaspora countries with cities
+
+Task 3: Responsive CSS fix
+- overflow-x: hidden + max-width: 100vw on html/body
+- max-width: 100% on img/video/iframe
+- Prevents horizontal scroll on 1440px+ screens
+
+Verification (after deploy):
+- /api/geo/detect → 200 ✅
+- /api/geo/regions → 200 + 12 regions ✅
+- /api/geo/cities → 200 ✅
+- /api/geo/countries → 200 ✅
+- /u/[userId] → 200 ✅
+- /families/[id] → 200 ✅
+- /api/store/items → 200 ✅
+
+DB:
+- Regions: 12, Cities: 50, Countries: 1 (partial seed), DiasporaCities: 3
+- Districts with cityId: 5 (linked to Marrakech)
+
+Commit: 7a35a96
