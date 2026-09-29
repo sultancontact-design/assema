@@ -6323,3 +6323,41 @@ All buttons work with optimistic updates (no reload).
 Touch targets ≥ 44px.
 
 Commits: f58634c + f5851d1
+
+---
+Task ID: v53.0
+Agent: main developer
+Task: fix profile grid + video autoplay
+
+pre-flight: ✅ ALL CHECKS PASSED + checkpoint-v53-start tag
+
+Diagnosis:
+| Problem | Status | Root cause |
+|---------|--------|------------|
+| /api/users/list 404 | NOT 404 — returns 200 + 50 users | User tested before deploy completed |
+| /videos/[id] black | 200 but iframe had autoplay=0 | Changed to autoplay=1 |
+| /community/profile gray boxes | 200 but ProfileGrid showed gradients | Missing `sourceUrl` in video query + missing `content`/`category` in post query |
+
+Fix 1: Profile page video query (commit 023ba5b)
+- Was: `select: { id, title, thumbnailUrl, sourcePlatform, likes, comments, createdAt }`
+- Now: `select: { id, title, sourceUrl, sourcePlatform, thumbnailUrl, likes, comments, views, createdAt }`
+- Added `sourceUrl` — needed by getThumbnail() + detectPlatform()
+- Now YouTube thumbnails via img.youtube.com/vi/ID/hqdefault.jpg will show
+
+Fix 2: Profile page post query (commit 023ba5b)
+- Was: `select: { id, title, slug, coverImage, views }`
+- Now: `select: { id, title, slug, coverImage, content, excerpt, category, views }`
+- Added `content` (for extractFirstImage), `excerpt`, `category` (for getCategoryImage)
+- Now posts with no coverImage will show category-based Unsplash images
+
+Fix 3: Video autoplay (commit 023ba5b)
+- getEmbedUrl for YouTube: autoplay=0 → autoplay=1
+- Added 'web-share' to iframe allow list
+
+Verification:
+- /api/users/list → 200 + 50 users ✅
+- /videos/[id] → 200 ✅ (iframe with autoplay=1)
+- /community/profile → 200 ✅ (now with sourceUrl in video data)
+- Vercel 494 cookie error prevents browser testing (infrastructure limit, not code bug)
+
+Commit: 023ba5b
