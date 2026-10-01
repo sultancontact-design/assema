@@ -615,18 +615,11 @@ export default async function CommunityDashboardPage() {
               <FeedComposer onPost={() => { /* UnifiedFeed يُجلب تلقائياً */ }} />
             </main>
 
-            {/* العمود الأيسر (RTL) — النشاط + الفعاليات + الشفافية */}
+            {/* العمود الأيسر (RTL) — معطّل مؤقتاً للتشخيص */}
             <aside className="lg:col-span-3 space-y-4 order-3">
-              <LiveActivityCard
-                recentContributions={myContributions.slice(0, 3).map((c) => ({ id: c.id, amount: c.amount, user: { fullName: user.name ?? "أنت" }, confirmedAt: c.confirmedAt }))}
-                recentRequests={myRequests.slice(0, 3).map((r) => ({ id: r.id, anonymousCode: r.anonymousCode, title: r.title, amountRequested: r.amountRequested, status: r.status, createdAt: r.createdAt }))}
-              />
-              <UpcomingEventsCard events={upcomingEvents.slice(0, 3)} />
-              <FundTransparencyCard
-                balance={fundBalance}
-                totalContributions={fundTotalContributions}
-                totalDisbursed={fundTotalDisbursed}
-              />
+              <div className="p-4 rounded-xl border border-dashed border-border text-center text-sm text-muted-foreground">
+                Right aside (test mode)
+              </div>
             </aside>
           </div>
         </section>
