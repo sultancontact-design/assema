@@ -40,6 +40,7 @@ export default async function LeaderboardPage() {
   return (
     <div className="flex flex-col">
       <PageHero
+        section="leaderboard"
         title="لوحة المتصدرين"
         subtitle="ترتيب أعضاء الحي حسب النقاط — منافسة شريفة على الخير والعطاء."
         image="https://images.unsplash.com/photo-1551269901-5c5e14c25b58?auto=format&fit=crop&w=1920&q=80"

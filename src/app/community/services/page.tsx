@@ -36,6 +36,7 @@ export default async function ServicesPage() {
   return (
     <div className="flex flex-col">
       <PageHero
+        section="services"
         title="دليل الخدمات"
         subtitle="مهن، حرف، نصائح، وخدمات في حي سيدي يوسف بن علي — معلّمون، حرفيون، ومتخصّصون من جيرانك."
         image="https://images.unsplash.com/photo-1581338834637-9aa4fdda0ae6?auto=format&fit=crop&w=1920&q=80"

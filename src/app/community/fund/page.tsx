@@ -247,6 +247,7 @@ export default async function FundPage() {
     <div className="flex flex-col">
       {/* ━━━ Hero بصورة + عنوان display ━━━ */}
       <PageHero
+        section="fund"
         title="صندوق المعروف الرقمي"
         subtitle="صندوق تضامني رقمي بديل عن صندوق الأفراح والأتراح التقليدي. شفافية كاملة، سرّية تامة للمستفيدين، وموافقة لجنة نزاهة للطلبات الكبيرة."
         image="https://images.unsplash.com/photo-1601598851547-4308f1d1fa0f?auto=format&fit=crop&w=1920&q=80"

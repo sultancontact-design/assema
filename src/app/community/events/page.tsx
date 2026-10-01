@@ -104,6 +104,7 @@ export default async function EventsPage({ searchParams }: PageProps) {
     <div className="flex flex-col">
       {/* ━━━ Hero بصورة فعالية ━━━ */}
       <PageHero
+        section="events"
         title="فعاليات الحي"
         subtitle="ملتقيات، قوافل تضامنية، أمسيات ثقافية، ومناسبات تجمع أبناء الحي على قلب رجل واحد."
         image="https://images.unsplash.com/photo-1530024015-8b8a3c9c8e3c?auto=format&fit=crop&w=1920&q=80"

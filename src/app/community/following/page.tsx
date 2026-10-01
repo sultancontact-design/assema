@@ -30,7 +30,7 @@ export default async function FollowingPage() {
 
   return (
     <div className="flex flex-col">
-      <PageHero title="المتابعة" subtitle="من تتابع ومن يتابعك — اكتشف أبناء الحي وتواصل معهم." image="https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=1920&q=80" imageAlt="المتابعة" badge={`${following.length} متابَع · ${followers.length} متابِع`} />
+      <PageHero section="following" title="المتابعة" subtitle="من تتابع ومن يتابعك — اكتشف أبناء الحي وتواصل معهم." image="https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=1920&q=80" imageAlt="المتابعة" badge={`${following.length} متابَع · ${followers.length} متابِع`} />
       <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Following */}

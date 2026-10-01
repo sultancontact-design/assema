@@ -102,6 +102,7 @@ export default async function BlogPage({ searchParams }: PageProps) {
     <div className="flex flex-col">
       {/* ━━━ Hero بصورة + عنوان display ━━━ */}
       <PageHero
+        section="blog"
         title="مدوّنة الحي"
         subtitle="مقالات توعوية في الصحة والتربية والمالية والدين والمجتمع — معارف عملية لحياة مغربية أفضل في الحي."
         image="https://images.unsplash.com/photo-1481627834876-b7833e8f557d?auto=format&fit=crop&w=1920&q=80"

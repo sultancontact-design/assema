@@ -21,6 +21,7 @@ export default async function StorePage() {
   return (
     <div className="flex flex-col">
       <PageHero
+        section="store"
         title="متجر النقاط"
         subtitle="استبدل نقاطك بمنتجات وميزات حصرية — تجميدات، شارات، ومكافآت رقمية تدعم تفاعلك مع الحي."
         image="https://images.unsplash.com/photo-1607082348824-0cd0a4ab1c0d?auto=format&fit=crop&w=1920&q=80"

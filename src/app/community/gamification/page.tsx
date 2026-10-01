@@ -76,6 +76,7 @@ export default async function GamificationPage() {
   return (
     <div className="flex flex-col">
       <PageHero
+        section="gamification"
         title="نظام المكافآت"
         subtitle="مستويات، شارات، تحديات، ومكافآت يومية — كل تفاعل مع الحي يُكسبك نقاطاً ويُرقّيك."
         image="https://images.unsplash.com/photo-1611162616475-46b5b6bd0a1a?auto=format&fit=crop&w=1920&q=80"

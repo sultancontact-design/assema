@@ -27,6 +27,7 @@ export default async function ProfileEditPage() {
   return (
     <div className="flex flex-col">
       <PageHero
+        section="profile"
         title="تعديل الملف الشخصي"
         subtitle="حدّث بياناتك الشخصية، مهنتك، مهاراتك، وروابط التواصل الاجتماعي."
         image="https://images.unsplash.com/photo-1560161655-9d11b9531c4f?auto=format&fit=crop&w=1920&q=80"
