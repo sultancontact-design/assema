@@ -2,14 +2,12 @@
 
 // ===================================================================
 //  UnifiedFeed v61.0 — شبكة اجتماعية موحدة (10 أنواع منشورات)
-//  - يجلب من /api/feed
-//  - يعرض كل نوع ببطاقة مختلفة بصرياً (لون + أيقونة + محتوى)
-//  - 3-column layout: left aside (profile) + main feed + right aside
+//  v61.0-fixed: إزالة motion/react (كان يفشل في SSR على Vercel)
+//  - يستعمل div عادية مع transitions Tailwind بدلاً من motion
 // ===================================================================
 
 import * as React from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "motion/react";
 import {
   Heart,
   MessageCircle,
@@ -29,7 +27,6 @@ import {
   Video,
   UserPlus,
   ShieldCheck,
-  Coins,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -209,31 +206,15 @@ export function UnifiedFeed({ currentUserId }: UnifiedFeedProps) {
 
   return (
     <div className="space-y-4">
-      <AnimatePresence mode="popLayout">
-        {items.length === 0 && !loading ? (
-          <motion.div
-            key="empty"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <EmptyFeed />
-          </motion.div>
-        ) : (
-          items.map((item) => (
-            <motion.div
-              key={item.id}
-              layout
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.25 }}
-            >
-              <FeedItemCard item={item} />
-            </motion.div>
-          ))
-        )}
-      </AnimatePresence>
+      {items.length === 0 && !loading ? (
+        <EmptyFeed />
+      ) : (
+        items.map((item) => (
+          <div key={item.id} className="transition-opacity duration-300">
+            <FeedItemCard item={item} />
+          </div>
+        ))
+      )}
 
       {loading && (
         <div className="flex justify-center py-8">
