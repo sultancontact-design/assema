@@ -44,8 +44,18 @@ import { ZelligeDivider } from "@/components/shared/zellige-divider";
 import { DashboardMotion } from "@/components/community/dashboard-motion";
 import { EngagementSection } from "@/components/community/community-engagement";
 import { AdPlacement } from "@/components/ads/ad-placement";
-import { UnifiedFeed } from "@/components/community/unified-feed";
 import { FeedComposer } from "@/components/feed/feed-composer";
+import dynamic from "next/dynamic";
+
+// UnifiedFeed يستعمل motion/react الذي يفشل في SSR على Vercel
+// نحمّله ديناميكياً مع ssr: false لتخطّي الـ SSR
+const UnifiedFeedClient = dynamic(
+  () => import("@/components/community/unified-feed").then((m) => m.UnifiedFeed),
+  {
+    ssr: false,
+    loading: () => <div className="h-64 animate-pulse bg-muted rounded-xl" />,
+  }
+);
 import type {
   ContributionStatus,
   FundRequestStatus,
@@ -610,11 +620,10 @@ export default async function CommunityDashboardPage() {
               <TrendingTopicsCard />
             </aside>
 
-            {/* العمود الأوسط — Composer + UnifiedFeed (معطّل مؤقتاً للتشخيص) */}
+            {/* العمود الأوسط — Composer + UnifiedFeed */}
             <main className="lg:col-span-6 space-y-4 order-1 lg:order-2">
-              <div className="p-4 rounded-xl border border-dashed border-border text-center text-sm text-muted-foreground">
-                Composer + UnifiedFeed (test mode)
-              </div>
+              <FeedComposer onPost={() => { /* UnifiedFeed يُجلب تلقائياً */ }} />
+              <UnifiedFeedClient currentUserId={user.id} />
             </main>
 
             {/* العمود الأيسر (RTL) — النشاط + الفعاليات + الشفافية */}
