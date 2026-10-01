@@ -167,41 +167,13 @@ export default async function CommunityDashboardPage() {
     include: { _count: { select: { approvals: true } } },
   });
 
-  // 7.5) v61.0 — بيانات الـUnified Feed (آخر مساهمات + طلبات الحي + نقاط/مستوى المستخدم)
-  const [recentContributions, recentRequests, userStats] = await Promise.all([
-    db.contribution.findMany({
-      where: { status: "CONFIRMED", districtId: user.districtId },
-      orderBy: { confirmedAt: "desc" },
-      take: 5,
-      select: {
-        id: true,
-        amount: true,
-        month: true,
-        method: true,
-        digitalReceipt: true,
-        confirmedAt: true,
-        user: { select: { id: true, fullName: true } },
-      },
-    }),
-    db.fundRequest.findMany({
-      where: { districtId: user.districtId },
-      orderBy: { createdAt: "desc" },
-      take: 5,
-      select: {
-        id: true,
-        anonymousCode: true,
-        type: true,
-        title: true,
-        amountRequested: true,
-        status: true,
-        createdAt: true,
-      },
-    }),
-    db.user.findUnique({
+  // 7.5) v61.0 — نقاط/مستوى المستخدم (للـProfileMiniCard)
+  const userStats = await db.user
+    .findUnique({
       where: { id: user.id },
       select: { points: true, level: true },
-    }),
-  ]);
+    })
+    .catch(() => null);
 
   const userPoints = userStats?.points ?? 0;
   const userLevel = userStats?.level ?? 1;
@@ -640,19 +612,15 @@ export default async function CommunityDashboardPage() {
 
             {/* العمود الأوسط — Composer + UnifiedFeed */}
             <main className="lg:col-span-6 space-y-4 order-1 lg:order-2">
-              <Suspense fallback={<div className="h-32 animate-pulse bg-muted rounded-xl" />}>
-                <FeedComposer onPost={() => { /* UnifiedFeed يُجلب تلقائياً */ }} />
-              </Suspense>
-              <Suspense fallback={<div className="h-64 animate-pulse bg-muted rounded-xl" />}>
-                <UnifiedFeed currentUserId={user.id} />
-              </Suspense>
+              <FeedComposer onPost={() => { /* UnifiedFeed يُجلب تلقائياً */ }} />
+              <UnifiedFeed currentUserId={user.id} />
             </main>
 
-            {/* العمود الأيسر (RTL) — النشاط + الأعضاء + الفعاليات + الشفافية */}
+            {/* العمود الأيسر (RTL) — النشاط + الفعاليات + الشفافية */}
             <aside className="lg:col-span-3 space-y-4 order-3">
               <LiveActivityCard
-                recentContributions={recentContributions.slice(0, 3)}
-                recentRequests={recentRequests.slice(0, 3)}
+                recentContributions={myContributions.slice(0, 3).map((c) => ({ id: c.id, amount: c.amount, user: { fullName: user.name ?? "أنت" }, confirmedAt: c.confirmedAt }))}
+                recentRequests={myRequests.slice(0, 3).map((r) => ({ id: r.id, anonymousCode: r.anonymousCode, title: r.title, amountRequested: r.amountRequested, status: r.status, createdAt: r.createdAt }))}
               />
               <UpcomingEventsCard events={upcomingEvents.slice(0, 3)} />
               <FundTransparencyCard
