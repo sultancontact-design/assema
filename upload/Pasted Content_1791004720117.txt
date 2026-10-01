@@ -1,0 +1,1161 @@
+# البرومبت الشامل — إعادة بناء المنصة كشبكة اجتماعية متكاملة (v63.0)
+
+انسخ الكود أدناه بضغطة واحدة والصقه في الوكيل. هذا البرومبت **الوحيد** الذي يحتاجه لتنفيذ كل شيء.
+
+```markdown
+═══════════════════════════════════════════════════════════════════════════════
+البرومبت الشامل — إعادة بناء المنصة كشبكة اجتماعية متكاملة (v63.0)
+═══════════════════════════════════════════════════════════════════════════════
+
+【الرابط】
+https://assema-sultancontact-design.vercel.app
+
+【🚨 اقرأ أولاً — المشاكل المؤكدة من فحص المستخدم】
+
+❌ **الشريط العلوي**: أزرار متداخلة، فوضى بصرية
+❌ **التعليقات**: لا تعمل على المنشورات
+❌ **الحفظ**: لا يعمل
+❌ **المشاركة**: لا تعمل
+❌ **الفيديو**: يعمل بربع المكان المخصص له فقط
+❌ **الأقسام منفصلة**: تحتاج دمج كلي — شبكة اجتماعية واحدة
+❌ **لا يوجد زر متابعة**: يجب إضافته لكل مستخدم
+❌ **قالب المنصة**: معيب، يحتاج تغيير كامل
+
+【قواعد صارمة】
+1. **هذا ليس ترقيعاً** — إعادة بناء كاملة
+2. **لا تحذف أي شيء موجود** — ابنِ فوقه
+3. **ادمج الأقسام** — شبكة اجتماعية واحدة، لا صفحات منفصلة
+4. ادفع بعد كل ملف
+5. كل بند له دليل (لقطة + curl)
+6. لا تكشف أي secret
+7. استخدم GH_TOKEN + VERCEL_TOKEN
+
+═══════════════════════════════════════════════════════════════════════════════
+الجزء 1: إصلاح الشريط العلوي — إزالة الفوضى
+═══════════════════════════════════════════════════════════════════════════════
+
+【المشكلة】
+أزرار متداخلة في الشريط العلوي، روابط كثيرة، فوضى بصرية.
+
+【الحل — شريط علوي بسيط + كل شيء في الشريط الجانبي】
+
+```tsx
+// src/components/layout/site-header.tsx
+'use client'
+import { Menu, Search, Bell, User } from 'lucide-react'
+import { Logo } from './logo'
+import { NotificationBell } from './notification-bell'
+import { UserMenu } from './user-menu'
+import { GlobalSearch } from './global-search'
+
+export function SiteHeader() {
+  return (
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container-fluid flex h-16 items-center justify-between gap-4">
+        {/* 1. زر القائمة (يفتح الشريط الجانبي) */}
+        <button 
+          className="lg:hidden p-2 rounded-lg hover:bg-accent"
+          aria-label="فتح القائمة"
+        >
+          <Menu className="h-6 w-6" />
+        </button>
+        
+        {/* 2. اللوغو */}
+        <Logo className="h-8 w-8 lg:h-10 lg:w-10" />
+        
+        {/* 3. البحث (فقط على Desktop) */}
+        <div className="hidden md:flex flex-1 max-w-md">
+          <GlobalSearch />
+        </div>
+        
+        {/* 4. الإشعارات + المستخدم */}
+        <div className="flex items-center gap-2">
+          <NotificationBell />
+          <UserMenu />
+        </div>
+      </div>
+    </header>
+  )
+}
+```
+
+【CSS — إصلاح التداخل】
+```css
+/* globals.css */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  height: 64px;
+}
+
+main {
+  padding-top: 64px; /* تعويض ارتفاع الهيدر */
+}
+```
+
+【التحقق】
+- افتح `/` — الشريط العلوي بسيط
+- لا أزرار متداخلة
+- لقطة
+
+═══════════════════════════════════════════════════════════════════════════════
+الجزء 2: الشريط الجانبي — كل الأقسام في مكان واحد
+═══════════════════════════════════════════════════════════════════════════════
+
+【المرجع التقني — 2026】
+"shadcn Sidebar: composable, accessible sidebar component with built-in collapsible, icon-only, and offcanvas variants." — shadcn.io
+
+【الحل — شريط جانبي شامل + زر 3 شرائح】
+
+```tsx
+// src/components/layout/app-sidebar.tsx
+'use client'
+import { useState, useEffect } from 'react'
+import { Sidebar, SidebarProvider, SidebarTrigger, SidebarContent,
+         SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem,
+         SidebarMenuButton, SidebarGroup, SidebarGroupLabel,
+         SidebarInset } from '@/components/ui/sidebar'
+import { Home, Users, Wallet, Calendar, Map, Briefcase, Newspaper,
+         TrendingUp, Store, Gamepad2, Settings, MessageCircle,
+         Bell, Bookmark, User, Search, Trophy, Target } from 'lucide-react'
+
+const SIDEBAR_SECTIONS = [
+  {
+    label: 'الشبكة الاجتماعية',
+    items: [
+      { title: 'الرئيسية', icon: Home, href: '/' },
+      { title: 'المنشورات', icon: MessageCircle, href: '/feed' },
+      { title: 'الأعضاء', icon: Users, href: '/members' },
+      { title: 'الإشعارات', icon: Bell, href: '/notifications' },
+      { title: 'المحفوظات', icon: Bookmark, href: '/bookmarks' },
+      { title: 'الملف الشخصي', icon: User, href: '/profile' },
+    ],
+  },
+  {
+    label: 'المجتمع',
+    items: [
+      { title: 'المجموعات', icon: Users, href: '/groups' },
+      { title: 'الفعاليات', icon: Calendar, href: '/events' },
+      { title: 'المبادرات', icon: Target, href: '/initiatives' },
+      { title: 'النقاشات', icon: MessageCircle, href: '/discussions' },
+    ],
+  },
+  {
+    label: 'المعروف',
+    items: [
+      { title: 'صندوق المعروف', icon: Wallet, href: '/fund' },
+      { title: 'الشفافية', icon: TrendingUp, href: '/fund/transparency' },
+    ],
+  },
+  {
+    label: 'المعرفة',
+    items: [
+      { title: 'المدونة', icon: Newspaper, href: '/blog' },
+      { title: 'دليل الحي', icon: Briefcase, href: '/guide' },
+      { title: 'الخدمات', icon: Briefcase, href: '/services' },
+    ],
+  },
+  {
+    label: 'السوق',
+    items: [
+      { title: 'أسعار السوق', icon: TrendingUp, href: '/prices' },
+      { title: 'المتجر', icon: Store, href: '/store' },
+    ],
+  },
+  {
+    label: 'الانتماء',
+    items: [
+      { title: 'نقاطي', icon: Gamepad2, href: '/gamification' },
+      { title: 'الشارات', icon: Trophy, href: '/badges' },
+      { title: 'التحديات', icon: Target, href: '/challenges' },
+    ],
+  },
+  {
+    label: 'الخريطة',
+    items: [
+      { title: 'خريطة الأحياء', icon: Map, href: '/map-3d' },
+    ],
+  },
+]
+
+export function AppSidebar() {
+  const [open, setOpen] = useState(false)
+  
+  return (
+    <SidebarProvider defaultOpen={true}>
+      <Sidebar collapsible="icon" className="border-l">
+        <SidebarHeader>
+          <SidebarTrigger>
+            <Menu className="h-5 w-5" />
+          </SidebarTrigger>
+        </SidebarHeader>
+        <SidebarContent>
+          {SIDEBAR_SECTIONS.map((section) => (
+            <SidebarGroup key={section.label}>
+              <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
+              <SidebarMenu>
+                {section.items.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton asChild>
+                      <a href={item.href}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroup>
+          ))}
+        </SidebarContent>
+        <SidebarFooter>
+          <SidebarMenuButton asChild>
+            <a href="/settings">
+              <Settings className="h-4 w-4" />
+              <span>الإعدادات</span>
+            </a>
+          </SidebarMenuButton>
+        </SidebarFooter>
+      </Sidebar>
+      <SidebarInset>
+        {children}
+      </SidebarInset>
+    </SidebarProvider>
+  )
+}
+```
+
+【التحقق】
+- افتح `/` — الشريط الجانبي يظهر
+- اضغط زر 3 شرائح — يفتح/يغلق
+- لقطة × 3
+
+═══════════════════════════════════════════════════════════════════════════════
+الجزء 3: زر المتابعة (Follow Button)
+═══════════════════════════════════════════════════════════════════════════════
+
+【المرجع التقني — 2026】
+"ruixen profile-card: React card component — a glassmorphic profile card with two variants — full-bleed image overlay and split half layout. Includes follow button, favorite." — ruixen.com
+
+"Munia: Follow and unfollow other users. Display, search and filter a user's followers and following list. Activity logging and notifications." — GitHub
+
+【الحل — زر متابعة لكل مستخدم】
+
+```tsx
+// src/components/social/follow-button.tsx
+'use client'
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { UserPlus, UserCheck } from 'lucide-react'
+import { toast } from 'sonner'
+
+export function FollowButton({ 
+  userId, 
+  initialFollowing = false,
+  size = 'default' 
+}: { 
+  userId: string
+  initialFollowing?: boolean
+  size?: 'default' | 'sm'
+}) {
+  const [following, setFollowing] = useState(initialFollowing)
+  const [loading, setLoading] = useState(false)
+  
+  const handleToggle = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/users/${userId}/follow`, {
+        method: following ? 'DELETE' : 'POST',
+      })
+      if (res.ok) {
+        setFollowing(!following)
+        toast.success(following ? 'تم إلغاء المتابعة' : 'تمت المتابعة')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+  
+  return (
+    <Button
+      onClick={handleToggle}
+      disabled={loading}
+      variant={following ? 'outline' : 'default'}
+      size={size}
+      className="gap-2"
+    >
+      {following ? (
+        <>
+          <UserCheck className="h-4 w-4" />
+          متابَع
+        </>
+      ) : (
+        <>
+          <UserPlus className="h-4 w-4" />
+          متابعة
+        </>
+      )}
+    </Button>
+  )
+}
+```
+
+【API Endpoint】
+```typescript
+// src/app/api/users/[id]/follow/route.ts
+import { prisma } from '@/lib/db'
+import { getCurrentUserId } from '@/lib/auth'
+
+export async function POST(req: Request, { params }: { params: { id: string } }) {
+  const currentUserId = await getCurrentUserId()
+  if (!currentUserId) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  
+  await prisma.follow.create({
+    data: {
+      followerId: currentUserId,
+      followingId: params.id,
+    },
+  })
+  
+  // إشعار للمستخدم
+  await prisma.notification.create({
+    data: {
+      userId: params.id,
+      type: 'FOLLOW',
+      title: 'متابع جديد',
+      body: 'بدأ أحدهم بمتابعتك',
+    },
+  })
+  
+  return Response.json({ success: true })
+}
+
+export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+  const currentUserId = await getCurrentUserId()
+  if (!currentUserId) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  
+  await prisma.follow.deleteMany({
+    where: {
+      followerId: currentUserId,
+      followingId: params.id,
+    },
+  })
+  
+  return Response.json({ success: true })
+}
+```
+
+【Prisma Model】
+```prisma
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+  
+  follower    User     @relation("UserFollowing", fields: [followerId], references: [id])
+  following   User     @relation("UserFollowers", fields: [followingId], references: [id])
+  
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+```
+
+【الاستخدام — في كل مكان يظهر فيه مستخدم】
+```tsx
+// في ProfileCard
+<FollowButton userId={user.id} initialFollowing={isFollowing} />
+
+// في MemberList
+<FollowButton userId={member.id} size="sm" />
+
+// في PostCard
+<FollowButton userId={post.author.id} size="sm" />
+```
+
+【التحقق】
+- افتح `/members` — كل عضو له زر متابعة
+- اضغط → يتغير إلى "متابَع"
+- لقطة
+
+═══════════════════════════════════════════════════════════════════════════════
+الجزء 4: إصلاح التفاعلات — التعليقات + الحفظ + المشاركة
+═══════════════════════════════════════════════════════════════════════════════
+
+【4.1 — التعليقات】
+
+```tsx
+// src/components/social/comment-section.tsx
+'use client'
+import { useState, useEffect } from 'react'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import { Heart, Reply, MoreHorizontal } from 'lucide-react'
+import { toast } from 'sonner'
+
+export function CommentSection({ postId }: { postId: string }) {
+  const [comments, setComments] = useState([])
+  const [newComment, setNewComment] = useState('')
+  const [loading, setLoading] = useState(false)
+  
+  useEffect(() => {
+    fetch(`/api/posts/${postId}/comments`)
+      .then(r => r.json())
+      .then(d => setComments(d.comments || []))
+  }, [postId])
+  
+  const handleSubmit = async () => {
+    if (!newComment.trim()) return
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/posts/${postId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: newComment }),
+      })
+      const data = await res.json()
+      setComments([data.comment, ...comments])
+      setNewComment('')
+      toast.success('تم إضافة التعليق')
+    } finally {
+      setLoading(false)
+    }
+  }
+  
+  return (
+    <div className="space-y-4" dir="rtl">
+      {/* نموذج إضافة تعليق */}
+      <div className="flex gap-3">
+        <Avatar className="h-10 w-10">
+          <AvatarFallback>أ</AvatarFallback>
+        </Avatar>
+        <div className="flex-1 space-y-2">
+          <Textarea
+            placeholder="أضف تعليقاً..."
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            rows={2}
+            className="resize-none"
+          />
+          <div className="flex justify-end">
+            <Button 
+              onClick={handleSubmit} 
+              disabled={loading || !newComment.trim()}
+              size="sm"
+            >
+              {loading ? 'جاري الإرسال...' : 'تعليق'}
+            </Button>
+          </div>
+        </div>
+      </div>
+      
+      {/* قائمة التعليقات */}
+      <div className="space-y-4">
+        {comments.map((comment: any) => (
+          <CommentItem key={comment.id} comment={comment} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function CommentItem({ comment }: { comment: any }) {
+  const [liked, setLiked] = useState(comment.isLiked)
+  const [likes, setLikes] = useState(comment.likes)
+  
+  return (
+    <div className="flex gap-3">
+      <Avatar className="h-8 w-8">
+        <AvatarImage src={comment.author.avatar} />
+        <AvatarFallback>{comment.author.name[0]}</AvatarFallback>
+      </Avatar>
+      <div className="flex-1">
+        <div className="bg-muted rounded-lg p-3">
+          <div className="font-semibold text-sm">{comment.author.name}</div>
+          <p className="text-sm mt-1">{comment.content}</p>
+        </div>
+        <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
+          <button 
+            className="hover:text-primary flex items-center gap-1"
+            onClick={() => {
+              setLiked(!liked)
+              setLikes(liked ? likes - 1 : likes + 1)
+            }}
+          >
+            <Heart className={`h-3 w-3 ${liked ? 'fill-red-500 text-red-500' : ''}`} />
+            {likes}
+          </button>
+          <button className="hover:text-primary flex items-center gap-1">
+            <Reply className="h-3 w-3" />
+            رد
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+```
+
+【4.2 — الحفظ (Bookmark)】
+
+```tsx
+// src/components/social/bookmark-button.tsx
+'use client'
+import { useState } from 'react'
+import { Bookmark } from 'lucide-react'
+import { toast } from 'sonner'
+
+export function BookmarkButton({ postId, initialSaved = false }: { 
+  postId: string
+  initialSaved?: boolean 
+}) {
+  const [saved, setSaved] = useState(initialSaved)
+  const [loading, setLoading] = useState(false)
+  
+  const handleToggle = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/posts/${postId}/bookmark`, {
+        method: saved ? 'DELETE' : 'POST',
+      })
+      if (res.ok) {
+        setSaved(!saved)
+        toast.success(saved ? 'تم إزالة الحفظ' : 'تم الحفظ')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+  
+  return (
+    <button
+      onClick={handleToggle}
+      disabled={loading}
+      className="flex items-center gap-1 hover:text-primary transition-colors"
+      aria-label={saved ? 'إزالة من المحفوظات' : 'حفظ'}
+    >
+      <Bookmark className={`h-4 w-4 ${saved ? 'fill-primary text-primary' : ''}`} />
+    </button>
+  )
+}
+```
+
+【4.3 — المشاركة (Share)】
+
+```tsx
+// src/components/social/share-menu.tsx
+'use client'
+import { Share2, Facebook, Twitter, Linkedin, Copy, MessageCircle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { toast } from 'sonner'
+
+export function ShareMenu({ url, title }: { url: string; title: string }) {
+  const shareUrl = typeof window !== 'undefined' ? window.location.origin + url : url
+  
+  const handleShare = (platform: string) => {
+    const encodedUrl = encodeURIComponent(shareUrl)
+    const encodedTitle = encodeURIComponent(title)
+    
+    const urls: Record<string, string> = {
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+      twitter: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
+      whatsapp: `https://wa.me/?text=${encodedTitle}%20${encodedUrl}`,
+    }
+    
+    window.open(urls[platform], '_blank', 'width=600,height=400')
+  }
+  
+  const handleCopy = () => {
+    navigator.clipboard.writeText(shareUrl)
+    toast.success('تم نسخ الرابط')
+  }
+  
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="flex items-center gap-1 hover:text-primary transition-colors">
+          <Share2 className="h-4 w-4" />
+          <span className="text-sm">مشاركة</span>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuItem onClick={() => handleShare('facebook')}>
+          <Facebook className="h-4 w-4 ml-2" />
+          فيسبوك
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleShare('twitter')}>
+          <Twitter className="h-4 w-4 ml-2" />
+          X (تويتر)
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleShare('linkedin')}>
+          <Linkedin className="h-4 w-4 ml-2" />
+          لينكد إن
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleShare('whatsapp')}>
+          <MessageCircle className="h-4 w-4 ml-2" />
+          واتساب
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleCopy}>
+          <Copy className="h-4 w-4 ml-2" />
+          نسخ الرابط
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+```
+
+【التحقق】
+- افتح أي منشور
+- جرّب: تعليق + حفظ + مشاركة
+- كل واحد يعمل → toast
+- لقطة × 3
+
+═══════════════════════════════════════════════════════════════════════════════
+الجزء 5: إصلاح الفيديو — ملء المكان المخصص
+═══════════════════════════════════════════════════════════════════════════════
+
+【المشكلة】
+الفيديو يعمل بربع المكان المخصص له.
+
+【السبب المحتمل】
+- iframe بدون `width: 100%`
+- aspect-ratio غير محدد
+- container بحجم ثابت
+
+【الحل】
+
+```tsx
+// src/components/social/video-player.tsx
+'use client'
+import { useState } from 'react'
+import { Play } from 'lucide-react'
+
+export function VideoPlayer({ 
+  src, 
+  poster, 
+  type = 'youtube',
+  className = ''
+}: { 
+  src: string
+  poster?: string
+  type?: 'youtube' | 'vimeo' | 'direct'
+  className?: string
+}) {
+  const [playing, setPlaying] = useState(false)
+  
+  // استخراج ID من يوتيوب
+  const getYouTubeId = (url: string) => {
+    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/)
+    return match ? match[1] : url
+  }
+  
+  const embedSrc = type === 'youtube' 
+    ? `https://www.youtube.com/embed/${getYouTubeId(src)}?autoplay=1`
+    : src
+  
+  return (
+    <div className={`relative w-full aspect-video rounded-lg overflow-hidden bg-black ${className}`}>
+      {!playing ? (
+        <>
+          {/* صورة الغلاف */}
+          {poster ? (
+            <img 
+              src={poster} 
+              alt="فيديو"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-primary/20 to-secondary/20" />
+          )}
+          
+          {/* زر التشغيل */}
+          <button
+            onClick={() => setPlaying(true)}
+            className="absolute inset-0 flex items-center justify-center group"
+            aria-label="تشغيل الفيديو"
+          >
+            <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Play className="h-8 w-8 text-primary ml-1" fill="currentColor" />
+            </div>
+          </button>
+        </>
+      ) : (
+        <iframe
+          src={embedSrc}
+          title="فيديو"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+          className="absolute inset-0 w-full h-full"
+        />
+      )}
+    </div>
+  )
+}
+```
+
+【CSS — إصلاح الحجم】
+```css
+/* globals.css */
+.video-container {
+  width: 100%;
+  aspect-ratio: 16 / 9; /* أو 9/16 للريلز */
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #000;
+}
+
+.video-container iframe,
+.video-container video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+```
+
+【التحقق】
+- افتح `/videos` — الفيديو يملأ المكان
+- اضغط → يشغل بكامل الحجم
+- لقطة
+
+═══════════════════════════════════════════════════════════════════════════════
+الجزء 6: دمج الأقسام — شبكة اجتماعية موحدة
+═══════════════════════════════════════════════════════════════════════════════
+
+【المرجع التقني — 2026】
+"Tribune: The home page lays out up to five columns side-by-side — For you, Activity, Statistics, Profile, Saved." — shadcndashboard.com
+
+"Threads Clone: Comprehensive, full-featured recreation of Meta's Threads. Next.js 16, TypeScript, tRPC, Tailwind CSS, shadcn/ui, Prisma with Neon PostgreSQL." — shadcn.io
+
+【البنية الجديدة — 3 Columns】
+
+```tsx
+// src/app/(social)/layout.tsx
+export default function SocialLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="container-fluid py-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* العمود الأيمن — الملف الشخصي */}
+        <aside className="lg:col-span-3 space-y-4 lg:sticky lg:top-20 lg:self-start">
+          <ProfileCard />
+          <QuickNav />
+          <TrendingTopics />
+        </aside>
+        
+        {/* العمود الأوسط — الـFeed الموحد */}
+        <main className="lg:col-span-6 space-y-4">
+          {children}
+        </main>
+        
+        {/* العمود الأيسر — الإحصائيات */}
+        <aside className="lg:col-span-3 space-y-4 lg:sticky lg:top-20 lg:self-start">
+          <LiveStats />
+          <TopMembers />
+          <FundTransparency />
+        </aside>
+      </div>
+    </div>
+  )
+}
+```
+
+【الـFeed الموحد — 12 نوع منشور】
+
+```tsx
+// src/components/social/unified-feed.tsx
+'use client'
+import { useEffect, useState } from 'react'
+import { PostCard } from './post-card'
+import { ContributionCard } from './contribution-card'
+import { EventCard } from './event-card'
+import { BadgeCard } from './badge-card'
+import { BlogCard } from './blog-card'
+import { PollCard } from './poll-card'
+import { VideoCard } from './video-card'
+
+const CARD_COMPONENTS: Record<string, React.ComponentType<any>> = {
+  POST: PostCard,
+  CONTRIBUTION: ContributionCard,
+  EVENT: EventCard,
+  BADGE_EARNED: BadgeCard,
+  LEVEL_UP: BadgeCard,
+  BLOG_PUBLISHED: BlogCard,
+  POLL: PollCard,
+  VIDEO: VideoCard,
+}
+
+export function UnifiedFeed() {
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(true)
+  
+  useEffect(() => {
+    fetch('/api/feed')
+      .then(r => r.json())
+      .then(d => setItems(d.items || []))
+      .finally(() => setLoading(false))
+  }, [])
+  
+  if (loading) return <FeedSkeleton />
+  
+  return (
+    <div className="space-y-4">
+      {items.map((item: any) => {
+        const CardComponent = CARD_COMPONENTS[item.type] || PostCard
+        return <CardComponent key={item.id} item={item} />
+      })}
+    </div>
+  )
+}
+```
+
+【PostCard — مع كل التفاعلات】
+
+```tsx
+// src/components/social/post-card.tsx
+'use client'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal } from 'lucide-react'
+import { FollowButton } from './follow-button'
+import { CommentSection } from './comment-section'
+import { BookmarkButton } from './bookmark-button'
+import { ShareMenu } from './share-menu'
+import { useState } from 'react'
+
+export function PostCard({ item }: { item: any }) {
+  const [liked, setLiked] = useState(item.isLiked)
+  const [likes, setLikes] = useState(item.likes)
+  const [showComments, setShowComments] = useState(false)
+  
+  return (
+    <article className="bg-card border rounded-2xl p-4 space-y-3" dir="rtl">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <Avatar className="h-10 w-10">
+          <AvatarImage src={item.author.avatar} />
+          <AvatarFallback>{item.author.name[0]}</AvatarFallback>
+        </Avatar>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold">{item.author.name}</span>
+            <span className="text-xs text-muted-foreground">· {item.timeAgo}</span>
+          </div>
+          <div className="text-xs text-muted-foreground">{item.author.district}</div>
+        </div>
+        <FollowButton userId={item.author.id} size="sm" />
+      </div>
+      
+      {/* Content */}
+      <p className="text-sm leading-relaxed">{item.content}</p>
+      
+      {/* Images */}
+      {item.images?.length > 0 && (
+        <div className="grid grid-cols-2 gap-2 rounded-lg overflow-hidden">
+          {item.images.slice(0, 4).map((img: any, i: number) => (
+            <img 
+              key={i} 
+              src={img.url} 
+              alt={img.alt}
+              className="w-full h-48 object-cover"
+            />
+          ))}
+        </div>
+      )}
+      
+      {/* Actions */}
+      <div className="flex items-center justify-between pt-3 border-t">
+        <button 
+          onClick={() => {
+            setLiked(!liked)
+            setLikes(liked ? likes - 1 : likes + 1)
+          }}
+          className={`flex items-center gap-1 text-sm ${liked ? 'text-red-500' : 'text-muted-foreground'}`}
+        >
+          <Heart className={`h-4 w-4 ${liked ? 'fill-red-500' : ''}`} />
+          {likes}
+        </button>
+        
+        <button 
+          onClick={() => setShowComments(!showComments)}
+          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary"
+        >
+          <MessageCircle className="h-4 w-4" />
+          {item.commentsCount}
+        </button>
+        
+        <ShareMenu url={`/posts/${item.id}`} title={item.content.slice(0, 50)} />
+        
+        <BookmarkButton postId={item.id} initialSaved={item.isSaved} />
+      </div>
+      
+      {/* Comments */}
+      {showComments && (
+        <div className="pt-3 border-t">
+          <CommentSection postId={item.id} />
+        </div>
+      )}
+    </article>
+  )
+}
+```
+
+【التحقق】
+- افتح `/feed` — Feed موحد
+- كل بطاقة بها: إعجاب + تعليق + مشاركة + حفظ
+- لقطة × 3
+
+═══════════════════════════════════════════════════════════════════════════════
+الجزء 7: استنساخ ودمج القوالب — قائمة كاملة
+═══════════════════════════════════════════════════════════════════════════════
+
+【الأمر】
+```bash
+# 1. Threads Clone (T3 Stack) — Threads-style، 5 columns
+git clone --depth 1 https://github.com/sujjeee/threads-clone.git /tmp/threads-clone
+cp -r /tmp/threads-clone/src/components/thread/* src/components/social/
+
+# 2. Munia — Next.js App Router، كامل الميزات
+git clone --depth 1 https://github.com/leandronorcio/munia.git /tmp/munia
+cp -r /tmp/munia/src/components/* src/components/social/
+
+# 3. Sociffy — Next.js + Prisma + TypeScript
+git clone --depth 1 https://github.com/Mustafaguzel2/Sociffy.git /tmp/sociffy
+cp -r /tmp/sociffy/src/components/* src/components/social/
+
+# 4. Next-JS-Social-Network — Tailwind CSS + Daisy UI + Prisma
+git clone --depth 1 https://github.com/PedroL22/Next-JS-Social-Network.git /tmp/social-network
+cp -r /tmp/social-network/components/* src/components/social/
+
+# 5. react-newsfeed — Social media post component
+npm install react-newsfeed
+
+# 6. next-video — Video component
+npm install next-video
+
+# 7. react-share-lite — Share buttons
+npm install react-share-lite
+
+# 8. ruixen profile-card — Glassmorphic profile card with follow button
+npx shadcn@latest add "https://ruixen.com/r/profile-card"
+
+# 9. Kiranism Dashboard — Admin dashboard
+git clone --depth 1 https://github.com/Kiranism/next-shadcn-dashboard-starter.git /tmp/kiranism
+cp -r /tmp/kiranism/src/components/* src/components/admin/
+
+# 10. arhamkhnz Dashboard — 8 dashboards + themes
+git clone --depth 1 https://github.com/arhamkhnz/next-shadcn-admin-dashboard.git /tmp/arhamkhnz
+cp -r /tmp/arhamkhnz/src/components/* src/components/admin/
+```
+
+【التحقق】
+- قائمة القوالب المستنسخة: ✅/❌
+- كل قالب في مكانه الصحيح
+- لقطة
+
+═══════════════════════════════════════════════════════════════════════════════
+الجزء 8: تطوير لوحة السوبر أدمن — تحكم شامل
+═══════════════════════════════════════════════════════════════════════════════
+
+【8.1 — لوحة القيادة — 12 KPI + 4 Charts】
+
+```tsx
+// src/app/admin/dashboard/page.tsx
+import { KpiCard } from '@/components/admin/kpi-card'
+import { UsersChart } from '@/components/admin/users-chart'
+import { RevenueChart } from '@/components/admin/revenue-chart'
+import { ActivityChart } from '@/components/admin/activity-chart'
+import { RetentionChart } from '@/components/admin/retention-chart'
+import { LiveFeed } from '@/components/admin/live-feed'
+
+export default function AdminDashboard() {
+  return (
+    <div className="space-y-6" dir="rtl">
+      <div>
+        <h1 className="text-3xl font-bold">لوحة القيادة</h1>
+        <p className="text-muted-foreground">نظرة شاملة على المنصة</p>
+      </div>
+      
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <KpiCard title="إجمالي المستخدمين" value={201} trend={12} icon={Users} />
+        <KpiCard title="المستخدمون النشطون" value={156} trend={8} icon={Activity} />
+        <KpiCard title="المساهمات" value={509} trend={15} icon={Wallet} />
+        <KpiCard title="الرصيد" value="58,660" trend={5} icon={TrendingUp} />
+        <KpiCard title="الفعاليات" value={90} trend={-3} icon={Calendar} />
+        <KpiCard title="المقالات" value={60} trend={10} icon={Newspaper} />
+        <KpiCard title="التعليقات" value={1240} trend={22} icon={MessageCircle} />
+        <KpiCard title="الإعجابات" value={3420} trend={18} icon={Heart} />
+        <KpiCard title="النقاط المتداولة" value={125000} trend={7} icon={Award} />
+        <KpiCard title="الإعلانات النشطة" value={7} trend={0} icon={Megaphone} />
+        <KpiCard title="الزوار اليوم" value={450} trend={12} icon={Eye} />
+        <KpiCard title="معدل التحويل" value="3.2%" trend={0.5} icon={Target} />
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <UsersChart />
+        <RevenueChart />
+        <ActivityChart />
+        <RetentionChart />
+      </div>
+      
+      <LiveFeed />
+    </div>
+  )
+}
+```
+
+【8.2 — إدارة النقاط والشراء】
+
+```tsx
+// src/components/admin/points-manager.tsx
+'use client'
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Plus, Minus, ShoppingCart, RotateCcw } from 'lucide-react'
+import { toast } from 'sonner'
+
+export function PointsManager({ userId }: { userId: string }) {
+  const [amount, setAmount] = useState('')
+  const [reason, setReason] = useState('')
+  
+  const handleAdd = async () => {
+    await fetch(`/api/admin/users/${userId}/points/add`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: parseInt(amount), reason }),
+    })
+    toast.success('تم إضافة النقاط')
+  }
+  
+  const handlePurchase = async () => {
+    await fetch(`/api/admin/users/${userId}/points/purchase`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: parseInt(amount), pricePaid: 50, method: 'CASH' }),
+    })
+    toast.success('تم شراء النقاط')
+  }
+  
+  return (
+    <div className="glass-card p-6" dir="rtl">
+      <h2 className="text-xl font-bold mb-4">إدارة النقاط</h2>
+      <div className="space-y-4">
+        <Input type="number" placeholder="المبلغ (نقاط)" value={amount} onChange={(e) => setAmount(e.target.value)} dir="ltr" />
+        <Textarea placeholder="السبب (إلزامي)" value={reason} onChange={(e) => setReason(e.target.value)} rows={2} />
+        <div className="flex gap-2 flex-wrap">
+          <Button onClick={handleAdd} className="flex-1"><Plus className="h-4 w-4 ms-2" />إضافة نقاط</Button>
+          <Button variant="destructive" className="flex-1"><Minus className="h-4 w-4 ms-2" />خصم نقاط</Button>
+          <Button variant="outline" onClick={handlePurchase} className="flex-1"><ShoppingCart className="h-4 w-4 ms-2" />شراء نقاط</Button>
+          <Button variant="ghost" className="flex-1"><RotateCcw className="h-4 w-4 ms-2" />استرداد</Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+```
+
+【التحقق】
+- افتح `/admin/dashboard` — PointsManager ظاهر
+- أضف 100 نقطة → toast
+- لقطة
+
+═══════════════════════════════════════════════════════════════════════════════
+التقرير النهائي
+═══════════════════════════════════════════════════════════════════════════════
+
+## الجزء 1 — الشريط العلوي
+- بسيط: ✅/❌
+- لا أزرار متداخلة: ✅/❌
+- لقطة: ✅/❌
+
+## الجزء 2 — الشريط الجانبي
+- 7 مجموعات: ✅/❌
+- زر 3 شرائح: ✅/❌
+- لقطات: [3]
+
+## الجزء 3 — زر المتابعة
+- FollowButton: ✅/❌
+- API: ✅/❌
+- لقطة: ✅/❌
+
+## الجزء 4 — التفاعلات
+- تعليقات: ✅/❌
+- حفظ: ✅/❌
+- مشاركة: ✅/❌
+- لقطات: [3]
+
+## الجزء 5 — الفيديو
+- يملأ المكان: ✅/❌
+- لقطة: ✅/❌
+
+## الجزء 6 — الدمج
+- 3-column layout: ✅/❌
+- 12 نوع منشور: ✅/❌
+- لقطة: ✅/❌
+
+## الجزء 7 — القوالب
+- 10 قوالب: ✅/❌
+- لقطة: ✅/❌
+
+## الجزء 8 — الأدمن
+- 12 KPI: ✅/❌
+- PointsManager: ✅/❌
+- لقطات: [3]
+
+## 🚀 الحالة النهائية v63.0
+- الشريط العلوي: ✅/❌
+- الشريط الجانبي: ✅/❌
+- زر المتابعة: ✅/❌
+- التفاعلات: ✅/❌
+- الفيديو: ✅/❌
+- الدمج: ✅/❌
+- القوالب: ✅/❌
+- لوحة الأدمن: ✅/❌
+
+⚠️ ادفع بعد كل جزء
+⚠️ كل بند له لقطة
+⚠️ لا "تم" بدون إثبات
+
+═══════════════════════════════════════════════════════════════════════════════
+ابدأ الآن بالجزء 1 — إصلاح الشريط العلوي.
+ثم 2 (الشريط الجانبي)، ثم 3 (المتابعة)، ثم 4 (التفاعلات)، ثم 5 (الفيديو)، ثم 6 (الدمج).
+═══════════════════════════════════════════════════════════════════════════════
+```
+
+---
+
+## 📌 ملخص المصادر المُرفقة
+
+### قوالب شبكات اجتماعية (10 قوالب)
+| القالب | المصدر | الميزة |
+|--------|--------|--------|
+| Threads Clone | shadcn.io | Threads-style، T3 Stack |
+| Munia | GitHub | OAuth، posts، comments، follows |
+| Sociffy | GitHub | Next.js + Prisma + TypeScript |
+| Next-JS-Social-Network | GitHub | Tailwind + Daisy UI + Prisma |
+| react-newsfeed | npm | Social media post component |
+| next-video | npm | Video component for Next.js |
+| react-share-lite | npm | Share buttons |
+| ruixen profile-card | shadcn | Glassmorphic profile card |
+| Kiranism Dashboard | GitHub (6k+ stars) | Next.js 16 + shadcn |
+| arhamkhnz Dashboard | GitHub | 8 dashboards + themes |
+
+### مكتبات أساسية
+| المكتبة | الغرض |
+|---------|-------|
+| shadcn/ui | مكونات UI |
+| Framer Motion | الحركات |
+| Sonner | الإشعارات |
+| TanStack Query | جلب البيانات |
+| Recharts | الرسوم البيانية |
+
+**انسخ والصق الآن.** 🤲
