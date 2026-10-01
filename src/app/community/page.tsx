@@ -44,7 +44,7 @@ import { ZelligeDivider } from "@/components/shared/zellige-divider";
 import { DashboardMotion } from "@/components/community/dashboard-motion";
 import { EngagementSection } from "@/components/community/community-engagement";
 import { AdPlacement } from "@/components/ads/ad-placement";
-import { FeedComposer } from "@/components/feed/feed-composer";
+import { FeedComposerWrapper } from "@/components/feed/feed-composer-wrapper";
 import { UnifiedFeedClient } from "@/components/community/unified-feed-client";
 import type {
   ContributionStatus,
@@ -610,18 +610,24 @@ export default async function CommunityDashboardPage() {
               <TrendingTopicsCard />
             </aside>
 
-            {/* العمود الأوسط — Composer + UnifiedFeed (FeedComposer معطّل للتشخيص) */}
+            {/* العمود الأوسط — Composer + UnifiedFeed */}
             <main className="lg:col-span-6 space-y-4 order-1 lg:order-2">
-              <div className="p-4 rounded-xl border border-dashed border-border text-center text-sm text-muted-foreground">
-                FeedComposer placeholder
-              </div>
+              <FeedComposerWrapper />
+              <UnifiedFeedClient currentUserId={user.id} />
             </main>
 
-            {/* العمود الأيسر (RTL) — معطّل مؤقتاً للتشخيص */}
+            {/* العمود الأيسر (RTL) — النشاط + الفعاليات + الشفافية */}
             <aside className="lg:col-span-3 space-y-4 order-3">
-              <div className="p-4 rounded-xl border border-dashed border-border text-center text-sm text-muted-foreground">
-                Right aside (test mode)
-              </div>
+              <LiveActivityCard
+                recentContributions={myContributions.slice(0, 3).map((c) => ({ id: c.id, amount: c.amount, user: { fullName: user.name ?? "أنت" }, confirmedAt: c.confirmedAt }))}
+                recentRequests={myRequests.slice(0, 3).map((r) => ({ id: r.id, anonymousCode: r.anonymousCode, title: r.title, amountRequested: r.amountRequested, status: r.status, createdAt: r.createdAt }))}
+              />
+              <UpcomingEventsCard events={upcomingEvents.slice(0, 3)} />
+              <FundTransparencyCard
+                balance={fundBalance}
+                totalContributions={fundTotalContributions}
+                totalDisbursed={fundTotalDisbursed}
+              />
             </aside>
           </div>
         </section>
