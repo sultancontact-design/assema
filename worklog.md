@@ -7128,3 +7128,89 @@ Stage Summary (الجزء 2):
 - ✅ Section identity bar (gradient line تحت العنوان)
 - ✅ 0 console errors على 5 صفحات مختبرة
 - ✅ لا overflow أفقي
+
+---
+Task ID: v61.0-part3
+Agent: Main (Z.ai Code)
+Task: الجزء 3 — شبكة اجتماعية موحّدة (Unified Feed + 10 post types + 3-column layout)
+
+Work Log:
+- إنشاء src/components/community/unified-feed.tsx (~480 سطر)
+  * 10 أنواع منشورات: POST/CONTRIBUTION/FUND_REQUEST/EVENT/SERVICE/
+    INITIATIVE/VIDEO/BLOG/BADGE_EARNED/LEVEL_UP/GROUP_JOINED/STATUS
+  * كل نوع له بطاقة مختلفة بصرياً (لون + أيقونة + badge + identity bar)
+  * 4 أزرار تفاعل لكل بطاقة: like/comment/share/save
+  * Staggered transitions (بدلاً من motion/react الذي كان يفشل في SSR)
+  * Empty state مع gradient icon
+
+- إضافة 3-column layout لـ /community:
+  * Left aside (lg:col-span-3): ProfileMiniCard + QuickLinksCard + TrendingTopicsCard
+  * Main feed (lg:col-span-6): FeedComposerWrapper + UnifiedFeedClient
+  * Right aside (lg:col-span-3): LiveActivityCard + UpcomingEventsCard + FundTransparencyCard
+  * Responsive: يتراص عمودياً على الجوال (main أولاً)
+
+- اكتشاف السبب الجذري بعد سلسلة من 7 اختبارات عزل:
+  1. أزلت FeedComposer + UnifiedFeed → الصفحة عملت (لا خطأ)
+  2. أعدت FeedComposer وحده → ظهر الخطأ
+  3. استبدلته بـ placeholder div → الصفحة عملت
+  4. السبب: Server Component (community/page.tsx) كان يمرّر onPost={() => {}}
+     كـ prop إلى FeedComposer (Client Component)
+  5. **Functions CANNOT cross Server→Client boundary** (ليست JSON-serializable)
+  6. هذا سبّب: "An error occurred in the Server Components render" (digest 747426716)
+
+الإصلاح النهائي (commit 5980e48):
+- إنشاء src/components/feed/feed-composer-wrapper.tsx
+  ('use client' wrapper يحتفظ بـ onPost callback داخلياً)
+- community/page.tsx يستخدم <FeedComposerWrapper /> بدون props
+- الـ wrapper يُرسل CustomEvent('feed:new-post') عند النشر الناجح
+- إعادة تفعيل UnifiedFeedClient + جميع بطاقات الـ right aside
+
+التحقق النهائي (على الإنتاج):
+| الاختبار | النتيجة |
+|----------|---------|
+| hasError | false ✅ |
+| Left aside | 3 children (ProfileMiniCard + QuickLinksCard + TrendingTopicsCard) ✅ |
+| Main column | 2 children (FeedComposer + UnifiedFeed) ✅ |
+| Right aside | 3 children (LiveActivityCard + UpcomingEventsCard + FundTransparencyCard) ✅ |
+| hasComposer | true (textarea found) ✅ |
+| feedCards | 16 cards rendered ✅ |
+| scrollWidth | 1440 (no overflow) ✅ |
+| errors | 0 ✅ |
+
+الملفات المنتجة في v61.0 الجزء 3:
+- src/components/community/unified-feed.tsx (~480 سطر جديد)
+- src/components/community/unified-feed-client.tsx (15 سطر wrapper)
+- src/components/feed/feed-composer-wrapper.tsx (28 سطر wrapper)
+- src/app/community/page.tsx (+170 سطر: 3-column section + 6 helper components)
+
+Commits على GitHub (v61.0 الجزء 3):
+- 3abac0b — v61.0 part3: unified social feed (10 post types + 3-column layout)
+- 7997b38 — v61.0 part3-fix: import Suspense (was missing)
+- 79960d3 — v61.0 part3-debug: simplify data fetches
+- a00170b — v61.0 part3-isolate: disable middle to test
+- 7962db9 — v61.0 part3-fixed: load UnifiedFeed dynamically (build error)
+- 0b1b253 — v61.0 part3-fix2: move const after imports (syntax)
+- 4cb67ad — v61.0 part3-fix3: client wrapper for dynamic
+- 7690108 — v61.0 part3-fix4: remove motion/react entirely
+- 5fd97c5 — v61.0 part3-isolate2: remove UnifiedFeedClient
+- 6df4d29 — v61.0 part3-isolate3: disable right aside
+- 1b0a627 — v61.0 part3-isolate4: disable whole section
+- 78e055c — v61.0 part3-isolate5: enable left aside only ← نجح!
+- c29ac95 — v61.0 part3-isolate6: add FeedComposer ← فشل!
+- 9dee0b4 — v61.0 part3-isolate7: replace with placeholder ← نجح
+- 5980e48 — v61.0 part3-final: use FeedComposerWrapper ✅
+
+Stage Summary (الجزء 3):
+- ✅ UnifiedFeed component (10 post types)
+- ✅ 3-column layout (left/main/right)
+- ✅ Composer في العمود الأوسط
+- ✅ UnifiedFeed يعرض 16 بطاقة
+- ✅ Right aside (3 بطاقات: نشاط + فعاليات + شفافية)
+- ✅ Left aside (3 بطاقات: profile + روابط + مواضيع رائجة)
+- ✅ 0 console errors
+- ✅ لا overflow أفقي
+- ✅ FeedComposerWrapper يحلّ مشكلة Server→Client function prop
+
+ملاحظة: السبب الجذري كان عدم معرفتي بقاعدة Next.js الأساسية:
+"Server Components لا يمكنها تمرير functions كـ props إلى Client Components"
+كل ما تحتاجه هو wrapper 'use client' للاحتفاظ بالـ callback داخلياً.
