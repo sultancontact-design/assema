@@ -46,6 +46,12 @@ import { EngagementSection } from "@/components/community/community-engagement";
 import { AdPlacement } from "@/components/ads/ad-placement";
 import { FeedComposer } from "@/components/feed/feed-composer";
 import dynamic from "next/dynamic";
+import type {
+  ContributionStatus,
+  FundRequestStatus,
+  FundRequestType,
+  ContributionMethod,
+} from "@prisma/client";
 
 // UnifiedFeed يستعمل motion/react الذي يفشل في SSR على Vercel
 // نحمّله ديناميكياً مع ssr: false لتخطّي الـ SSR
@@ -56,12 +62,6 @@ const UnifiedFeedClient = dynamic(
     loading: () => <div className="h-64 animate-pulse bg-muted rounded-xl" />,
   }
 );
-import type {
-  ContributionStatus,
-  FundRequestStatus,
-  FundRequestType,
-  ContributionMethod,
-} from "@prisma/client";
 
 // ===================================================================
 //  بيانات التحقّق
