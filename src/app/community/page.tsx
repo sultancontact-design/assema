@@ -6,6 +6,7 @@
 
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Suspense } from "react";
 import {
   Users,
   Home as HomeIcon,
@@ -639,8 +640,12 @@ export default async function CommunityDashboardPage() {
 
             {/* العمود الأوسط — Composer + UnifiedFeed */}
             <main className="lg:col-span-6 space-y-4 order-1 lg:order-2">
-              <FeedComposer onPost={() => { /* UnifiedFeed يُجلب تلقائياً */ }} />
-              <UnifiedFeed currentUserId={user.id} />
+              <Suspense fallback={<div className="h-32 animate-pulse bg-muted rounded-xl" />}>
+                <FeedComposer onPost={() => { /* UnifiedFeed يُجلب تلقائياً */ }} />
+              </Suspense>
+              <Suspense fallback={<div className="h-64 animate-pulse bg-muted rounded-xl" />}>
+                <UnifiedFeed currentUserId={user.id} />
+              </Suspense>
             </main>
 
             {/* العمود الأيسر (RTL) — النشاط + الأعضاء + الفعاليات + الشفافية */}
