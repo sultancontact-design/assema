@@ -40,7 +40,7 @@ const FOOTER_LINKS = {
 export function SiteFooter() {
   return (
     <footer className="mt-auto border-t border-border bg-muted/30">
-      <div className="container mx-auto px-4 py-10">
+      <div className="container-fluid py-10">
         <ZelligeDivider variant="diamond" className="mb-8 opacity-60" />
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">

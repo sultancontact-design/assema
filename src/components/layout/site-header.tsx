@@ -108,7 +108,7 @@ export function SiteHeader() {
   return (
     <>
       <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="container mx-auto flex h-16 items-center justify-between gap-2 px-4">
+        <div className="container-fluid flex h-16 items-center justify-between gap-2">
           {/* الشعار — جهة اليمين في RTL */}
           <SiteLogo size="md" />
 
@@ -238,7 +238,7 @@ export function SiteHeader() {
 
       {/* بانر إعلاني علوي — header-leaderboard، تحت الترويسة مباشرة */}
       <div className="border-b border-border bg-muted/20">
-        <div className="container mx-auto px-4 py-2">
+        <div className="container-fluid py-2">
           <AdPlacement
             placement="header-leaderboard"
             className="mx-auto w-full max-w-[728px]"

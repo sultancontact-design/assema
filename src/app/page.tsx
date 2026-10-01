@@ -736,7 +736,7 @@ export default async function HomePage() {
 
       {/* ─────────── 2. الأرقام الحيّة (4 بطاقات) ─────────── */}
       <section
-        className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-12"
+        className="container-fluid py-10 md:py-12"
         aria-labelledby="stats-heading"
       >
         <h2 id="stats-heading" className="sr-only">
@@ -749,20 +749,20 @@ export default async function HomePage() {
 
       {/* ─────────── 3. شريط النشاطات الحيّة ─────────── */}
       <section
-        className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pb-4"
+        className="container-fluid pb-4"
         aria-label="آخر نشاطات الحي"
       >
         <ActivityTicker />
       </section>
 
       {/* ─────────── 4. بانر الإلحاح الأخلاقي ─────────── */}
-      <section className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+      <section className="container-fluid pb-8">
         <FomoBanner />
       </section>
 
       {/* ─────────── 5. معاينة المحتوى العمومي — Bento Grid ─────────── */}
       <section
-        className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16"
+        className="container-fluid py-8 md:py-12"
         aria-labelledby="preview-heading"
       >
         {/* عنوان تحريري يساري (لا text-center) */}
@@ -851,7 +851,7 @@ export default async function HomePage() {
 
       {/* ─────────── 6. المبادئ — قائمة عمودية بتسلسل رقمي ─────────── */}
       <section
-        className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20"
+        className="container-fluid py-10 md:py-14"
         aria-labelledby="principles-heading"
       >
         <div className="mb-10 max-w-3xl">
@@ -873,7 +873,7 @@ export default async function HomePage() {
 
       {/* ─────────── 7. باقات الإعلانات — بطاقة بارزة ─────────── */}
       <section className="bg-muted/30 border-y border-border" aria-labelledby="ads-heading">
-        <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20">
+        <div className="container-fluid py-10 md:py-14">
           <div className="mb-10 max-w-3xl">
             <Badge variant="outline" className="mb-3 text-accent border-accent/30">
               للراعين والمعلنين
@@ -946,7 +946,7 @@ export default async function HomePage() {
       </section>
 
       {/* ─────────── 8. دعوة للانضمام (CTA نهائي) ─────────── */}
-      <section className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-8 md:pt-12 pb-16 md:pb-24">
+      <section className="container-fluid pt-8 md:pt-12 pb-10 md:pb-16">
         <Card className="overflow-hidden border-0 maarouf-gradient-soft text-primary-foreground">
           <CardContent className="relative p-8 md:p-12 text-center">
             {/* أنميشن الخلفية: نمط زخرفي شفّاف */}

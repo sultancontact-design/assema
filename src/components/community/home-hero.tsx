@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 //  HomeHero v59.0 — 2026 Aurora + Glass Split Layout
 //  - Aurora gradient background (replacing dark unsplash photo)
 //  - Glass-strong KPI card on the left (RTL) with live counters
-//  - Display typography (clamp 2.5rem → 5rem)
+//  - Display typography (clamp 2rem → 3.5rem — not too huge on big screens)
 //  - Staggered motion animation (one coordinated load)
 //  - Bento-style: 7/5 columns (content + KPI card)
 // ===================================================================
@@ -56,7 +56,7 @@ export function HomeHero() {
       <div className="absolute inset-0 z-0 bg-gradient-to-b from-background/30 via-background/10 to-background/60" aria-hidden />
 
       {/* 7/5 Split layout (RTL: content right, KPI left) */}
-      <div className="relative z-10 container-fluid py-16 md:py-24 lg:py-28">
+      <div className="relative z-10 container-fluid py-10 md:py-14 lg:py-16">
         <motion.div
           variants={prefersReduced ? undefined : containerVariants}
           initial={prefersReduced ? "visible" : "hidden"}
@@ -75,7 +75,8 @@ export function HomeHero() {
             <motion.h1
               variants={prefersReduced ? undefined : itemVariants}
               id="hero-heading"
-              className="font-heading font-extrabold text-foreground text-display"
+              className="font-heading font-extrabold text-foreground leading-[1.1] tracking-tight"
+              style={{ fontSize: "clamp(2rem, 4.5vw, 3.5rem)" }}
             >
               من حيّ إلى عاصمة
               <br />
@@ -125,7 +126,7 @@ export function HomeHero() {
                   مباشر
                 </span>
               </div>
-              <div className="font-heading font-extrabold text-foreground tabular-nums" style={{ fontSize: "clamp(2.25rem, 4.5vw, 3.5rem)" }}>
+              <div className="font-heading font-extrabold text-foreground tabular-nums" style={{ fontSize: "clamp(1.75rem, 3.5vw, 2.75rem)" }}>
                 <LiveFundTotal />
                 <span className="text-base font-medium text-muted-foreground ms-2">د.م</span>
               </div>
