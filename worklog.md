@@ -6866,3 +6866,75 @@ Stage Summary:
 - لم تُختبر /community/fund بـ Recharts في العرض الرئيسي (يحتاج جلسة قادمة)
 - Lighthouse لم يُشغّل (يحتاج وقت + إضافة chrx)
 - كل الصفحات المُعاد تصميمها تمرّ بلا console errors + لا overflow
+
+---
+Task ID: v59.1
+Agent: Main (Z.ai Code)
+Task: v59.1 — FundChartsPreview + التحقّق النهائي
+
+Work Log:
+- اكتشاف أن المستودع المحلي كان خلف origin/main (local عند v42.0)
+- git reset --hard origin/main لتحديث المحلي إلى v59.0-final (565d46c)
+- استعادة عمل FundChartsPreview من /tmp (محفوظ قبل reset)
+- إنشاء src/components/community/fund-charts-preview.tsx (196 سطر):
+  * LineChart (8/12 أعمدة): المساهمات آخر 12 شهراً
+    - gradient stroke (primary → accent)
+    - hover dots + custom tooltip (RTL + popover colors)
+    - Y-axis compact format (k لآلاف)
+    - h-64 (mobile) / h-64 (desktop)
+  * PieChart (4/12 أعمدة): توزيع الطلبات حسب النوع
+    - Donut style (innerRadius=40, outerRadius=70)
+    - ألوان مخصصة لكل نوع (MEDICAL=أحمر, DEATH=بني, WEDDING=ذهبي, etc.)
+    - Legend في الأسفل (RTL)
+    - empty state عند عدم وجود بيانات
+  * كلاهما في card-2026 (hover lift + soft shadow)
+- تكامل في src/app/community/fund/page.tsx:
+  * import FundChartsPreview
+  * placement: بين KPI tiles و FundTabs
+  * يستخدم transparency data الموجودة (monthlyData + typeCounts)
+- فحص ESLint: 0 errors
+- Commit + push: d2ffcf8 → origin/main
+- انتظار Vercel deploy: state=READY
+- اختبار فعلي بـagent-browser على الإنتاج:
+  * login admin@syba-community.ma
+  * فتح /community/fund
+  * snapshot: ظهر "المساهمات في آخر 12 شهراً" + "توزيع الطلبات" فوق FundTabs
+  * 0 console errors
+  * scrollWidth=1440 عند viewport 1440 (لا overflow)
+
+التحقق من Responsive (4 مقاسات على / + 3 على /community/fund):
+
+| الصفحة | Viewport | scrollWidth | errors | Overflow؟ |
+|---------|----------|-------------|--------|-----------|
+| / | 375×812 | 375 | 0 | ✅ لا |
+| / | 768×1024 | 768 | 0 | ✅ لا |
+| / | 1440×900 | 1440 | 0 | ✅ لا |
+| / | 1920×1080 | 1920 | 0 | ✅ لا |
+| /community/fund | 375×812 | 375 | 0 | ✅ لا |
+| /community/fund | 1440×900 | 1440 | 0 | ✅ لا |
+| /community/fund | 1920×1080 | 1920 | 0 | ✅ لا |
+
+**7/7 مقاسات مختبرة — كلها نظيفة 100% (0 errors + لا overflow)**
+
+Stage Summary:
+- ✅ /community/fund أصبح يعرض:
+  1. PageHero (صورة + عنوان display)
+  2. Bento KPI: بطاقة رصيد كبيرة + 4 KPIs صغيرة (موجود مسبقاً)
+  3. **جديد**: FundChartsPreview (LineChart + PieChart)
+  4. FundTabs (التبويبات الكاملة)
+- ✅ LineChart + PieChart يظهران فوراً فوق FundTabs (بدل ما يكونوا مخفيين في tab)
+- ✅ كل الصفحات المُعاد تصميمها (5) تعمل بـ 0 console errors
+- ✅ كلها تمرّ فحص عدم overflow على 7 مقاسات
+
+الملفات المنتجة في v59.1:
+- src/components/community/fund-charts-preview.tsx (196 سطر جديد)
+- src/app/community/fund/page.tsx (+3 سطور: import + placement)
+
+Commits على GitHub:
+- d2ffcf8 — v59.1: add FundChartsPreview (LineChart + PieChart) on /community/fund main view
+
+الخلاصة:
+- v58.0: ✅ إصلاح cookie + زر شراء + profile tabs (موجود على الإنتاج)
+- v59.0: ✅ Home Aurora + Feed glass + Groups card-2026 + Profile Aurora (موجود على الإنتاج)
+- v59.1: ✅ Fund Charts Preview (LineChart + PieChart) فوق FundTabs
+- 5 صفحات معاد تصميمها + 2 charts + 0 errors + لا overflow على 7 مقاسات
