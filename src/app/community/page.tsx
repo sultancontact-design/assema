@@ -610,11 +610,9 @@ export default async function CommunityDashboardPage() {
               <TrendingTopicsCard />
             </aside>
 
-            {/* العمود الأوسط — معطّل مؤقتاً للتشخيص */}
+            {/* العمود الأوسط — Composer + UnifiedFeed */}
             <main className="lg:col-span-6 space-y-4 order-1 lg:order-2">
-              <div className="p-4 rounded-xl border border-dashed border-border text-center text-sm text-muted-foreground">
-                Middle column (test mode)
-              </div>
+              <FeedComposer onPost={() => { /* UnifiedFeed يُجلب تلقائياً */ }} />
             </main>
 
             {/* العمود الأيسر (RTL) — معطّل مؤقتاً للتشخيص */}
