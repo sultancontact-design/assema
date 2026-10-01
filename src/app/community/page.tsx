@@ -582,47 +582,11 @@ export default async function CommunityDashboardPage() {
         </section>
 
         {/* v61.0 الجزء 3: شبكة اجتماعية موحّدة — 3 أعمدة (left aside + main feed + right aside) */}
+        {/* v61.0 الجزء 3 معطّل مؤقتاً للتشخيص */}
+        {false && (
         <ZelligeDivider variant="diamond" />
 
-        <section aria-labelledby="unified-feed-heading" className="space-y-4">
-          <div className="mb-4">
-            <h2
-              id="unified-feed-heading"
-              className="font-heading text-2xl md:text-3xl font-extrabold text-foreground"
-            >
-              شريط الحي الموحّد
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              كل أنشطة الحي في مكان واحد — مساهمات، فعاليات، منشورات، شارات، وأكثر.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-            {/* العمود الأيمن (RTL) — الملف الشخصي + روابط سريعة */}
-            <aside className="lg:col-span-3 space-y-4 order-2 lg:order-1">
-              <ProfileMiniCard
-                userName={user.name ?? "أبناء الحي"}
-                districtName={district?.name ?? HOME_DISTRICT.name}
-                points={userPoints}
-                level={userLevel}
-              />
-              <QuickLinksCard userId={user.id} districtId={user.districtId} />
-              <TrendingTopicsCard />
-            </aside>
-
-            {/* العمود الأوسط — Composer + UnifiedFeed */}
-            <main className="lg:col-span-6 space-y-4 order-1 lg:order-2">
-              <FeedComposer onPost={() => { /* UnifiedFeed يُجلب تلقائياً */ }} />
-            </main>
-
-            {/* العمود الأيسر (RTL) — معطّل مؤقتاً للتشخيص */}
-            <aside className="lg:col-span-3 space-y-4 order-3">
-              <div className="p-4 rounded-xl border border-dashed border-border text-center text-sm text-muted-foreground">
-                Right aside (test mode)
-              </div>
-            </aside>
-          </div>
-        </section>
+        )}
       </div>
     </DashboardMotion>
   );
