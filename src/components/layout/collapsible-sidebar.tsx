@@ -1,15 +1,11 @@
 "use client";
 
 // ===================================================================
-//  CollapsibleSidebar — شريط جانبي قابل للطيّ
-//  - شريط ثابت على سطح المكتب (جهة اليمين في RTL)
-//  - على الجوال: زرّ هامبرغر يفتحه كـ Sheet
-//  - يحتوي كل أقسام المجتمع: الرئيسية، المجتمع، صندوق المعروف،
-//    الفعاليات، المجموعات، الرسائل، النقاشات، المبادرات، المتجر،
-//    الخريطة، المدوّنة، دليل الحي، قصص النجاح، تاريخ الحي، الأخلاق
-//  - كل عنصر: أيقونة + تسمية
-//  - إبراز العنصر النشط (usePathname)
-//  - زرّ طيّ/توسعة (framer-motion)
+//  CollapsibleSidebar v61.0 — 3-mode sidebar (expanded/collapsed/hidden)
+//  - position: sticky (in-flow, NOT fixed) — no longer covers content
+//  - 3 modes saved to localStorage
+//  - Mobile: Sheet (off-canvas) as before
+//  - When hidden: floating reopen button (visible on desktop)
 // ===================================================================
 
 import * as React from "react";
@@ -61,6 +57,14 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+type SidebarMode = "expanded" | "collapsed" | "hidden";
+
+const WIDTHS: Record<SidebarMode, number> = {
+  expanded: 224,
+  collapsed: 64,
+  hidden: 0,
+};
+
 // ===================================================================
 //  عناصر القائمة
 // ===================================================================
@@ -93,30 +97,48 @@ const NAV_ITEMS = [
 ] as const;
 
 // ===================================================================
-//  Hook: حالة الطيّ (مشفوعة في localStorage)
+//  Hook: 3-mode state (expanded/collapsed/hidden) — saved to localStorage
 // ===================================================================
-function useCollapsed() {
-  const [collapsed, setCollapsed] = React.useState(false);
+function useSidebarMode() {
+  const [mode, setMode] = React.useState<SidebarMode>("expanded");
+  const [mounted, setMounted] = React.useState(false);
+
   React.useEffect(() => {
+    setMounted(true);
     try {
-      const stored = window.localStorage.getItem("sidebar.collapsed");
-      if (stored === "true") setCollapsed(true);
+      const stored = window.localStorage.getItem("sidebar.mode") as SidebarMode | null;
+      if (stored === "expanded" || stored === "collapsed" || stored === "hidden") {
+        setMode(stored);
+      }
     } catch {
       // تجاهل
     }
   }, []);
-  const toggle = React.useCallback(() => {
-    setCollapsed((prev) => {
-      const next = !prev;
+
+  const update = React.useCallback((next: SidebarMode) => {
+    setMode(next);
+    try {
+      window.localStorage.setItem("sidebar.mode", next);
+    } catch {
+      // تجاهل
+    }
+  }, []);
+
+  // Cycle: expanded → collapsed → hidden → expanded
+  const cycle = React.useCallback(() => {
+    setMode((prev) => {
+      const next: SidebarMode =
+        prev === "expanded" ? "collapsed" : prev === "collapsed" ? "hidden" : "expanded";
       try {
-        window.localStorage.setItem("sidebar.collapsed", String(next));
+        window.localStorage.setItem("sidebar.mode", next);
       } catch {
         // تجاهل
       }
       return next;
     });
   }, []);
-  return { collapsed, toggle, setCollapsed };
+
+  return { mode, setMode: update, cycle, mounted };
 }
 
 function isActive(pathname: string, href: string): boolean {
@@ -125,7 +147,7 @@ function isActive(pathname: string, href: string): boolean {
 }
 
 // ===================================================================
-//  NavItems — قائمة العناصر القابلة للطيّ
+//  NavItems — قائمة العناصر (collapsed=أيقونات فقط)
 // ===================================================================
 const NavItems = React.forwardRef<
   HTMLUListElement,
@@ -160,7 +182,6 @@ const NavItems = React.forwardRef<
             </Link>
           );
 
-          // في الوضع المطويّ: نُغلّفه بـTooltip
           if (collapsed) {
             return (
               <li key={item.href}>
@@ -182,16 +203,22 @@ const NavItems = React.forwardRef<
 NavItems.displayName = "NavItems";
 
 // ===================================================================
-//  CollapsibleSidebar — الشريط الجانبي الرئيسي
+//  CollapsibleSidebar — الشريط الجانبي الرئيسي (3-mode, no-overlay)
 // ===================================================================
 export function CollapsibleSidebar() {
-  const { collapsed, toggle } = useCollapsed();
+  const { mode, setMode, cycle, mounted } = useSidebarMode();
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const pathname = usePathname();
 
   React.useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
+
+  // عرض SSR ثابت لتفادي hydration mismatch
+  const currentMode = mounted ? mode : "expanded";
+  const width = WIDTHS[currentMode];
+  const collapsed = currentMode === "collapsed";
+  const hidden = currentMode === "hidden";
 
   return (
     <>
@@ -221,19 +248,41 @@ export function CollapsibleSidebar() {
         </Sheet>
       </div>
 
-      {/* شريط جانبي ثابت على سطح المكتب — جهة اليمين في RTL */}
+      {/* زرّ عائم لفتح الشريط بعد الإخفاء (desktop only) */}
+      <AnimatePresence>
+        {hidden && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="hidden lg:block fixed top-20 end-3 z-30"
+          >
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setMode("expanded")}
+              aria-label="فتح القائمة الجانبية"
+              className="size-11 rounded-full shadow-md bg-background/95"
+            >
+              <Menu className="size-5" />
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* شريط جانبي على سطح المكتب — position: sticky (no overlay) */}
       <motion.aside
         initial={false}
-        animate={{
-          width: collapsed ? 64 : 224,
-        }}
+        animate={{ width }}
         transition={{ type: "spring", stiffness: 260, damping: 30 }}
         className={cn(
-          "hidden lg:flex flex-col fixed top-16 inset-y-0 end-0 z-30",
+          "hidden lg:flex flex-col sticky top-16 self-start h-[calc(100vh-4rem)]",
           "bg-background border-s border-border",
-          "ps-1 pe-1.5 py-3"
+          "ps-1 pe-1.5 py-3 shrink-0",
+          hidden && "overflow-hidden pointer-events-none opacity-0"
         )}
         aria-label="القائمة الجانبية"
+        aria-hidden={hidden}
       >
         {/* رأس الشريط: زرّ الطيّ */}
         <div
@@ -242,7 +291,7 @@ export function CollapsibleSidebar() {
             collapsed && "justify-center"
           )}
         >
-          {!collapsed && (
+          {!collapsed && !hidden && (
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               أقسام
             </span>
@@ -250,9 +299,10 @@ export function CollapsibleSidebar() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={toggle}
+            onClick={cycle}
             className="size-9 text-muted-foreground hover:text-foreground"
             aria-label={collapsed ? "توسعة القائمة" : "طيّ القائمة"}
+            title={`الوضع الحالي: ${currentMode} (اضغط للتغيير)`}
           >
             {collapsed ? (
               <ChevronLeft className="size-4" />
@@ -267,46 +317,51 @@ export function CollapsibleSidebar() {
           <NavItems collapsed={collapsed} />
         </nav>
 
-        {/* تذييل: زرّ توسعة/طيّ سفلي */}
-        <div className="border-t border-border pt-2 mt-2 px-1">
+        {/* تذييل: أزرار 3-mode */}
+        <div className="border-t border-border pt-2 mt-2 px-1 space-y-1">
           <Button
             variant="ghost"
             size="sm"
-            onClick={toggle}
+            onClick={() => setMode("expanded")}
             className={cn(
-              "h-9 w-full text-xs gap-1.5 text-muted-foreground hover:text-foreground",
-              collapsed && "px-0 justify-center"
+              "h-8 w-full text-xs gap-1.5 justify-center",
+              currentMode === "expanded" ? "bg-accent/40 text-foreground" : "text-muted-foreground hover:text-foreground"
             )}
-            aria-label={collapsed ? "توسعة القائمة" : "طيّ القائمة"}
+            aria-label="وضع موسّع"
+            title="وضع موسّع"
           >
-            {collapsed ? (
-              <>
-                <PanelLeftOpen className="size-3.5" />
-              </>
-            ) : (
-              <>
-                <PanelLeftClose className="size-3.5" />
-                <span>طيّ</span>
-              </>
+            <PanelLeftOpen className="size-3.5" />
+            {!collapsed && <span>موسّع</span>}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setMode("collapsed")}
+            className={cn(
+              "h-8 w-full text-xs gap-1.5 justify-center",
+              currentMode === "collapsed" ? "bg-accent/40 text-foreground" : "text-muted-foreground hover:text-foreground"
             )}
+            aria-label="وضع أيقونات"
+            title="وضع أيقونات"
+          >
+            <PanelLeftClose className="size-3.5" />
+            {!collapsed && <span>أيقونات</span>}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setMode("hidden")}
+            className={cn(
+              "h-8 w-full text-xs gap-1.5 justify-center",
+              currentMode === "hidden" ? "bg-accent/40 text-foreground" : "text-muted-foreground hover:text-foreground"
+            )}
+            aria-label="إخفاء"
+            title="إخفاء القائمة"
+          >
+            <X className="size-3.5" />
+            {!collapsed && <span>إخفاء</span>}
           </Button>
         </div>
-
-        {/* مؤشّر طيّ متحرّك */}
-        <AnimatePresence>
-          {collapsed && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="px-1.5 mt-2 text-center text-[10px] text-muted-foreground"
-            >
-              قائمة
-              <br />
-              جانبية
-            </motion.div>
-          )}
-        </AnimatePresence>
       </motion.aside>
     </>
   );
