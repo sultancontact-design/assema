@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHero } from "@/components/community/page-hero";
 import { FundTabs, type FundTabsProps } from "@/components/community/fund-tabs";
+import { FundChartsPreview } from "@/components/community/fund-charts-preview";
 import type {
   ContributionMethod,
   ContributionStatus,
@@ -297,6 +298,9 @@ export default async function FundPage() {
           <KpiTile icon={<Receipt className="size-5" />} label="مساهمات (آخر 30 يوم)" value={String(transparency.recentContributions.length)} accent="primary" />
           <KpiTile icon={<Users className="size-5" />} label="طلبات قيد المراجعة" value={String(transparency.recentRequests.length)} accent="secondary" />
         </div>
+
+        {/* v59.0: معاينة الرسوم البيانية (LineChart + PieChart) — فوق FundTabs */}
+        <FundChartsPreview data={transparency} />
 
         {/* التبويبات */}
         <FundTabs
