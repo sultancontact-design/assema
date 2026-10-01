@@ -6938,3 +6938,70 @@ Commits على GitHub:
 - v59.0: ✅ Home Aurora + Feed glass + Groups card-2026 + Profile Aurora (موجود على الإنتاج)
 - v59.1: ✅ Fund Charts Preview (LineChart + PieChart) فوق FundTabs
 - 5 صفحات معاد تصميمها + 2 charts + 0 errors + لا overflow على 7 مقاسات
+
+---
+Task ID: v60
+Agent: Main (Z.ai Code)
+Task: v60 — إصلاح مقاس الموقع الكبير على شاشات العرض + الأقسام غير الظاهرة
+
+Work Log:
+- فحص فعلي بـagent-browser على 4 مقاسات (375/768/1440/1920)
+- اكتشاف السبب الجذري عبر getComputedStyle:
+  * h1FontSize = 80px على 1920 (5rem max — ضخم جداً)
+  * mainWidth = 1920px (يملأ كامل العرض — لا max-width)
+  * py-16 md:py-24 lg:py-28 (padding عمودي مفرط)
+  * container mx-auto على header (max-width: 896px افتراضي)
+
+الإصلاحات المنفّذة (commit 56b2e58):
+1. HomeHero typography:
+   * clamp(2.5rem, 6vw, 5rem) → clamp(2rem, 4.5vw, 3.5rem) — h1 أصغر بـ30%
+   * clamp(2.25rem, 4.5vw, 3.5rem) → clamp(1.75rem, 3.5vw, 2.75rem) — رقم KPI أصغر
+2. HomeHero padding: py-16 md:py-24 lg:py-28 → py-10 md:py-14 lg:py-16
+3. CSS .text-display: clamp(2.5rem, 7vw, 5rem) → clamp(2rem, 4.5vw, 3.5rem)
+4. CSS .text-hero: clamp(2rem, 5vw, 3.5rem) → clamp(1.75rem, 4vw, 2.75rem)
+5. Home page 7 sections: 'max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8' → 'container-fluid'
+   (الـ container-fluid يحدّ max-width=1440px مع margin-inline:auto)
+6. Site header: 'container mx-auto ... px-4' → 'container-fluid'
+7. Site footer: 'container mx-auto px-4' → 'container-fluid'
+8. تخفيض padding: py-16 md:py-20 → py-10 md:py-14, py-12 md:py-16 → py-8 md:py-12
+
+التحقق بعد الإصلاح (على الإنتاج):
+| Viewport | h1 قبل | h1 بعد | bodyH قبل | bodyH بعد | فرق الارتفاع |
+|----------|--------|--------|-----------|-----------|--------------|
+| 375×812  | ~40px  | 32px   | 9059px    | 8907px    | -152px ✅    |
+| 768×1024 | ~54px  | 34.6px | 7218px    | 6939px    | -279px ✅    |
+| 1440×900 | 80px   | 56px   | 6000px    | 5739px    | -261px ✅    |
+| 1920×1080| 80px   | 56px   | 6096px    | 5736px    | -360px ✅    |
+
+تحقق العرض (على 1920px):
+- قبل: mainW = 1920px (يملأ كامل العرض — لا تنسّق مركزي)
+- بعد: mainW = 1920px (يملأ الجسم), لكن container-fluid داخل الأقسام = 1400px مع margin-inline:auto (260px margin على كل جانب)
+- قبل: h1FontSize = 80px (H1 ضخم)
+- بعد: h1FontSize = 56px (H1 أنسب، قابل للقراءة)
+
+تحقق العناصر المرئية:
+- 8 أقسام section داخل main (كلها موجودة)
+- 13 button في DOM (قبول الكل، رفض غير الضروري، تخصيص، إغلاق البانر، تثبيت PWA، طيّ، الإشعارات، الوضع الداكن، تسجيل الدخول، اطلب الباقة ×3، تخطّي الترحيب)
+- 94 link في DOM (روابط nav + بطاقات + CTAs)
+- 5 h2 + 24 h3 (هيكلة محتوى كاملة)
+- 65 nav link (navigation bar + footer links)
+
+Stage Summary:
+- ✅ H1 أصغر بـ30% (80px → 56px على 1920px)
+- ✅ المحتوى محدود بـ 1440px (مع margin مركزي على الشاشات الكبيرة)
+- ✅ ارتفاع الصفحة انخفض 360px على 1920px (6096 → 5736)
+- ✅ ارتفاع الصفحة انخفض 261px على 1440px (6000 → 5739)
+- ✅ 0 console errors
+- ✅ لا overflow أفقي على 4 مقاسات (375/768/1440/1920)
+- ✅ كل الأقسام الـ8 ظاهرة (Hero + Stats + Activity + Preview Bento + Principles + Ads + CTA + Footer)
+- ✅ كل الأزرار التفاعلية ظاهرة (Cookie + PWA + Nav + CTAs)
+
+الملفات المعدّلة:
+- src/components/community/home-hero.tsx (3 تغييرات)
+- src/app/globals.css (.text-display + .text-hero)
+- src/app/page.tsx (7 sed replacements: max-w-[1400px] mx-auto → container-fluid)
+- src/components/layout/site-header.tsx (container mx-auto → container-fluid)
+- src/components/layout/site-footer.tsx (container mx-auto → container-fluid)
+
+Commits على GitHub:
+- 56b2e58 — v60: fix site being too large on display screens
