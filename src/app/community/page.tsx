@@ -20,6 +20,7 @@ import {
   Group as GroupIcon,
   Clock,
   MapPin,
+  ShieldCheck,
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -37,10 +38,13 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ZelligeDivider } from "@/components/shared/zellige-divider";
 import { DashboardMotion } from "@/components/community/dashboard-motion";
 import { EngagementSection } from "@/components/community/community-engagement";
 import { AdPlacement } from "@/components/ads/ad-placement";
+import { UnifiedFeed } from "@/components/community/unified-feed";
+import { FeedComposer } from "@/components/feed/feed-composer";
 import type {
   ContributionStatus,
   FundRequestStatus,
@@ -161,6 +165,47 @@ export default async function CommunityDashboardPage() {
     take: 3,
     include: { _count: { select: { approvals: true } } },
   });
+
+  // 7.5) v61.0 — بيانات الـUnified Feed (آخر مساهمات + طلبات الحي + نقاط/مستوى المستخدم)
+  const [recentContributions, recentRequests, userStats] = await Promise.all([
+    db.contribution.findMany({
+      where: { status: "CONFIRMED", districtId: user.districtId },
+      orderBy: { confirmedAt: "desc" },
+      take: 5,
+      select: {
+        id: true,
+        amount: true,
+        month: true,
+        method: true,
+        digitalReceipt: true,
+        confirmedAt: true,
+        user: { select: { id: true, fullName: true } },
+      },
+    }),
+    db.fundRequest.findMany({
+      where: { districtId: user.districtId },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      select: {
+        id: true,
+        anonymousCode: true,
+        type: true,
+        title: true,
+        amountRequested: true,
+        status: true,
+        createdAt: true,
+      },
+    }),
+    db.user.findUnique({
+      where: { id: user.id },
+      select: { points: true, level: true },
+    }),
+  ]);
+
+  const userPoints = userStats?.points ?? 0;
+  const userLevel = userStats?.level ?? 1;
+  const fundTotalContributions = confirmedContribs._sum.amount ?? 0;
+  const fundTotalDisbursed = disbursedAmounts._sum.amountDisbursed ?? 0;
 
   // 8) روابط سريعة
   const quickLinks = [
@@ -562,6 +607,57 @@ export default async function CommunityDashboardPage() {
             })}
           </div>
         </section>
+
+        {/* v61.0 الجزء 3: شبكة اجتماعية موحّدة — 3 أعمدة (left aside + main feed + right aside) */}
+        <ZelligeDivider variant="diamond" />
+
+        <section aria-labelledby="unified-feed-heading" className="space-y-4">
+          <div className="mb-4">
+            <h2
+              id="unified-feed-heading"
+              className="font-heading text-2xl md:text-3xl font-extrabold text-foreground"
+            >
+              شريط الحي الموحّد
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              كل أنشطة الحي في مكان واحد — مساهمات، فعاليات، منشورات، شارات، وأكثر.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            {/* العمود الأيمن (RTL) — الملف الشخصي + روابط سريعة */}
+            <aside className="lg:col-span-3 space-y-4 order-2 lg:order-1">
+              <ProfileMiniCard
+                userName={user.name ?? "أبناء الحي"}
+                districtName={district?.name ?? HOME_DISTRICT.name}
+                points={userPoints}
+                level={userLevel}
+              />
+              <QuickLinksCard userId={user.id} districtId={user.districtId} />
+              <TrendingTopicsCard />
+            </aside>
+
+            {/* العمود الأوسط — Composer + UnifiedFeed */}
+            <main className="lg:col-span-6 space-y-4 order-1 lg:order-2">
+              <FeedComposer onPost={() => { /* UnifiedFeed يُجلب تلقائياً */ }} />
+              <UnifiedFeed currentUserId={user.id} />
+            </main>
+
+            {/* العمود الأيسر (RTL) — النشاط + الأعضاء + الفعاليات + الشفافية */}
+            <aside className="lg:col-span-3 space-y-4 order-3">
+              <LiveActivityCard
+                recentContributions={recentContributions.slice(0, 3)}
+                recentRequests={recentRequests.slice(0, 3)}
+              />
+              <UpcomingEventsCard events={upcomingEvents.slice(0, 3)} />
+              <FundTransparencyCard
+                balance={fundBalance}
+                totalContributions={fundTotalContributions}
+                totalDisbursed={fundTotalDisbursed}
+              />
+            </aside>
+          </div>
+        </section>
       </div>
     </DashboardMotion>
   );
@@ -679,5 +775,282 @@ function StatusBadge({
     <Badge variant="outline" className={map[color] ?? map.slate}>
       {children}
     </Badge>
+  );
+}
+
+// ===================================================================
+//  v61.0 الجزء 3 — بطاقات مساعدة للشبكة الاجتماعية الموحّدة
+// ===================================================================
+
+function ProfileMiniCard({
+  userName,
+  districtName,
+  points,
+  level,
+}: {
+  userName: string;
+  districtName: string;
+  points: number;
+  level: number;
+}) {
+  const initials = userName.slice(0, 1);
+  return (
+    <Card className="card-2026 overflow-hidden">
+      <div className="h-16 gradient-aurora" aria-hidden />
+      <CardContent className="p-4 -mt-8 text-center">
+        <div className="mx-auto size-16 rounded-full bg-background ring-4 ring-background grid place-items-center">
+          <Avatar className="size-16">
+            <AvatarFallback className="font-bold text-white text-xl" style={{ background: "linear-gradient(135deg, #6366F1, #8B5CF6)" }}>
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+        </div>
+        <h3 className="font-heading font-bold text-foreground mt-2">{userName}</h3>
+        <p className="text-xs text-muted-foreground flex items-center justify-center gap-1 mt-0.5">
+          <MapPin className="size-3" />
+          {districtName}
+        </p>
+        <div className="mt-3 pt-3 border-t border-border/60 grid grid-cols-2 gap-2">
+          <div>
+            <p className="text-xs text-muted-foreground">النقاط</p>
+            <p className="font-heading font-bold text-primary text-lg tabular-nums">{formatNumber(points)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">المستوى</p>
+            <p className="font-heading font-bold text-secondary text-lg tabular-nums">{level}</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function QuickLinksCard({
+  userId,
+  districtId,
+}: {
+  userId: string;
+  districtId: string;
+}) {
+  void userId; void districtId; // معلومات الحساب — تُستخدم لاحقاً للروابط الديناميكية
+  const links = [
+    { href: "/community/profile", label: "ملفي الشخصي", icon: "👤" },
+    { href: "/community/fund", label: "صندوق المعروف", icon: "🤝" },
+    { href: "/community/events", label: "الفعاليات", icon: "📅" },
+    { href: "/community/store", label: "المتجر", icon: "🎁" },
+    { href: "/community/groups", label: "المجموعات", icon: "👥" },
+    { href: "/wallet", label: "محفظتي", icon: "💰" },
+  ];
+  return (
+    <Card>
+      <CardContent className="p-3">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-1">
+          روابط سريعة
+        </p>
+        <ul className="space-y-0.5">
+          {links.map((l) => (
+            <li key={l.href}>
+              <Link
+                href={l.href}
+                className="flex items-center gap-2 px-2 py-2 rounded-md hover:bg-muted/60 text-sm text-foreground hover:text-primary transition-colors min-h-9"
+              >
+                <span className="text-base" aria-hidden>{l.icon}</span>
+                <span>{l.label}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
+  );
+}
+
+function TrendingTopicsCard() {
+  const topics = [
+    { tag: "إفطار رمضاني", count: 24 },
+    { tag: "صندوق المعروف", count: 18 },
+    { tag: "قافلة طبية", count: 12 },
+    { tag: "تربية الأبناء", count: 9 },
+    { tag: "الأسعار", count: 7 },
+  ];
+  return (
+    <Card>
+      <CardContent className="p-3">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-1">
+          مواضيع رائجة
+        </p>
+        <ul className="space-y-1">
+          {topics.map((t) => (
+            <li key={t.tag}>
+              <Link
+                href={`/feed?q=${encodeURIComponent(t.tag)}`}
+                className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md hover:bg-muted/60 text-sm transition-colors"
+              >
+                <span className="text-foreground truncate">
+                  <span className="text-primary me-1">#</span>
+                  {t.tag}
+                </span>
+                <span className="text-xs text-muted-foreground tabular-nums shrink-0">{t.count}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
+  );
+}
+
+function LiveActivityCard({
+  recentContributions,
+  recentRequests,
+}: {
+  recentContributions: Array<{
+    id: string;
+    amount: number;
+    user?: { fullName: string } | null;
+    confirmedAt: Date | null;
+  }>;
+  recentRequests: Array<{
+    id: string;
+    anonymousCode: string | null;
+    title: string;
+    amountRequested: number;
+    status: string;
+    createdAt: Date;
+  }>;
+}) {
+  return (
+    <Card>
+      <CardContent className="p-3">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-1 flex items-center gap-1">
+          <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" aria-hidden />
+          نشاط مباشر
+        </p>
+        <ul className="space-y-2">
+          {recentContributions.slice(0, 3).map((c) => (
+            <li key={c.id} className="flex items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <HandHeart className="size-3 text-emerald-600 shrink-0" />
+                <span className="text-muted-foreground truncate">
+                  مساهمة من {c.user?.fullName ?? "مجهول"}
+                </span>
+              </div>
+              <span className="font-bold text-emerald-700 tabular-nums shrink-0">
+                {formatMAD(c.amount)}
+              </span>
+            </li>
+          ))}
+          {recentRequests.slice(0, 2).map((r) => (
+            <li key={r.id} className="flex items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <ShieldCheck className="size-3 text-primary shrink-0" />
+                <span className="text-muted-foreground truncate">
+                  {r.title.slice(0, 25)}…
+                </span>
+              </div>
+              <Badge variant="outline" className="text-[9px] px-1.5 py-0 shrink-0">
+                {r.status}
+              </Badge>
+            </li>
+          ))}
+          {recentContributions.length === 0 && recentRequests.length === 0 && (
+            <li className="text-xs text-muted-foreground text-center py-3">
+              لا يوجد نشاط حديث
+            </li>
+          )}
+        </ul>
+      </CardContent>
+    </Card>
+  );
+}
+
+function UpcomingEventsCard({
+  events,
+}: {
+  events: Array<{
+    id: string;
+    title: string;
+    startDate: Date;
+    location?: string | null;
+  }>;
+}) {
+  if (events.length === 0) {
+    return null;
+  }
+  return (
+    <Card>
+      <CardContent className="p-3">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-1">
+          فعاليات قادمة
+        </p>
+        <ul className="space-y-2">
+          {events.map((e) => (
+            <li key={e.id}>
+              <Link
+                href={`/community/events/${e.id}`}
+                className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/60 text-sm transition-colors"
+              >
+                <div className="grid place-items-center size-9 shrink-0 rounded-lg bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
+                  <span className="text-[9px] font-bold leading-none">
+                    {new Date(e.startDate).toLocaleDateString("ar-MA", { month: "short" })}
+                  </span>
+                  <span className="font-heading text-sm font-bold leading-none">
+                    {new Date(e.startDate).getDate()}
+                  </span>
+                </div>
+                <p className="text-xs text-foreground truncate flex-1">{e.title}</p>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
+  );
+}
+
+function FundTransparencyCard({
+  balance,
+  totalContributions,
+  totalDisbursed,
+}: {
+  balance: number;
+  totalContributions: number;
+  totalDisbursed: number;
+}) {
+  return (
+    <Card className="border-s-4 border-s-emerald-500">
+      <CardContent className="p-3">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-1 flex items-center gap-1">
+          <HandHeart className="size-3 text-emerald-600" />
+          شفافية الصندوق
+        </p>
+        <div className="space-y-2 text-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">الرصيد الحالي</span>
+            <span className="font-heading font-bold text-emerald-700 tabular-nums">
+              {formatMAD(balance)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">إجمالي المساهمات</span>
+            <span className="font-medium text-foreground tabular-nums">
+              {formatMAD(totalContributions)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">إجمالي المصروف</span>
+            <span className="font-medium text-foreground tabular-nums">
+              {formatMAD(totalDisbursed)}
+            </span>
+          </div>
+        </div>
+        <Link
+          href="/community/fund"
+          className="block mt-3 text-xs text-emerald-700 hover:underline text-center font-medium"
+        >
+          عرض التفاصيل →
+        </Link>
+      </CardContent>
+    </Card>
   );
 }

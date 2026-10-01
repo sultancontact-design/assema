@@ -1,0 +1,652 @@
+"use client";
+
+// ===================================================================
+//  UnifiedFeed v61.0 — شبكة اجتماعية موحدة (10 أنواع منشورات)
+//  - يجلب من /api/feed
+//  - يعرض كل نوع ببطاقة مختلفة بصرياً (لون + أيقونة + محتوى)
+//  - 3-column layout: left aside (profile) + main feed + right aside
+// ===================================================================
+
+import * as React from "react";
+import Link from "next/link";
+import { motion, AnimatePresence } from "motion/react";
+import {
+  Heart,
+  MessageCircle,
+  Share2,
+  Bookmark,
+  Loader2,
+  PenLine,
+  Sparkles,
+  TrendingUp,
+  Award,
+  Crown,
+  Gift,
+  Calendar,
+  HandHeart,
+  Megaphone,
+  BookOpen,
+  Video,
+  UserPlus,
+  ShieldCheck,
+  Coins,
+} from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { formatNumber, formatMAD, formatDateArabic } from "@/lib/constants";
+import { SECTION_THEMES, type SectionKey } from "@/components/layout/section-theme";
+
+// ===================================================================
+//  تعريف أنواع المنشورات (10 أنواع)
+// ===================================================================
+
+type FeedItemType =
+  | "POST"
+  | "CONTRIBUTION"
+  | "FUND_REQUEST"
+  | "EVENT"
+  | "SERVICE"
+  | "INITIATIVE"
+  | "VIDEO"
+  | "BLOG"
+  | "BADGE_EARNED"
+  | "LEVEL_UP"
+  | "GROUP_JOINED"
+  | "STATUS";
+
+interface FeedItemData {
+  id: string;
+  type: FeedItemType;
+  content?: string;
+  targetId?: string;
+  mediaUrls?: string;
+  likes: number;
+  comments: number;
+  shares: number;
+  views: number;
+  createdAt: string;
+  user?: {
+    id: string;
+    fullName: string;
+    avatar?: string | null;
+  };
+  // بيانات إضافية يتم جلبها من الـAPI (اختياري)
+  metadata?: {
+    amount?: number;
+    title?: string;
+    category?: string;
+    level?: number;
+    badgeName?: string;
+    groupName?: string;
+    [key: string]: unknown;
+  };
+}
+
+interface UnifiedFeedProps {
+  currentUserId?: string;
+}
+
+// ===================================================================
+//  خريطة النوع → هوية بصرية (أيقونة + لون + خلفية)
+// ===================================================================
+
+const TYPE_CONFIG: Record<
+  FeedItemType,
+  {
+    icon: React.ComponentType<{ className?: string }>;
+    section: SectionKey;
+    label: string;
+    action: string;
+  }
+> = {
+  POST: {
+    icon: PenLine,
+    section: "feed",
+    label: "منشور",
+    action: "نشر",
+  },
+  CONTRIBUTION: {
+    icon: HandHeart,
+    section: "fund",
+    label: "مساهمة",
+    action: "ساهم بـ",
+  },
+  FUND_REQUEST: {
+    icon: ShieldCheck,
+    section: "fund",
+    label: "طلب صندوق",
+    action: "طلب",
+  },
+  EVENT: {
+    icon: Calendar,
+    section: "events",
+    label: "فعالية",
+    action: "أنشأ فعالية",
+  },
+  SERVICE: {
+    icon: Gift,
+    section: "services",
+    label: "خدمة",
+    action: "أضاف خدمة",
+  },
+  INITIATIVE: {
+    icon: Megaphone,
+    section: "initiatives",
+    label: "مبادرة",
+    action: "أطلق مبادرة",
+  },
+  VIDEO: {
+    icon: Video,
+    section: "videos",
+    label: "فيديو",
+    action: "شارك فيديو",
+  },
+  BLOG: {
+    icon: BookOpen,
+    section: "blog",
+    label: "مقال",
+    action: "كتب مقال",
+  },
+  BADGE_EARNED: {
+    icon: Award,
+    section: "gamification",
+    label: "شارة جديدة",
+    action: "حصل على شارة",
+  },
+  LEVEL_UP: {
+    icon: Crown,
+    section: "gamification",
+    label: "ترقية",
+    action: "ترقّى لمستوى",
+  },
+  GROUP_JOINED: {
+    icon: UserPlus,
+    section: "groups",
+    label: "انضمام",
+    action: "انضمّ لـ",
+  },
+  STATUS: {
+    icon: Sparkles,
+    section: "community",
+    label: "حالة",
+    action: "حدّث حالته",
+  },
+};
+
+// ===================================================================
+//  UnifiedFeed — المكوّن الرئيسي
+// ===================================================================
+
+export function UnifiedFeed({ currentUserId }: UnifiedFeedProps) {
+  const [items, setItems] = React.useState<FeedItemData[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [cursor, setCursor] = React.useState<string | null>(null);
+  const [hasMore, setHasMore] = React.useState(false);
+
+  const loadFeed = React.useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ limit: "20" });
+      if (cursor) params.set("cursor", cursor);
+      const res = await fetch(`/api/feed?${params}`);
+      const data = await res.json();
+      setItems((prev) => [...prev, ...(data.items || [])]);
+      setCursor(data.nextCursor);
+      setHasMore(!!data.nextCursor);
+    } catch {
+      // silent
+    } finally {
+      setLoading(false);
+    }
+  }, [cursor]);
+
+  React.useEffect(() => {
+    loadFeed();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div className="space-y-4">
+      <AnimatePresence mode="popLayout">
+        {items.length === 0 && !loading ? (
+          <motion.div
+            key="empty"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <EmptyFeed />
+          </motion.div>
+        ) : (
+          items.map((item) => (
+            <motion.div
+              key={item.id}
+              layout
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25 }}
+            >
+              <FeedItemCard item={item} />
+            </motion.div>
+          ))
+        )}
+      </AnimatePresence>
+
+      {loading && (
+        <div className="flex justify-center py-8">
+          <Loader2 className="size-6 animate-spin text-primary" />
+        </div>
+      )}
+
+      {hasMore && !loading && (
+        <button
+          onClick={loadFeed}
+          className="w-full py-3 text-primary font-medium hover:bg-muted rounded-xl transition-colors min-h-11"
+        >
+          تحميل المزيد
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ===================================================================
+//  FeedItemCard — بطاقة منشور واحد (10 أنواع مختلفة بصرياً)
+// ===================================================================
+
+function FeedItemCard({ item }: { item: FeedItemData }) {
+  const config = TYPE_CONFIG[item.type] ?? TYPE_CONFIG.POST;
+  const theme = SECTION_THEMES[config.section];
+  const Icon = config.icon;
+  const user = item.user;
+  const displayName = user?.fullName ?? "أبناء الحي";
+  const initials = displayName.slice(0, 1);
+  const mediaArr = (() => {
+    try {
+      return JSON.parse(item.mediaUrls || "[]") as string[];
+    } catch {
+      return [];
+    }
+  })();
+
+  return (
+    <Card
+      className="card-2026 overflow-hidden"
+      style={{
+        ["--section-primary" as string]: theme.primary,
+        ["--section-secondary" as string]: theme.secondary,
+        ["--section-accent" as string]: theme.accent,
+        borderColor: `${theme.primary}40`,
+      }}
+    >
+      {/* شريط علوي ملوّن بحسب نوع المنشور */}
+      <div
+        className="h-1.5"
+        style={{
+          background: `linear-gradient(to right, ${theme.primary}, ${theme.secondary})`,
+        }}
+        aria-hidden
+      />
+
+      <CardContent className="p-4 md:p-5">
+        {/* الرأس: avatar + اسم + نوع + وقت */}
+        <div className="flex items-start gap-3 mb-3">
+          <Link href={user?.id ? `/u/${user.id}` : "/community/members"}>
+            <Avatar className="size-10 ring-2" style={{ ["--tw-ring-color" as string]: `${theme.primary}30` }}>
+              <AvatarFallback
+                className="text-white font-bold"
+                style={{ background: `linear-gradient(135deg, ${theme.primary}, ${theme.secondary})` }}
+              >
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+          </Link>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+              <Link
+                href={user?.id ? `/u/${user.id}` : "/community/members"}
+                className="font-semibold text-foreground hover:text-primary transition-colors"
+              >
+                {displayName}
+              </Link>
+              <Badge
+                variant="outline"
+                className="text-[10px] gap-1"
+                style={{
+                  borderColor: `${theme.primary}40`,
+                  color: theme.primary,
+                  background: `${theme.primary}10`,
+                }}
+              >
+                <Icon className="size-2.5" />
+                {config.label}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {formatDateArabic(new Date(item.createdAt))}
+            </p>
+          </div>
+        </div>
+
+        {/* المحتوى — يختلف حسب النوع */}
+        <FeedItemContent item={item} config={config} theme={theme} mediaArr={mediaArr} />
+
+        {/* الإجراءات (إعجاب، تعليق، مشاركة، حفظ) */}
+        <div className="mt-4 pt-3 border-t border-border/60 flex items-center justify-between gap-2">
+          <FeedActions item={item} theme={theme} />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ===================================================================
+//  FeedItemContent — محتوى مختلف لكل نوع
+// ===================================================================
+
+function FeedItemContent({
+  item,
+  config,
+  theme,
+  mediaArr,
+}: {
+  item: FeedItemData;
+  config: { action: string; label: string; icon: React.ComponentType<{ className?: string }>; section: SectionKey };
+  theme: { primary: string; secondary: string; accent: string; emoji?: string };
+  mediaArr: string[];
+}) {
+  // 1) POST / STATUS — نص + صور
+  if (item.type === "POST" || item.type === "STATUS") {
+    return (
+      <div className="space-y-3">
+        {item.content && (
+          <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+            {item.content}
+          </p>
+        )}
+        {mediaArr.length > 0 && (
+          <div className="grid grid-cols-1 gap-2">
+            {mediaArr.slice(0, 4).map((url, i) => (
+              <img
+                key={i}
+                src={url}
+                alt={`صورة ${i + 1}`}
+                className="rounded-xl max-h-80 object-cover w-full"
+                loading="lazy"
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // 2) CONTRIBUTION — بطاقة مساهمة مالية
+  if (item.type === "CONTRIBUTION") {
+    const amount = item.metadata?.amount ?? 0;
+    return (
+      <div
+        className="rounded-xl p-4"
+        style={{ background: `${theme.primary}10` }}
+      >
+        <p className="text-sm text-muted-foreground mb-1">{config.action}</p>
+        <p className="font-heading text-3xl font-extrabold tabular-nums" style={{ color: theme.primary }}>
+          {formatMAD(amount)}
+        </p>
+        <p className="text-xs text-muted-foreground mt-1">
+          مساهمة في صندوق المعروف — شكراً لكرمك 🌹
+        </p>
+      </div>
+    );
+  }
+
+  // 3) FUND_REQUEST — بطاقة طلب
+  if (item.type === "FUND_REQUEST") {
+    return (
+      <div className="rounded-xl p-4 border" style={{ borderColor: `${theme.primary}40` }}>
+        <p className="text-xs text-muted-foreground mb-1">{config.action}</p>
+        <p className="font-heading text-lg font-bold text-foreground">
+          {item.metadata?.title ?? item.content ?? "طلب من الصندوق"}
+        </p>
+        {item.metadata?.amount && (
+          <p className="text-sm mt-1" style={{ color: theme.primary }}>
+            المبلغ المطلوب: {formatMAD(item.metadata.amount)}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // 4) EVENT — بطاقة فعالية
+  if (item.type === "EVENT") {
+    return (
+      <div className="rounded-xl p-4 border" style={{ borderColor: `${theme.primary}40`, background: `${theme.primary}08` }}>
+        <p className="text-xs text-muted-foreground mb-1">{config.action}</p>
+        <p className="font-heading text-lg font-bold text-foreground">
+          {item.metadata?.title ?? item.content ?? "فعالية جديدة"}
+        </p>
+        {item.metadata?.category && (
+          <p className="text-xs mt-1" style={{ color: theme.secondary }}>
+            {item.metadata.category}
+          </p>
+        )}
+        <Link
+          href={item.targetId ? `/community/events/${item.targetId}` : "/community/events"}
+          className="inline-block mt-3 text-xs font-medium px-3 py-1.5 rounded-full"
+          style={{ background: theme.primary, color: "white" }}
+        >
+          عرض الفعالية
+        </Link>
+      </div>
+    );
+  }
+
+  // 5) VIDEO — بطاقة فيديو
+  if (item.type === "VIDEO") {
+    return (
+      <div className="rounded-xl p-4 border" style={{ borderColor: `${theme.primary}40` }}>
+        <p className="text-xs text-muted-foreground mb-1">{config.action}</p>
+        <p className="font-heading text-base font-bold text-foreground line-clamp-2">
+          {item.metadata?.title ?? item.content ?? "فيديو جديد"}
+        </p>
+        <Link
+          href={item.targetId ? `/videos/${item.targetId}` : "/videos"}
+          className="inline-flex items-center gap-1 mt-2 text-xs font-medium"
+          style={{ color: theme.primary }}
+        >
+          <Video className="size-3" />
+          مشاهدة
+        </Link>
+      </div>
+    );
+  }
+
+  // 6) BLOG — بطاقة مقال
+  if (item.type === "BLOG") {
+    return (
+      <div className="rounded-xl p-4 border" style={{ borderColor: `${theme.primary}40` }}>
+        <p className="text-xs text-muted-foreground mb-1">{config.action}</p>
+        <p className="font-heading text-base font-bold text-foreground line-clamp-2">
+          {item.metadata?.title ?? item.content ?? "مقال جديد"}
+        </p>
+        <Link
+          href={item.targetId ? `/blog/${item.targetId}` : "/blog"}
+          className="inline-flex items-center gap-1 mt-2 text-xs font-medium"
+          style={{ color: theme.primary }}
+        >
+          <BookOpen className="size-3" />
+          اقرأ المقال
+        </Link>
+      </div>
+    );
+  }
+
+  // 7) BADGE_EARNED — بطاقة شارة
+  if (item.type === "BADGE_EARNED") {
+    return (
+      <div
+        className="rounded-xl p-4 flex items-center gap-3"
+        style={{ background: `linear-gradient(135deg, ${theme.primary}15, ${theme.secondary}15)` }}
+      >
+        <div
+          className="grid place-items-center size-12 rounded-full"
+          style={{ background: `linear-gradient(135deg, ${theme.primary}, ${theme.secondary})` }}
+        >
+          <Award className="size-6 text-white" />
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">{config.action}</p>
+          <p className="font-heading font-bold text-foreground">
+            {item.metadata?.badgeName ?? "شارة جديدة"}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // 8) LEVEL_UP — بطاقة ترقية
+  if (item.type === "LEVEL_UP") {
+    return (
+      <div
+        className="rounded-xl p-4 flex items-center gap-3"
+        style={{ background: `linear-gradient(135deg, ${theme.primary}15, ${theme.secondary}15)` }}
+      >
+        <div
+          className="grid place-items-center size-12 rounded-full"
+          style={{ background: `linear-gradient(135deg, ${theme.primary}, ${theme.secondary})` }}
+        >
+          <Crown className="size-6 text-white" />
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">{config.action}</p>
+          <p className="font-heading text-2xl font-extrabold" style={{ color: theme.primary }}>
+            المستوى {item.metadata?.level ?? "?"}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // 9) GROUP_JOINED — بطاقة اجتماعية
+  if (item.type === "GROUP_JOINED") {
+    return (
+      <div className="rounded-xl p-4 border" style={{ borderColor: `${theme.primary}40` }}>
+        <p className="text-sm text-foreground">
+          {config.action}{" "}
+          <span className="font-semibold" style={{ color: theme.primary }}>
+            {item.metadata?.groupName ?? "مجموعة"}
+          </span>
+        </p>
+      </div>
+    );
+  }
+
+  // 10) SERVICE / INITIATIVE — افتراضي
+  return (
+    <div className="rounded-xl p-4 border" style={{ borderColor: `${theme.primary}40` }}>
+      <p className="text-xs text-muted-foreground mb-1">{config.action}</p>
+      <p className="text-sm text-foreground line-clamp-3">
+        {item.metadata?.title ?? item.content ?? "نشاط جديد في الحي"}
+      </p>
+    </div>
+  );
+}
+
+// ===================================================================
+//  FeedActions — أزرار التفاعل (إعجاب، تعليق، مشاركة، حفظ)
+// ===================================================================
+
+function FeedActions({
+  item,
+  theme,
+}: {
+  item: FeedItemData;
+  theme: { primary: string; secondary: string };
+}) {
+  return (
+    <>
+      <ActionButton
+        icon={Heart}
+        count={item.likes}
+        theme={theme}
+        label="إعجاب"
+      />
+      <ActionButton
+        icon={MessageCircle}
+        count={item.comments}
+        theme={theme}
+        label="تعليق"
+      />
+      <ActionButton
+        icon={Share2}
+        count={item.shares}
+        theme={theme}
+        label="مشاركة"
+      />
+      <ActionButton
+        icon={Bookmark}
+        count={0}
+        theme={theme}
+        label="حفظ"
+      />
+      {item.views > 0 && (
+        <div className="flex items-center gap-1 text-xs text-muted-foreground ms-auto">
+          <TrendingUp className="size-3" />
+          {formatNumber(item.views)} مشاهدة
+        </div>
+      )}
+    </>
+  );
+}
+
+function ActionButton({
+  icon: Icon,
+  count,
+  theme,
+  label,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  count: number;
+  theme: { primary: string; secondary: string };
+  label: string;
+}) {
+  const [active, setActive] = React.useState(false);
+  return (
+    <button
+      onClick={() => setActive((p) => !p)}
+      className="flex items-center gap-1.5 text-xs px-2 py-1.5 rounded-md transition-colors hover:bg-muted min-h-9"
+      style={active ? { color: theme.primary } : undefined}
+      aria-label={label}
+      aria-pressed={active}
+    >
+      <Icon className={`size-4 ${active ? "fill-current" : ""}`} />
+      <span className="tabular-nums">{formatNumber(count)}</span>
+    </button>
+  );
+}
+
+// ===================================================================
+//  EmptyFeed — حالة فارغة
+// ===================================================================
+
+function EmptyFeed() {
+  return (
+    <Card className="card-2026 rounded-3xl p-10 text-center">
+      <div className="mx-auto mb-4 grid place-items-center size-16 rounded-full bg-gradient-to-br from-primary/15 to-accent/15">
+        <Sparkles className="size-7 text-primary" />
+      </div>
+      <p className="font-heading text-2xl font-bold mb-2 text-foreground">
+        لا يوجد نشاط بعد
+      </p>
+      <p className="text-muted-foreground">
+        ابدأ بكتابة منشور أو شارك في الفعاليات القادمة
+      </p>
+    </Card>
+  );
+}
+
+export default UnifiedFeed;
