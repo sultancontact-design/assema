@@ -7062,3 +7062,69 @@ Stage Summary (الجزء 1):
 - ✅ sticky (يبقى مرئياً عند التمرير)
 - ✅ responsive على 4 مقاسات (375/768/1440/1920)
 - ✅ 0 console errors + 0 overflow أفقي
+
+---
+Task ID: v61.0-part2
+Agent: Main (Z.ai Code)
+Task: الجزء 2 — هوية لونية لكل قسم (Per-Section Color Identity)
+
+Work Log:
+- إنشاء src/components/layout/section-theme.ts (~230 سطر):
+  * 22 section themes مع 8 ألوان لكل قسم
+  * كل theme: primary, secondary, accent, background, gradient, glowColor, emoji
+  * getSectionFromPath() — يحوّل pathname → section key تلقائياً
+
+- إعادة كتابة src/components/community/page-hero.tsx (~110 سطر):
+  * يقبل prop جديد: section (default: "community")
+  * يضبط CSS variables: --section-primary, --section-secondary, --section-accent, --section-glow
+  * خلفية: صورة (opacity 55%) + section gradient (85%) + bottom-up gradient + Aurora tint
+  * Badge يحوي emoji القسم + section identity bar (gradient line under subtitle)
+  * العنوان: clamp(2rem, 4.5vw, 3.5rem) — متوافق مع v60
+
+- تحديث 10 صفحات لاستخدام section prop:
+  * /feed → "feed" (sky/cyan/blue)
+  * /community/fund → "fund" (emerald/teal/green)
+  * /community/events → "events" (orange/amber/red)
+  * /community/services → "services" (blue/indigo/violet)
+  * /community/store → "store" (purple/pink/fuchsia)
+  * /blog → "blog" (red/orange/amber)
+  * /community/leaderboard → "leaderboard" (amber/orange/emerald)
+  * /community/gamification → "gamification" (violet/amber/pink)
+  * /community/following → "following" (purple/pink/amber)
+  * /community/profile/edit → "profile" (indigo/violet/pink)
+
+التحقق الفعلي بـagent-browser (CSS variables على 8 أقسام):
+| Section | Primary | Secondary | Accent |
+|---------|---------|------------|--------|
+| fund | #299B6D (أخضر زمردي) ✅ | #F5B220 (ذهبي) | #E85A3D (ترابي) |
+| events | #FF6B35 (برتقالي حيوي) ✅ | #F7C548 (أصفر) | #D62828 (أحمر) |
+| store | #8B5CF6 (بنفسجي) ✅ | #EC4899 (وردي) | #F5B220 (ذهبي) |
+| services | #3B82F6 (أزرق) ✅ | #8B5CF6 (بنفسجي) | #06B6D4 (سماوي) |
+| blog | #DC2626 (أحمر دافئ) ✅ | #F97316 (برتقالي) | #FBBF24 (أصفر) |
+| leaderboard | #F5B220 (ذهبي) ✅ | #E85A3D (ترابي) | #299B6D (زمردي) |
+| gamification | #8B5CF6 (بنفسجي) ✅ | #F5B220 (ذهبي) | #EC4899 (وردي) |
+| feed | #0EA5E9 (سماء) ✅ | #06B6D4 (فيروزي) | #F5B220 (ذهبي) |
+
+التحقق من الجودة (5 صفحات):
+| الصفحة | Console errors | Overflow |
+|---------|----------------|----------|
+| /community/fund | 0 | 1440 = 1440 ✅ |
+| /community/events | 0 | 1440 = 1440 ✅ |
+| /community/store | 0 | 1440 = 1440 ✅ |
+| /blog | 0 | 1440 = 1440 ✅ |
+| /feed | 0 | 1440 = 1440 ✅ |
+
+8 لقطات شاشة محفوظة في screenshots/v61-themes/.
+
+Commits على GitHub:
+- ce0a3dd — v61.0 part2: per-section color identity (10+ sections with unique colors)
+
+Stage Summary (الجزء 2):
+- ✅ 22 section themes معرفة في section-theme.ts
+- ✅ 10 صفحات حُدّثت لاستخدام section prop
+- ✅ كل قسم له هوية لونية بصرية مختلفة (متحقّق بـ getComputedStyle)
+- ✅ CSS variables على كل section (--section-primary, --section-accent, etc.)
+- ✅ Badge يحوي emoji القسم
+- ✅ Section identity bar (gradient line تحت العنوان)
+- ✅ 0 console errors على 5 صفحات مختبرة
+- ✅ لا overflow أفقي
