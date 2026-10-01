@@ -7005,3 +7005,60 @@ Stage Summary:
 
 Commits على GitHub:
 - 56b2e58 — v60: fix site being too large on display screens
+
+---
+Task ID: v61.0-part1
+Agent: Main (Z.ai Code)
+Task: الجزء 1 — إصلاح الشريط الجانبي الذي يغطي المحتوى
+
+Work Log:
+- فحص فعلي بـagent-browser على /community/fund (1920×1080):
+  * aside (sidebar): position=fixed, width=224px, occupies left=0 to right=224
+  * main: width=1920px (FULL viewport) — overlaps with sidebar!
+  * السبب: sidebar position:fixed يطفو فوق المحتوى، لا يأخذ مساحة في flex flow
+  * التحقق من المشكلة: asideLeft=0, asideRight=224, mainLeft=0, mainRight=1920
+  * النتيجة: الـ sidebar يغطّي 224px من المحتوى على الجانب الأيسر
+
+الإصلاح المنفّذ (commit d3a27c8):
+1. تغيير position من `fixed` → `sticky` (in-flow flex item)
+2. إضافة 3 أوضاع: expanded (224px) / collapsed (64px) / hidden (0)
+3. حفظ الوضع في localStorage('sidebar.mode')
+4. 3 أزرار في تذييل الـsidebar لاختيار الوضع مباشرة:
+   * "وضع موسّع" (expanded) — 224px
+   * "وضع أيقونات" (collapsed) — 64px
+   * "إخفاء" (hidden) — 0px + floating reopen button
+5. زرّ cycle في الأعلى: expanded → collapsed → hidden → expanded
+6. زرّ عائم "فتح القائمة الجانبية" يظهر عند الإخفاء (top-20 end-3)
+7. sticky top-16 + h-[calc(100vh-4rem)] (يملأ الارتفاع تحت الـheader)
+8. shrink-0 (لا ينكمش في flex) — main يأخذ flex-1 (الباقي)
+9. mobile: لا يزال يستخدم Sheet (off-canvas) كما هو
+
+التحقق بعد الإصلاح (على الإنتاج، 4 مقاسات):
+| Viewport | asideW | mainW | Overlap | Overflow |
+|----------|--------|-------|---------|----------|
+| 375×812 (mobile) | 0 (hidden) | 375 | false ✅ | 375 = 375 ✅ |
+| 768×1024 (tablet) | 0 (hidden) | 768 | false ✅ | 768 = 768 ✅ |
+| 1440×900 (laptop) | 224 | 1216 | false ✅ | 1440 = 1440 ✅ |
+| 1920×1080 (desktop) | 224 | 1696 | false ✅ | 1920 = 1920 ✅ |
+
+اختبار الأوضاع الثلاثة (button clicks على 1920px):
+- الوضع 1 (expanded): asideW=224 ✅
+- اضغط "وضع أيقونات" → asideW=64 (collapsed) ✅
+- اضغط "إخفاء" → asideW=0 + floating reopen button يظهر ✅
+- اضغط زرّ العائم "فتح القائمة الجانبية" → asideW=224 (expanded) ✅
+
+الملفات المعدّلة:
+- src/components/layout/collapsible-sidebar.tsx (rewrite ~270 سطر)
+- app-chrome.tsx — لا تعديل (flex flex-1 layout صحيح بالفعل)
+
+Commits على GitHub:
+- d3a27c8 — v61.0 part1: fix sidebar overlay (was position:fixed covering content)
+
+Stage Summary (الجزء 1):
+- ✅ 3 أوضاع: expanded / collapsed / hidden
+- ✅ لا تغطية للمحتوى (position:sticky بدل fixed)
+- ✅ زر 3 شرائح (cycle) + 3 أزرار صريحة في التذييل
+- ✅ زر عائم لفتح الشريط بعد الإخفاء
+- ✅ sticky (يبقى مرئياً عند التمرير)
+- ✅ responsive على 4 مقاسات (375/768/1440/1920)
+- ✅ 0 console errors + 0 overflow أفقي
