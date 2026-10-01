@@ -613,7 +613,6 @@ export default async function CommunityDashboardPage() {
             {/* العمود الأوسط — Composer + UnifiedFeed */}
             <main className="lg:col-span-6 space-y-4 order-1 lg:order-2">
               <FeedComposer onPost={() => { /* UnifiedFeed يُجلب تلقائياً */ }} />
-              <UnifiedFeedClient currentUserId={user.id} />
             </main>
 
             {/* العمود الأيسر (RTL) — النشاط + الفعاليات + الشفافية */}
