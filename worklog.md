@@ -7321,3 +7321,50 @@ Stage Summary (الجزء 4):
 
 العمل المنجز محلياً (جاهز للـ push):
 - Commit ef71c10 — v61.0 part4: admin points management (4 APIs + UI)
+
+---
+Task ID: v61.0-part4-continued
+Agent: Main (Z.ai Code)
+Task: الجزء 4 (تابع) — إضافة PointsActivityWidget + تكامل dashboard
+
+Work Log:
+- إنشاء src/components/admin/points-activity-widget.tsx (~190 سطر):
+  * مكوّن عميل يجلب من /api/admin/points/ledger (الـ endpoint الجديد)
+  * 8 إعدادات نوع المعاملة:
+    - EARN (إكساب) — emerald + Sparkles
+    - SPEND (صرف) — rose + TrendingDown
+    - ADMIN_ADD (إضافة أدمن) — emerald-700 + TrendingUp
+    - ADMIN_REMOVE (خصم أدمن) — rose-700 + TrendingDown
+    - PURCHASE (شراء) — violet-700 + ShoppingCart
+    - REFUND (استرداد) — amber-700 + RotateCcw
+    - ADJUST (تعديل) — blue-700 + Coins
+    - TRANSFER (تحويل) — indigo-700 + Coins
+  * كل صف يعرض: user (link إلى /admin/users/manage?q=email) + reason + amount (ملوّن) + balanceAfter + timeAgo
+  * وضعان: full (مع Card + header) + compact (بدون header)
+  * Time ago formatter بالعربية: "الآن" / "قبل X د" / "قبل X س" / "قبل X ي"
+  * Loading skeletons + empty state "لا توجد معاملات بعد"
+
+- التكامل في dashboard-client.tsx:
+  * Added PointsActivityWidget at the bottom (mt-6) — يعرض آخر 5 معاملات
+  * الـ widget يظهر في /admin/dashboard الرئيسية
+  * كل صف هو link لفلترة /admin/users/manage بحسب بريد المستخدم
+
+- فحص ESLint: 0 errors, 10 warnings (pre-existing)
+
+Local commits ready for push (pending token refresh):
+- ef71c10 — v61.0 part4: admin points management (4 APIs + UI)
+- 5cdc10b — v61.0-part4-final: worklog (4 API endpoints + UI ready locally)
+- ac7d3ac — v61.0 part4+: PointsActivityWidget on admin dashboard
+
+Stage Summary (الجزء 4 — مكتمل محلياً، بانتظار push):
+- ✅ 5 API endpoints (4 actions + 1 ledger) — atomic transactions + AuditLog + PointsLedger
+- ✅ UI: 4 buttons per user + Points Management Dialog (4 modes)
+- ✅ Display points + level in user row
+- ✅ PointsActivityWidget for at-a-glance visibility
+- ✅ Widget integrated on /admin/dashboard
+- ✅ ESLint نظيف (0 errors)
+- ⚠️ 3 commits محلية بانتظار push (tokens expired)
+
+ملاحظة للمستخدم: عندما تُجدّد GH_TOKEN + VERCEL_TOKEN، يمكن push بسهولة:
+  git push "https://NEW_GH_TOKEN@github.com/sultancontact-design/assema.git" main
+ثم انتظر deploy Vercel + تحقّق على /admin/users/manage + /admin/dashboard
