@@ -7214,3 +7214,110 @@ Stage Summary (الجزء 3):
 ملاحظة: السبب الجذري كان عدم معرفتي بقاعدة Next.js الأساسية:
 "Server Components لا يمكنها تمرير functions كـ props إلى Client Components"
 كل ما تحتاجه هو wrapper 'use client' للاحتفاظ بالـ callback داخلياً.
+
+---
+Task ID: v61.0-part4
+Agent: Main (Z.ai Code)
+Task: الجزء 4 — لوحة السوبر أدمن (إدارة النقاط: add/remove/purchase/refund)
+
+Work Log:
+- إنشاء 4 API endpoints جديدة للنقاط (5 ملفات):
+  1. POST /api/admin/users/manage/[id]/points/add (~75 سطر)
+     * Atomic transaction: increment user.points + create PointsLedger (type=ADMIN_ADD)
+     * + AuditLog (action=admin.points.add, severity=info)
+     * Validates: amount > 0, amount <= 1,000,000, reason (default: "إضافة يدوية")
+     * Returns: { success, newBalance, added, userName }
+
+  2. POST /api/admin/users/manage/[id]/points/remove (~75 سطر)
+     * Atomic: decrement (with balance check) + PointsLedger (type=ADMIN_REMOVE, amount=-X)
+     * + AuditLog (severity=warn)
+     * Balance check: throws if user.points < amount
+     * Returns: { success, newBalance, removed, userName }
+
+  3. POST /api/admin/users/manage/[id]/points/purchase (~110 سطر)
+     * Creates PointsPurchase (status=COMPLETED, completedAt=now)
+     * + increment user.points + PointsLedger (type=PURCHASE)
+     * + AuditLog. Validates method (CASH/BANK_TRANSFER/CMI)
+     * Returns: { success, orderId, newBalance, amount, pricePaid, method, userName }
+
+  4. POST /api/admin/users/manage/[id]/points/refund (~110 سطر)
+     * Creates PointsPurchase (status=REFUNDED, amount=-X, pricePaid=-refundAmount)
+     * + decrement user.points (with balance check)
+     * + PointsLedger (type=REFUND, amount=-X)
+     * + AuditLog (severity=warn)
+     * Returns: { success, refundId, newBalance, refunded, refundAmount, userName }
+
+  5. GET /api/admin/points/ledger (~55 سطر)
+     * Paginated list of all PointsLedger entries
+     * Filter by userId + type. Includes user relation
+     * Returns: { items, total, page, totalPages }
+
+- تحديث src/app/api/admin/users/manage/route.ts:
+  * GET now includes 'points' + 'level' fields in the response
+  * (each user row displays current points balance)
+
+- تحديث src/components/admin/users-manage-client.tsx (+100 سطر):
+  * كل صف مستخدم يعرض الآن: full name + role badge + lock badge + POINTS badge
+    (النقاط + المستوى بألوان ذهبية: "191 نقطة · L1")
+  * 4 أزرار جديدة لكل مستخدم:
+    - Add (+) — أخضر
+    - Remove (−) — وردي
+    - Purchase (cart) — بنفسجي
+    - Refund (rotate) — كهرماني
+  * Points Management Dialog (4 modes):
+    - add: amount + reason
+    - remove: amount + reason (with balance check)
+    - purchase: amount + pricePaid + method (CASH/BANK_TRANSFER/CMI) + note
+    - refund: amount + refundAmount + reason (with balance check)
+  * Dialog header يحوي:
+    - Icon ملون حسب الوضع
+    - Title: "إضافة/خصم/بيع/استرداد نقاط"
+  * Form body يحوي:
+    - بطاقة معلومات المستخدم (الاسم + الرصيد الحالي)
+    - Input للعدد المطلوب
+    - حقول إضافية حسب الوضع (pricePaid + method للـ purchase، refundAmount للـ refund)
+    - Textarea للسبب/ملاحظة
+    - زر إلغاء + زر تأكيد (مع loading state)
+  * Toast feedback بعد كل عملية:
+    - "أُضيفت X نقطة. الرصيد: Y"
+    - "بِيعت X نقطة. الرصيد: Y"
+    - "استُرجعت X نقطة. الرصيد: Y"
+  * Auto-refresh لقائمة المستخدمين بعد كل عملية
+
+- فحص ESLint: 0 errors, 10 warnings (pre-existing)
+
+🚨 ملاحظة حرجة:
+- Push إلى GitHub FAILED: token منتهي الصلاحية (HTTP 401)
+  * curl https://api.github.com/repos/... → 401 Unauthorized
+  * git push → "fatal: could not read Password"
+- Vercel API token أيضاً منتهي (HTTP 403)
+  * curl /api.vercel.com/... → 403 Forbidden
+- Commit موجود محلياً: ef71c10 (ولكن غير مدفوع لـ origin)
+- لا يمكنني تشغيل deploys جديدة أو التحقّق على الإنتاج حتى يُحدّث المستخدم الـ tokens
+
+الملفات المنتجة (v61.0 الجزء 4):
+- src/app/api/admin/users/manage/[id]/points/add/route.ts (75 سطر)
+- src/app/api/admin/users/manage/[id]/points/remove/route.ts (75 سطر)
+- src/app/api/admin/users/manage/[id]/points/purchase/route.ts (110 سطر)
+- src/app/api/admin/users/manage/[id]/points/refund/route.ts (110 سطر)
+- src/app/api/admin/points/ledger/route.ts (55 سطر)
+- src/components/admin/users-manage-client.tsx (+100 سطر)
+- src/app/api/admin/users/manage/route.ts (+2 fields: points, level)
+
+Stage Summary (الجزء 4):
+- ✅ 4 API endpoints (add/remove/purchase/refund) — معاملة ذرّية + AuditLog + PointsLedger
+- ✅ GET /api/admin/points/ledger — paginated مع فلترة
+- ✅ UI: 4 أزرار لكل مستخدم + Dialog كامل بـ 4 أوضاع
+- ✅ Display points + level في صف المستخدم
+- ✅ ESLint نظيف (0 errors)
+- ⚠️ Push معطّل (token منتهي) — يحتاج المستخدم لتحديث GH_TOKEN + VERCEL_TOKEN
+- ⚠️ لم يتم التحقّق الفعلي (DB write + curl + agent-browser) — يحتاج tokens صالحة
+
+ما يحتاجه المستخدم:
+1. تجديد GitHub Personal Access Token (ghp_...)
+2. تجديد Vercel Token (vcp_...)
+3. تحديث Vercel env vars للمشروع
+4. بعد ذلك يمكن push + deploy + التحقّق الفعلي
+
+العمل المنجز محلياً (جاهز للـ push):
+- Commit ef71c10 — v61.0 part4: admin points management (4 APIs + UI)
