@@ -16,6 +16,7 @@ import {
 import {
   RetentionLineChart, EngagementBarChart, FeatureUsagePieChart, NotificationsAreaChart,
 } from "@/components/admin/admin-charts";
+import { PointsActivityWidget } from "@/components/admin/points-activity-widget";
 
 // ===================================================================
 //  DashboardClient v35.1 — Kiranism-inspired Bento Dashboard
@@ -294,6 +295,11 @@ export function DashboardClient() {
             })}
           </div>
         )}
+      </div>
+
+      {/* v61.0: آخر معاملات النقاط — يستعمل /api/admin/points/ledger الجديد */}
+      <div className="mt-6">
+        <PointsActivityWidget limit={5} />
       </div>
     </div>
   );
