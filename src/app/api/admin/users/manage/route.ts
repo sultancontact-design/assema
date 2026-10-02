@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   const search = searchParams.get("q");
   const where: Record<string, unknown> = { deletedAt: null };
   if (search) where.OR = [{ fullName: { contains: search } }, { email: { contains: search } }, { phone: { contains: search } }];
-  const [users, total] = await Promise.all([db.user.findMany({ where, select: { id: true, fullName: true, email: true, phone: true, role: true, status: true, isLocked: true, lastLoginAt: true, createdAt: true, district: { select: { nameAr: true } } }, orderBy: { createdAt: "desc" }, skip: (page - 1) * 20, take: 20 }), db.user.count({ where })]);
+  const [users, total] = await Promise.all([db.user.findMany({ where, select: { id: true, fullName: true, email: true, phone: true, role: true, status: true, isLocked: true, lastLoginAt: true, createdAt: true, points: true, level: true, district: { select: { nameAr: true } } }, orderBy: { createdAt: "desc" }, skip: (page - 1) * 20, take: 20 }), db.user.count({ where })]);
   return NextResponse.json({ users, total, page, totalPages: Math.ceil(total / 20) });
 }
 export async function POST(request: Request) {
