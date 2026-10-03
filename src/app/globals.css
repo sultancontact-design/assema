@@ -144,15 +144,15 @@
   /* الشريط الجانبي (لوحة الإدارة) */
   --sidebar: #FFFFFF;
   --sidebar-foreground: #1F1A17;
-  --sidebar-primary: #B8492B;
+  --sidebar-primary: #0F766E;
   --sidebar-primary-foreground: #FBF6EE;
   --sidebar-accent: #F0E9DB;
   --sidebar-accent-foreground: #1F1A17;
   --sidebar-border: #E8DCC4;
-  --sidebar-ring: #B8492B;
+  --sidebar-ring: #0F766E;
 
   /* الألوان المغربية المميّزة (مباشرة) */
-  --zellige: #B8492B;
+  --zellige: #0F766E;
   --zellige-foreground: #FBF6EE;
   --atlas: #2D5A3D;
   --atlas-foreground: #FBF6EE;
@@ -199,14 +199,14 @@
 
   --sidebar: #1F1812;
   --sidebar-foreground: #F5E9D5;
-  --sidebar-primary: #D4623E;
+  --sidebar-primary: #14B8A6;
   --sidebar-primary-foreground: #FBF6EE;
   --sidebar-accent: #2A1F16;
   --sidebar-accent-foreground: #F5E9D5;
   --sidebar-border: #3A2E20;
-  --sidebar-ring: #D4623E;
+  --sidebar-ring: #14B8A6;
 
-  --zellige: #D4623E;
+  --zellige: #14B8A6;
   --zellige-foreground: #FBF6EE;
   --atlas: #4A7A5D;
   --atlas-foreground: #FBF6EE;
@@ -465,39 +465,39 @@
 
 /* ═══════════ v11.0 — ألوان نابضة محسّنة ═══════════ */
 :root {
-  --primary: #C9492B;
-  --primary-light: #E85A38;
-  --secondary: #1D4D2D;
-  --accent: #D4A017;
+  --primary: #0F766E;
+  --primary-light: #14B8A6;
+  --secondary: #0F766E;
+  --accent: #F59E0B;
   --success: #10B981;
   --warning: #F59E0B;
   --error: #EF4444;
 }
 
 .hero-gradient {
-  background: linear-gradient(135deg, #C9492B 0%, #D4A017 50%, #1D4D2D 100%) !important;
+  background: linear-gradient(135deg, #0F766E 0%, #14B8A6 100%) !important;
 }
 
 .text-gradient-zellige {
-  background: linear-gradient(90deg, #C9492B, #D4A017) !important;
+  background: linear-gradient(90deg, #0F766E, #F59E0B) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   background-clip: text !important;
 }
 
 .card-glow {
-  box-shadow: 0 4px 20px rgba(201, 73, 43, 0.12) !important;
+  box-shadow: 0 4px 20px rgba(15, 118, 110, 0.12) !important;
   transition: box-shadow 0.3s ease, transform 0.2s ease !important;
 }
 
 .card-glow:hover {
-  box-shadow: 0 8px 40px rgba(201, 73, 43, 0.25) !important;
+  box-shadow: 0 8px 40px rgba(15, 118, 110, 0.25) !important;
   transform: translateY(-2px) !important;
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(201, 73, 43, 0.4); }
-  50% { box-shadow: 0 0 0 12px rgba(201, 73, 43, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(15, 118, 110, 0.4); }
+  50% { box-shadow: 0 0 0 12px rgba(15, 118, 110, 0); }
 }
 
 .animate-pulse-glow {
