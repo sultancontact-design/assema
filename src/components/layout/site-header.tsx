@@ -1,18 +1,21 @@
 "use client";
 
 // ===================================================================
-//  SiteHeader — ترويسة الموقع
-//  - Sticky top, RTL nav, sheet للجوال
-//  - 5 روابط + login (للزوّار) / streak + notifications + avatar (للأعضاء)
+//  SiteHeader v63.0 — Simplified, clean, social-network style
+//  - Sticky top, RTL, minimal: Logo + Search + Notifications + User
+//  - All nav links moved to CollapsibleSidebar (v61.0)
+//  - No clutter, no overlapping buttons
+//  - Mobile: hamburger opens sidebar Sheet
 // ===================================================================
 
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Menu, X, Heart, Users, CalendarDays, Home as HomeIcon, Newspaper, Mail, MessageSquare, Lightbulb, Gift, BookOpen, Tag, Compass } from "lucide-react";
+import { Search, Bell, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetContent,
@@ -22,229 +25,221 @@ import {
 } from "@/components/ui/sheet";
 import { SiteLogo } from "@/components/shared/site-logo";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
-import { StreakWidget } from "@/components/community/streak-widget";
 import { SmartNotificationCenter } from "@/components/community/smart-notification-center";
-import { AdPlacement } from "@/components/ads/ad-placement";
-
-const NAV_LINKS = [
-  { href: "/", label: "الرئيسية", icon: HomeIcon },
-  { href: "/community", label: "المجتمع", icon: Users },
-  { href: "/community/fund", label: "صندوق المعروف", icon: Heart },
-  { href: "/community/events", label: "الفعاليات", icon: CalendarDays },
-  { href: "/community/groups", label: "المجموعات", icon: Newspaper },
-  { href: "/community/messages", label: "الرسائل", icon: Mail },
-  { href: "/community/discussions", label: "النقاشات", icon: MessageSquare },
-  { href: "/community/initiatives", label: "المبادرات", icon: Lightbulb },
-  { href: "/community/store", label: "المتجر", icon: Gift },
-  { href: "/blog", label: "المدوّنة", icon: BookOpen },
-  { href: "/community/prices", label: "الأسعار", icon: Tag },
-  { href: "/guide", label: "دليل الحي", icon: Compass },
-];
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function SiteHeader() {
   const pathname = usePathname() ?? "/";
-  const [open, setOpen] = React.useState(false);
+  const [mobileOpen, setMobileOpen] = React.useState(false);
   const { data: session, status } = useSession();
   const isAuthenticated = status === "authenticated" && !!session?.user;
-  const [streakData, setStreakData] = React.useState<{
-    currentStreak: number;
-    freezes: number;
-    atRisk: boolean;
-    checkedInToday: boolean;
-    longestStreak: number;
-    totalCheckIns: number;
-    hoursUntilBreak: number;
-  } | null>(null);
   const [notifInitial, setNotifInitial] = React.useState<
     Array<{
       id: string;
-      type: string;
       title: string;
-      body: string;
-      actionUrl: string | null;
-      icon: string | null;
-      sentAt: string;
-      openedAt: string | null;
+      body?: string;
+      type: string;
+      isRead: boolean;
+      createdAt: string;
     }>
   >([]);
-  const [notifUnread, setNotifUnread] = React.useState(0);
 
   React.useEffect(() => {
-    setOpen(false);
+    setMobileOpen(false);
   }, [pathname]);
 
-  // جلب حالة السلسلة + الإشعارات للمستخدم الحالي
-  React.useEffect(() => {
-    if (!isAuthenticated) return;
-    void (async () => {
-      try {
-        const [streakRes, notifRes] = await Promise.all([
-          fetch("/api/community/streak/check-in", { cache: "no-store" }),
-          fetch("/api/community/notifications", { cache: "no-store" }),
-        ]);
-        if (streakRes.ok) {
-          const sd = await streakRes.json();
-          setStreakData({
-            currentStreak: sd.currentStreak ?? 0,
-            longestStreak: sd.longestStreak ?? 0,
-            freezes: sd.freezes ?? 0,
-            atRisk: sd.atRisk ?? false,
-            checkedInToday: sd.checkedInToday ?? false,
-            totalCheckIns: sd.totalCheckIns ?? 0,
-            hoursUntilBreak: sd.hoursUntilBreak ?? 48,
-          });
-        }
-        if (notifRes.ok) {
-          const nd = await notifRes.json();
-          setNotifInitial(nd.notifications ?? []);
-          setNotifUnread(nd.unreadCount ?? 0);
-        }
-      } catch {
-        // تجاهل
-      }
-    })();
-  }, [isAuthenticated]);
+  const userInitial = session?.user?.name?.slice(0, 1) ?? "أ";
 
   return (
-    <>
-      <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="container-fluid flex h-16 items-center justify-between gap-2">
-          {/* الشعار — جهة اليمين في RTL */}
-          <SiteLogo size="md" />
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container-fluid flex h-16 items-center justify-between gap-4">
+        {/* 1. Mobile menu + Logo */}
+        <div className="flex items-center gap-2">
+          {/* Mobile hamburger — opens Sheet with nav links */}
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden"
+                aria-label="فتح القائمة"
+              >
+                {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-72 p-0">
+              <SheetHeader className="p-4 border-b border-border">
+                <SheetTitle className="text-start">
+                  <SiteLogo size="sm" />
+                </SheetTitle>
+              </SheetHeader>
+              <nav className="px-2 py-3 overflow-y-auto">
+                <MobileNavLinks onNavigate={() => setMobileOpen(false)} />
+              </nav>
+            </SheetContent>
+          </Sheet>
 
-          {/* قائمة سطح المكتب */}
-          <nav className="hidden lg:flex items-center gap-0.5" aria-label="القائمة الرئيسية">
-            {NAV_LINKS.map((link) => {
-              const Icon = link.icon;
-              const active =
-                pathname === link.href ||
-                (link.href !== "/" && pathname.startsWith(link.href));
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={cn(
-                    "flex items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors",
-                    active
-                      ? "bg-primary/10 text-primary"
-                      : "text-foreground/70 hover:bg-accent/40 hover:text-accent-foreground"
-                  )}
-                  aria-current={active ? "page" : undefined}
-                >
-                  <Icon className="size-4 shrink-0" />
-                  <span className="whitespace-nowrap">{link.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
+          {/* Logo — always visible */}
+          <Link href="/" className="flex items-center gap-2 shrink-0">
+            <SiteLogo size="sm" />
+          </Link>
+        </div>
 
-          {/* الإجراءات — جهة اليسار في RTL */}
-          <div className="flex items-center gap-1.5">
-            {isAuthenticated && streakData && (
-              <div className="hidden sm:block">
-                <StreakWidget variant="compact" initial={streakData} />
-              </div>
-            )}
-
-            {isAuthenticated && (
-              <SmartNotificationCenter
-                initialNotifications={notifInitial}
-                initialUnreadCount={notifUnread}
-              />
-            )}
-
-            <ThemeToggle />
-
-            {!isAuthenticated && (
-              <div className="hidden sm:block">
-                <Button asChild size="sm" variant="default">
-                  <Link href="/login">تسجيل الدخول</Link>
-                </Button>
-              </div>
-            )}
-
-            {isAuthenticated && (
-              <div className="hidden sm:block">
-                <Button asChild size="sm" variant="outline">
-                  <Link href="/community">لوحتي</Link>
-                </Button>
-              </div>
-            )}
-
-            {/* زر القائمة على الجوال */}
-            <Sheet open={open} onOpenChange={setOpen}>
-              <SheetTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="lg:hidden"
-                  aria-label="فتح القائمة"
-                >
-                  {open ? <X className="size-5" /> : <Menu className="size-5" />}
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-72">
-                <SheetHeader>
-                  <SheetTitle className="text-start">القائمة</SheetTitle>
-                </SheetHeader>
-                <nav className="flex flex-col gap-1 px-2 mt-4">
-                  {NAV_LINKS.map((link) => {
-                    const Icon = link.icon;
-                    const active =
-                      pathname === link.href ||
-                      (link.href !== "/" && pathname.startsWith(link.href));
-                    return (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        className={cn(
-                          "flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
-                          active
-                            ? "bg-primary/10 text-primary"
-                            : "text-foreground/70 hover:bg-accent/40"
-                        )}
-                      >
-                        <Icon className="size-4" />
-                        <span>{link.label}</span>
-                      </Link>
-                    );
-                  })}
-                  <div className="my-2 h-px bg-border" />
-                  {isAuthenticated ? (
-                    <>
-                      <Button asChild size="sm" className="w-full">
-                        <Link href="/community">لوحتي</Link>
-                      </Button>
-                      <Button asChild size="sm" variant="outline" className="w-full">
-                        <Link href="/ethics">تصميمنا الأخلاقي</Link>
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button asChild size="sm" className="w-full">
-                        <Link href="/login">تسجيل الدخول</Link>
-                      </Button>
-                      <Button asChild size="sm" variant="outline" className="w-full">
-                        <Link href="/register">حساب جديد</Link>
-                      </Button>
-                    </>
-                  )}
-                </nav>
-              </SheetContent>
-            </Sheet>
+        {/* 2. Search (desktop only, center) */}
+        <div className="hidden md:flex flex-1 max-w-md">
+          <div className="relative w-full">
+            <Search className="absolute top-1/2 -translate-y-1/2 start-3 size-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="ابحث في المنصة..."
+              className="ps-9 h-10 rounded-full bg-muted/50 border-transparent focus-visible:border-border"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const q = (e.target as HTMLInputElement).value.trim();
+                  if (q) window.location.href = `/feed?q=${encodeURIComponent(q)}`;
+                }
+              }}
+            />
           </div>
         </div>
-      </header>
 
-      {/* بانر إعلاني علوي — header-leaderboard، تحت الترويسة مباشرة */}
-      <div className="border-b border-border bg-muted/20">
-        <div className="container-fluid py-2">
-          <AdPlacement
-            placement="header-leaderboard"
-            className="mx-auto w-full max-w-[728px]"
-          />
+        {/* 3. Actions: Notifications + Theme + User/Login */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Theme toggle */}
+          <ThemeToggle />
+
+          {/* Notifications (authenticated only) */}
+          {isAuthenticated && <SmartNotificationCenter initialNotifications={notifInitial} />}
+
+          {/* User menu or login */}
+          {isAuthenticated ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-2 rounded-full p-0.5 hover:bg-muted/60 transition-colors" aria-label="قائمة المستخدم">
+                  <Avatar className="size-9 ring-2 ring-primary/20">
+                    <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-bold text-sm">
+                      {userInitial}
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{session?.user?.name}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{session?.user?.email}</p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/community/profile" className="cursor-pointer">الملف الشخصي</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/wallet" className="cursor-pointer">المحفظة</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/community/gamification" className="cursor-pointer">النقاط والشارات</Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {session?.user?.role === "SUPER_ADMIN" && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin/dashboard" className="cursor-pointer font-semibold text-primary">لوحة الإدارة</Link>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/api/auth/signout?callbackUrl=/" className="cursor-pointer text-red-600">تسجيل الخروج</Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button asChild size="sm" className="rounded-full h-9 px-4">
+              <Link href="/login">تسجيل الدخول</Link>
+            </Button>
+          )}
         </div>
       </div>
-    </>
+    </header>
+  );
+}
+
+// ===================================================================
+//  MobileNavLinks — روابط القائمة للجوال (same as sidebar)
+// ===================================================================
+
+const MOBILE_NAV = [
+  { section: "الشبكة", links: [
+    { href: "/", label: "الرئيسية" },
+    { href: "/feed", label: "المنشورات" },
+    { href: "/discover", label: "اكتشف" },
+    { href: "/community/members", label: "الأعضاء" },
+    { href: "/community/messages", label: "الرسائل" },
+    { href: "/community/profile", label: "ملفي الشخصي" },
+  ]},
+  { section: "المجتمع", links: [
+    { href: "/community", label: "المجتمع" },
+    { href: "/community/fund", label: "صندوق المعروف" },
+    { href: "/community/events", label: "الفعاليات" },
+    { href: "/community/groups", label: "المجموعات" },
+    { href: "/community/discussions", label: "النقاشات" },
+    { href: "/community/initiatives", label: "المبادرات" },
+  ]},
+  { section: "المعرفة", links: [
+    { href: "/blog", label: "المدوّنة" },
+    { href: "/videos", label: "الفيديوهات" },
+    { href: "/community/services", label: "الخدمات" },
+    { href: "/community/prices", label: "أسعار السوق" },
+    { href: "/guide", label: "دليل الحي" },
+  ]},
+  { section: "الانتماء", links: [
+    { href: "/community/store", label: "المتجر" },
+    { href: "/community/gamification", label: "النقاط والشارات" },
+    { href: "/community/leaderboard", label: "المتصدرون" },
+    { href: "/community/map-3d", label: "الخريطة" },
+    { href: "/wallet", label: "المحفظة" },
+  ]},
+];
+
+function MobileNavLinks({ onNavigate }: { onNavigate?: () => void }) {
+  const pathname = usePathname() ?? "/";
+  return (
+    <div className="space-y-4">
+      {MOBILE_NAV.map((section) => (
+        <div key={section.section}>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-3 mb-2">
+            {section.section}
+          </p>
+          <ul className="space-y-0.5">
+            {section.links.map((link) => {
+              const active = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
+              return (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    onClick={onNavigate}
+                    className={cn(
+                      "block px-3 py-2.5 rounded-md text-sm transition-colors min-h-11",
+                      active
+                        ? "bg-primary/10 text-primary font-semibold"
+                        : "text-foreground/70 hover:bg-accent/30 hover:text-foreground"
+                    )}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+    </div>
   );
 }
