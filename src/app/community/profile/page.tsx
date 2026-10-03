@@ -24,6 +24,7 @@ export default async function ProfilePage() {
       socialWhatsapp: true,
       profession: true, skills: true, interests: true,
       points: true, level: true,
+      followersCount: true, followingCount: true,
       createdAt: true,
       district: { select: { name: true, nameAr: true } },
     },
@@ -99,10 +100,11 @@ export default async function ProfilePage() {
 
             {/* Stats */}
             <div className="flex gap-6 mb-4">
+              <Link href="/community/profile/followers" className="text-center hover:text-primary transition-colors"><div className="font-bold text-lg">{dbUser.followersCount || 0}</div><div className="text-xs text-muted-foreground">متابِعون</div></Link>
+              <Link href="/community/profile/following" className="text-center hover:text-primary transition-colors"><div className="font-bold text-lg">{dbUser.followingCount || 0}</div><div className="text-xs text-muted-foreground">متابَعون</div></Link>
               <div className="text-center"><div className="font-bold text-lg">{videos.length}</div><div className="text-xs text-muted-foreground">فيديو</div></div>
               <div className="text-center"><div className="font-bold text-lg">{posts.length}</div><div className="text-xs text-muted-foreground">مقال</div></div>
               <div className="text-center"><div className="font-bold text-lg">{dbUser.points}</div><div className="text-xs text-muted-foreground">نقطة</div></div>
-              <div className="text-center"><div className="font-bold text-lg">{dbUser.level}</div><div className="text-xs text-muted-foreground">مستوى</div></div>
             </div>
 
             {/* Bio */}

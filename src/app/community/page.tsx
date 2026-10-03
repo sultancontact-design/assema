@@ -46,6 +46,8 @@ import { EngagementSection } from "@/components/community/community-engagement";
 import { AdPlacement } from "@/components/ads/ad-placement";
 import { FeedComposerWrapper } from "@/components/feed/feed-composer-wrapper";
 import { UnifiedFeedClient } from "@/components/community/unified-feed-client";
+import { CommunityTabs } from "@/components/community/community-tabs";
+import { SuggestionsCard } from "@/components/community/suggestions-card";
 import type {
   ContributionStatus,
   FundRequestStatus,
@@ -607,6 +609,7 @@ export default async function CommunityDashboardPage() {
                 level={userLevel}
               />
               <QuickLinksCard userId={user.id} districtId={user.districtId} />
+              <SuggestionsCard />
               <TrendingTopicsCard />
             </aside>
 
