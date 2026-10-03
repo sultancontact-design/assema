@@ -7,6 +7,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   const user = await getCurrentUser();
   if (!user || user.role !== "SUPER_ADMIN") return NextResponse.json({ error: "غير مصرّح" }, { status: 403 });
   const { id } = await params;
-  await db.user.update({ where: { id }, data: { isLocked: false, lockedReason: null, status: "ACTIVE" } }).catch(() => null);
+  // v61.0: use lockedUntil + status (isLocked column not in schema)
+  await db.user.update({ where: { id }, data: { lockedUntil: null, status: "ACTIVE" } }).catch(() => null);
   return NextResponse.json({ success: true, isLocked: false });
 }

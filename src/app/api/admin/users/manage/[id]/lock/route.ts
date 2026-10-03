@@ -9,6 +9,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const { id } = await params;
   let body: Record<string, unknown> = {}; try { body = await request.json(); } catch {}
   const reason = typeof body.reason === "string" ? body.reason : "Locked by admin";
-  await db.user.update({ where: { id }, data: { isLocked: true, lockedReason: reason, status: "SUSPENDED" } }).catch(() => null);
+  // v61.0: use lockedUntil + status (isLocked column not in schema)
+  await db.user.update({ where: { id }, data: { lockedUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), status: "SUSPENDED" } }).catch(() => null);
   return NextResponse.json({ success: true, isLocked: true });
 }
