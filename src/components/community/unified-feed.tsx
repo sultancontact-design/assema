@@ -259,27 +259,42 @@ function FeedItemCard({ item }: { item: FeedItemData }) {
     }
   })();
 
+  // v66.0: 5 visually distinct card types
+  const cardStyles: Record<string, { className: string; showTopBar: boolean; showHeader: boolean }> = {
+    POST: { className: "bg-white border border-gray-200 rounded-xl", showTopBar: false, showHeader: true },
+    STATUS: { className: "bg-white border border-gray-200 rounded-xl", showTopBar: false, showHeader: true },
+    CONTRIBUTION: { className: "bg-green-50 border border-green-200 rounded-xl", showTopBar: false, showHeader: true },
+    FUND_REQUEST: { className: "bg-white border border-gray-200 rounded-xl", showTopBar: false, showHeader: true },
+    EVENT: { className: "bg-white border border-gray-200 rounded-xl overflow-hidden", showTopBar: false, showHeader: true },
+    VIDEO: { className: "bg-white border border-gray-200 rounded-xl", showTopBar: false, showHeader: true },
+    BLOG: { className: "bg-white border border-gray-200 rounded-xl overflow-hidden", showTopBar: false, showHeader: true },
+    BADGE_EARNED: { className: "bg-amber-50 border border-amber-200 rounded-xl", showTopBar: false, showHeader: false },
+    LEVEL_UP: { className: "bg-amber-50 border border-amber-200 rounded-xl", showTopBar: false, showHeader: false },
+    GROUP_JOINED: { className: "bg-white border border-gray-200 rounded-xl", showTopBar: false, showHeader: true },
+    SERVICE: { className: "bg-white border border-gray-200 rounded-xl", showTopBar: false, showHeader: true },
+    INITIATIVE: { className: "bg-white border border-gray-200 rounded-xl", showTopBar: false, showHeader: true },
+  };
+  const cardStyle = cardStyles[item.type] ?? cardStyles.POST;
+
   return (
     <Card
-      className="card-2026 overflow-hidden"
+      className={`${cardStyle.className} transition-shadow hover:shadow-md`}
       style={{
         ["--section-primary" as string]: theme.primary,
         ["--section-secondary" as string]: theme.secondary,
-        ["--section-accent" as string]: theme.accent,
-        borderColor: `${theme.primary}40`,
       }}
     >
-      {/* شريط علوي ملوّن بحسب نوع المنشور */}
-      <div
-        className="h-1.5"
-        style={{
-          background: `linear-gradient(to right, ${theme.primary}, ${theme.secondary})`,
-        }}
-        aria-hidden
-      />
+      {cardStyle.showTopBar && (
+        <div
+          className="h-1.5"
+          style={{ background: `linear-gradient(to right, ${theme.primary}, ${theme.secondary})` }}
+          aria-hidden
+        />
+      )}
 
       <CardContent className="p-4 md:p-5">
-        {/* الرأس: avatar + اسم + نوع + وقت */}
+        {/* الرأس: avatar + اسم + نوع + وقت (تخطى للبطاقات الاحتفالية) */}
+        {cardStyle.showHeader && (
         <div className="flex items-start gap-3 mb-3">
           <Link href={user?.id ? `/u/${user.id}` : "/community/members"}>
             <Avatar className="size-10 ring-2" style={{ ["--tw-ring-color" as string]: `${theme.primary}30` }}>
@@ -318,6 +333,7 @@ function FeedItemCard({ item }: { item: FeedItemData }) {
             </p>
           </div>
         </div>
+        )}
 
         {/* المحتوى — يختلف حسب النوع */}
         <FeedItemContent item={item} config={config} theme={theme} mediaArr={mediaArr} />
