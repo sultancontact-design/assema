@@ -571,12 +571,7 @@ function FeedActions({
         theme={theme}
         label="مشاركة"
       />
-      <ActionButton
-        icon={Bookmark}
-        count={0}
-        theme={theme}
-        label="حفظ"
-      />
+      <BookmarkButton item={item} theme={theme} />
       {item.views > 0 && (
         <div className="flex items-center gap-1 text-xs text-muted-foreground ms-auto">
           <TrendingUp className="size-3" />
@@ -584,6 +579,67 @@ function FeedActions({
         </div>
       )}
     </>
+  );
+}
+
+// ===================================================================
+//  BookmarkButton — Save/unsave feed item (toggle behavior)
+//  v61.0: uses /api/social/bookmark with targetType=FeedItem
+// ===================================================================
+
+function BookmarkButton({
+  item,
+  theme,
+}: {
+  item: FeedItemData;
+  theme: { primary: string; secondary: string };
+}) {
+  const [bookmarked, setBookmarked] = React.useState(false);
+  const [submitting, setSubmitting] = React.useState(false);
+
+  React.useEffect(() => {
+    fetch(`/api/social/bookmark?targetType=FeedItem&targetId=${item.id}`)
+      .then((r) => r.json())
+      .then((d) => setBookmarked(!!d.bookmarked))
+      .catch(() => {});
+  }, [item.id]);
+
+  const toggle = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    const prev = bookmarked;
+    setBookmarked(!prev); // optimistic
+    try {
+      const res = await fetch("/api/social/bookmark", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetType: "FeedItem", targetId: item.id }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setBookmarked(!!data.bookmarked);
+      } else {
+        setBookmarked(prev); // rollback
+      }
+    } catch {
+      setBookmarked(prev);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={toggle}
+      disabled={submitting}
+      className="flex items-center gap-1 text-xs px-2 py-1.5 rounded-md hover:bg-muted transition-colors min-h-9 disabled:opacity-50"
+      style={bookmarked ? { color: theme.primary } : undefined}
+      aria-label="حفظ"
+      aria-pressed={bookmarked}
+      title={bookmarked ? "إزالة من المحفوظات" : "حفظ"}
+    >
+      <Bookmark className={`size-4 ${bookmarked ? "fill-current" : ""}`} />
+    </button>
   );
 }
 
