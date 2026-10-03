@@ -785,7 +785,7 @@ function ProfileMiniCard({
         </p>
         <div className="mt-3 pt-3 border-t border-border/60 grid grid-cols-2 gap-2">
           <div>
-            <p className="text-xs text-muted-foreground">النقاط</p>
+            <p className="text-xs text-muted-foreground">Karma</p>
             <p className="font-heading font-bold text-primary text-lg tabular-nums">{formatNumber(points)}</p>
           </div>
           <div>

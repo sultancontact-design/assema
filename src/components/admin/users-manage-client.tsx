@@ -83,7 +83,7 @@ export function UsersManageClient() {
       const res = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const data = await res.json();
       if (!res.ok) { toast.error(data.error || "فشل"); return; }
-      toast.success(`${mode === "add" ? "أُضيفت" : mode === "remove" ? "خُصمت" : mode === "purchase" ? "بِيعت" : "استُرجعت"} ${data.added ?? data.removed ?? data.amount ?? data.refunded} نقطة. الرصيد: ${data.newBalance}`);
+      toast.success(`${mode === "add" ? "أُضيفت" : mode === "remove" ? "خُصمت" : mode === "purchase" ? "بِيعت" : "استُرجعت"} ${data.added ?? data.removed ?? data.amount ?? data.refunded} Karma. الرصيد: ${data.newBalance}`);
       setPointsDialog(null);
       fetchUsers();
     } catch {
@@ -105,7 +105,7 @@ export function UsersManageClient() {
           {users.map(u => (
             <Card key={u.id} className={u.isLocked ? "border-red-300" : ""}><CardContent className="p-4">
               <div className="flex items-start justify-between gap-3 flex-wrap">
-                <div className="flex-1 min-w-0"><div className="flex items-center gap-2 flex-wrap mb-1"><h3 className="font-bold">{u.fullName}</h3><Badge className={`${ROLE_COLORS[u.role] ?? "bg-muted"} text-[10px]`}>{ROLES[u.role] ?? u.role}</Badge>{u.isLocked && <Badge variant="destructive" className="text-[10px]"><Lock className="size-3" /> مقفول</Badge>}{typeof u.points === "number" && <Badge variant="outline" className="text-[10px] gap-1 text-amber-700 border-amber-300 bg-amber-50"><Coins className="size-3" />{u.points} نقطة{typeof u.level === "number" && ` · L${u.level}`}</Badge>}</div>
+                <div className="flex-1 min-w-0"><div className="flex items-center gap-2 flex-wrap mb-1"><h3 className="font-bold">{u.fullName}</h3><Badge className={`${ROLE_COLORS[u.role] ?? "bg-muted"} text-[10px]`}>{ROLES[u.role] ?? u.role}</Badge>{u.isLocked && <Badge variant="destructive" className="text-[10px]"><Lock className="size-3" /> مقفول</Badge>}{typeof u.points === "number" && <Badge variant="outline" className="text-[10px] gap-1 text-amber-700 border-amber-300 bg-amber-50"><Coins className="size-3" />{u.points} Karma{typeof u.level === "number" && ` · L${u.level}`}</Badge>}</div>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground"><span className="font-mono" dir="ltr">{u.email}</span><span className="font-mono" dir="ltr">{u.phone}</span>{u.district?.nameAr && <span>· {u.district.nameAr}</span>}</div></div>
                 <div className="flex flex-wrap gap-1">
                   {/* v61.0: أزرار إدارة النقاط */}
@@ -167,7 +167,7 @@ export function UsersManageClient() {
                 </div>
                 <div className="flex items-center justify-between mt-1">
                   <span className="text-muted-foreground">الرصيد الحالي:</span>
-                  <span className="font-bold text-amber-700 flex items-center gap-1"><Coins className="size-3.5" />{pointsDialog.currentPoints} نقطة</span>
+                  <span className="font-bold text-amber-700 flex items-center gap-1"><Coins className="size-3.5" />{pointsDialog.currentPoints} Karma</span>
                 </div>
               </div>
               <div>
