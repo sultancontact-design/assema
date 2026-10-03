@@ -8164,3 +8164,57 @@ Commits على GitHub:
 - 5be2ae7 — v63.0-part1-verified: simplified header
 - 3c78b69 — v64.0: fix video sizing + add ShareMenu
 - 1e35e23 — v64.0-fix: force iframe absolute positioning
+
+---
+Task ID: v66.0-wave1
+Agent: Main (Z.ai Code)
+Task: v66.0 Wave 1 — Clean visual clutter + apply new Teal color system
+
+Work Log:
+
+1. ZelligeDivider simplified (110 usages fixed at once):
+   - Replaced component with: <div className="h-px w-full bg-border/60 my-4" />
+   - Same API preserved — all 110 existing usages auto-fixed
+   - NO MORE: red diamonds, wavy lines, decorative squares
+   - hasZelligeSVG: false ✅ (verified on production)
+
+2. New color system applied (light + dark mode):
+   Light:
+   - --primary: #0F766E (Teal-700) ← was #B8492B (terracotta)
+   - --accent: #F59E0B (Amber-500) ← was #C8842A (copper gold)
+   - --background: #FAFAFA ← was #FBF6EE (cream)
+   - --border: #E4E4E7 ← was #E8DCC4 (warm border)
+   - --muted: #F4F4F5 ← was #F0E9DB
+   - --ring: #0F766E ← was #B8492B
+   Dark:
+   - --primary: #14B8A6 (Teal-400) ← was #D4623E
+   - --background: #0A0A0A ← was #15110D (brown)
+   - --card: #18181B ← was #1F1812
+   - --border: #27272A ← was #3A2E20
+
+3. Replaced ALL hardcoded old colors (3 root blocks + rgba + hex):
+   - #B8492B → #0F766E (10 occurrences)
+   - #C9492B → #0F766E (8 occurrences)
+   - #D4623E → #14B8A6 (dark mode)
+   - #D4A017 → #F59E0B (accent)
+   - rgba(201,73,43) → rgba(15,118,110) (shadows/glows)
+   - .hero-gradient: from(terracotta) → from(teal)
+   - .card-glow: shadow rgba → teal shadow
+   - Total: 0 old color references remaining ✅
+
+التحقّق على الإنتاج:
+- primary: #0f766e ✅
+- accent: #f59e0b ✅
+- bg: #fafafa ✅
+- border: #e4e4e7 ✅
+- hasZelligeSVG: false ✅
+- overflow: 1440 = 1440 ✅
+- 0 console errors ✅
+
+Commits على GitHub:
+- 6520eda — v66.0 wave1: replace ZelligeDivider + apply Teal color system
+- 35b9aa0 — v66.0 wave1-fix: replace ALL old color references
+
+Visual transformation:
+FROM: Terracotta + cream + brown + red diamond patterns
+TO:   Teal + neutral gray + amber accent + clean lines
