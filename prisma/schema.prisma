@@ -326,6 +326,8 @@ model User {
   storeOrders       StoreOrder[]
   feedVotes         FeedVote[]
   postAwards        PostAward[]
+  userSkills        Skill[]
+  skillEndorsements SkillEndorsement[]
 
   // ─────────── الإحالة والمرجع (v7.0) ───────────
   referrals         Referral[]
@@ -2220,6 +2222,35 @@ model PostAward {
   @@index([userId])
   @@index([feedItemId])
   @@index([awardType])
+}
+
+// v61.0 Part 5: LinkedIn-style Skills + Endorsements
+model Skill {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String   // lowercase skill name (e.g. "تعليم", "نجارة")
+  createdAt DateTime @default(now())
+
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endorsements SkillEndorsement[]
+
+  @@unique([userId, name]) // لا تكرار لنفس المهارة لنفس المستخدم
+  @@index([userId])
+  @@index([name])
+}
+
+model SkillEndorsement {
+  id        String   @id @default(cuid())
+  skillId   String
+  endorserId String   // من يُصادق على المهارة
+  createdAt DateTime @default(now())
+
+  skill    Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  endorser User @relation(fields: [endorserId], references: [id], onDelete: Cascade)
+
+  @@unique([skillId, endorserId]) // صادقة واحدة لكل مستخدم لكل مهارة
+  @@index([skillId])
+  @@index([endorserId])
 }
 
 // ===================================================================
