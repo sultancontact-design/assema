@@ -1043,3 +1043,31 @@ html, body {
   height: 100% !important;
   border: 0 !important;
 }
+
+/* v64.0 — Force iframe to fill video container properly */
+/* height: 100% doesn't work inside absolute positioned parents */
+/* Fix: make iframe itself absolute positioned */
+.h-screen iframe[src*="youtube"],
+.h-screen iframe[src*="vimeo"],
+.h-screen iframe[src*="tiktok"],
+.h-full iframe[src*="youtube"],
+.h-full iframe[src*="vimeo"],
+.h-full iframe[src*="tiktok"] {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  border: 0 !important;
+}
+
+/* Also fix the video detail page container */
+.aspect-\\[9\\/16\\] iframe,
+.aspect-\\[16\\/9\\] iframe {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  border: 0 !important;
+}
