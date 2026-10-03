@@ -448,23 +448,34 @@ function FeedItemContent({
     );
   }
 
-  // 5) VIDEO — بطاقة فيديو
+  // 5) VIDEO — بطاقة فيديو مع صورة مصغرة
   if (item.type === "VIDEO") {
+    const videoId = item.targetId || "";
+    const youtubeThumb = (() => {
+      if (!item.metadata?.sourceUrl) return null;
+      const match = String(item.metadata.sourceUrl).match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|shorts\/)([^&?/]+)/);
+      return match ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : null;
+    })();
     return (
-      <div className="rounded-xl p-4 border" style={{ borderColor: `${theme.primary}40` }}>
-        <p className="text-xs text-muted-foreground mb-1">{config.action}</p>
-        <p className="font-heading text-base font-bold text-foreground line-clamp-2">
-          {item.metadata?.title ?? item.content ?? "فيديو جديد"}
-        </p>
-        <Link
-          href={item.targetId ? `/videos/${item.targetId}` : "/videos"}
-          className="inline-flex items-center gap-1 mt-2 text-xs font-medium"
-          style={{ color: theme.primary }}
-        >
-          <Video className="size-3" />
-          مشاهدة
-        </Link>
-      </div>
+      <Link href={videoId ? `/videos/${videoId}` : "/videos"} className="block">
+        <div className="relative w-full rounded-xl overflow-hidden" style={{ aspectRatio: "16/9" }}>
+          {youtubeThumb ? (
+            <img src={youtubeThumb} alt={item.metadata?.title || "فيديو"} className="absolute inset-0 w-full h-full object-cover" />
+          ) : (
+            <div className="absolute inset-0 grid place-items-center" style={{ background: `linear-gradient(135deg, ${theme.primary}, ${theme.secondary})` }}>
+              <Video className="size-12 text-white/50" />
+            </div>
+          )}
+          <div className="absolute inset-0 grid place-items-center">
+            <div className="size-12 rounded-full bg-white/90 grid place-items-center shadow-lg">
+              <Play className="size-5 text-primary ms-0.5" fill="currentColor" />
+            </div>
+          </div>
+          <div className="absolute bottom-0 inset-x-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
+            <p className="text-sm font-bold text-white line-clamp-1">{item.metadata?.title ?? item.content ?? "فيديو جديد"}</p>
+          </div>
+        </div>
+      </Link>
     );
   }
 
@@ -575,12 +586,7 @@ function FeedActions({
     <>
       <VoteButtons item={item} theme={theme} />
       <AwardButton item={item} theme={theme} />
-      <ActionButton
-        icon={MessageCircle}
-        count={item.comments}
-        theme={theme}
-        label="تعليق"
-      />
+      <CommentButton item={item} theme={theme} />
       <ShareMenu item={item} />
       <BookmarkButton item={item} theme={theme} />
       {item.views > 0 && (
@@ -590,6 +596,127 @@ function FeedActions({
         </div>
       )}
     </>
+  );
+}
+
+// ===================================================================
+//  CommentButton — opens inline comment section
+//  v68.0: Actually works! Toggles comment form + fetches comments
+// ===================================================================
+
+function CommentButton({
+  item,
+  theme,
+}: {
+  item: FeedItemData;
+  theme: { primary: string; secondary: string };
+}) {
+  const [showComments, setShowComments] = React.useState(false);
+  const [comments, setComments] = React.useState<any[]>([]);
+  const [newComment, setNewComment] = React.useState("");
+  const [posting, setPosting] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+
+  const toggleComments = async () => {
+    const next = !showComments;
+    setShowComments(next);
+    if (next && comments.length === 0) {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/comments?feedItemId=${item.id}`);
+        const data = await res.json();
+        setComments(data.comments || []);
+      } catch {
+        // silent
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const submitComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newComment.trim() || posting) return;
+    setPosting(true);
+    try {
+      const res = await fetch("/api/comments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ feedItemId: item.id, content: newComment.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok && data.comment) {
+        setComments((prev) => [...prev, data.comment]);
+        setNewComment("");
+      }
+    } catch {
+      // silent
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={toggleComments}
+        className="flex items-center gap-1.5 text-xs px-2 py-1.5 rounded-md transition-colors hover:bg-muted min-h-9"
+        style={showComments ? { color: theme.primary } : undefined}
+        aria-label="تعليق"
+        aria-pressed={showComments}
+      >
+        <MessageCircle className={`size-4 ${showComments ? "fill-current" : ""}`} />
+        {item.comments > 0 && <span className="tabular-nums">{formatNumber(item.comments)}</span>}
+      </button>
+
+      {/* Inline comment section */}
+      {showComments && (
+        <div className="absolute bottom-full mb-2 start-0 z-20 bg-card border border-border rounded-lg shadow-lg p-3 min-w-[300px] max-h-[400px] overflow-y-auto" dir="rtl">
+          {/* comment form */}
+          <form onSubmit={submitComment} className="flex gap-2 mb-3">
+            <input
+              type="text"
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="اكتب تعليقاً..."
+              className="flex-1 h-9 px-3 rounded-md border border-border bg-background text-sm resize-none"
+              disabled={posting}
+            />
+            <button
+              type="submit"
+              disabled={posting || !newComment.trim()}
+              className="px-3 h-9 rounded-md text-white text-sm font-medium disabled:opacity-50"
+              style={{ backgroundColor: "var(--primary)" }}
+            >
+              {posting ? "..." : "إرسال"}
+            </button>
+          </form>
+
+          {/* comments list */}
+          {loading ? (
+            <div className="text-center text-xs text-muted-foreground py-4">جاري التحميل...</div>
+          ) : comments.length === 0 ? (
+            <div className="text-center text-xs text-muted-foreground py-4">لا توجد تعليقات بعد</div>
+          ) : (
+            <div className="space-y-2">
+              {comments.map((c: any) => (
+                <div key={c.id} className="flex gap-2">
+                  <div className="grid size-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary to-accent text-white text-xs font-bold">
+                    {(c.user?.fullName || "U").slice(0, 1)}
+                  </div>
+                  <div className="flex-1">
+                    <div className="bg-muted/50 rounded-lg p-2">
+                      <div className="text-xs font-semibold mb-0.5">{c.user?.fullName || "مستخدم"}</div>
+                      <p className="text-xs">{c.content}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
