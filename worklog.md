@@ -8057,3 +8057,51 @@ Commits على GitHub:
 - ✅ PointsActivityWidget alongside PointsManager (2-column grid)
 - ✅ All APIs working (add/remove/purchase/refund/ledger/vote/award/bookmark/skill/challenge)
 - ✅ 0 console errors + 0 overflow on production
+
+---
+Task ID: v63.0-part1
+Agent: Main (Z.ai Code)
+Task: v63.0 — إصلاح الشريط العلوي + تحويل لقالب شبكة اجتماعية
+
+Work Log:
+المشكلة المؤكدة من المستخدم:
+- "أزرار متداخلة، فوضى بصرية" في الشريط العلوي
+- 12 رابط تنقّل في الهيدر (الرئيسية/المجتمع/الصندوق/الفعاليات/المجموعات/
+  الرسائل/النقاشات/المبادرات/المتجر/المدوّنة/الأسعار/دليل الحي)
+
+الإصلاح المنفّذ (commit 076d839):
+- إعادة كتابة site-header.tsx بالكامل (~200 سطر):
+  * الهيدر الجديد يحتوي فقط على 4 عناصر:
+    1. Mobile hamburger + Logo
+    2. Search bar (desktop only, rounded-full, Enter → /feed?q=)
+    3. Theme toggle + Notification bell (authenticated)
+    4. User avatar dropdown (profile/wallet/gamification/admin/logout)
+       OR Login button (visitors)
+  * 12 رابط تنقّل محذوفة من الهيدر (موجودة في CollapsibleSidebar)
+  * Mobile: hamburger يفتح Sheet بـ4 أقسام منظّمة:
+    - الشبكة (Home/Feed/Discover/Members/Messages/Profile)
+    - المجتمع (Community/Fund/Events/Groups/Discussions/Initiatives)
+    - المعرفة (Blog/Videos/Services/Prices/Guide)
+    - الانتماء (Store/Gamification/Leaderboard/Map/Wallet)
+  * Active link highlighting (usePathname)
+  * Admin link visible فقط لـ SUPER_ADMIN role
+  * User avatar with gradient ring + dropdown menu
+
+التحقّق على الإنتاج (1440×900):
+- headerHeight: 65px ✅ (compact, clean)
+- navLinkCount: 0 ✅ (no nav links in header)
+- hasSearch: true ✅
+- hasAvatar: true ✅ (after hydration, for authenticated users)
+- hasNotifications: true ✅
+- hasAdminLink: true ✅ ("لوحة الإدارة" in user dropdown)
+- overflow: 1440 = 1440 ✅ (no overflow)
+- sidebarVisible: 224px ✅ (CollapsibleSidebar from v61.0)
+
+ملف واحد معدّل:
+- src/components/layout/site-header.tsx (rewrite ~200 سطر، was 250 سطر)
+  * تم استبدال 12 رابط تنقّل بـ 4 عناصر بسيطة
+  * كل الأقسام موجودة في Sidebar (224px على Desktop)
+  * على Mobile: hamburger يفتح Sheet منظم
+
+Commits على GitHub:
+- 076d839 — v63.0 part1: simplify site header (12 nav links → logo + search + notifications + user)
