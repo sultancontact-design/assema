@@ -27,6 +27,8 @@ import {
   Video,
   UserPlus,
   ShieldCheck,
+  ArrowBigUp,
+  ArrowBigDown,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,6 +65,10 @@ interface FeedItemData {
   comments: number;
   shares: number;
   views: number;
+  // v61.0 Part 5: Reddit-style voting
+  upvotes?: number;
+  downvotes?: number;
+  score?: number;
   createdAt: string;
   user?: {
     id: string;
@@ -538,7 +544,8 @@ function FeedItemContent({
 }
 
 // ===================================================================
-//  FeedActions — أزرار التفاعل (إعجاب، تعليق، مشاركة، حفظ)
+//  FeedActions — أزرار التفاعل (Vote Reddit-style + تعليق + مشاركة + حفظ)
+//  v61.0 Part 5: استبدال زرّ الإعجاب بـ Upvote/Downvote (Reddit-style)
 // ===================================================================
 
 function FeedActions({
@@ -550,12 +557,7 @@ function FeedActions({
 }) {
   return (
     <>
-      <ActionButton
-        icon={Heart}
-        count={item.likes}
-        theme={theme}
-        label="إعجاب"
-      />
+      <VoteButtons item={item} theme={theme} />
       <ActionButton
         icon={MessageCircle}
         count={item.comments}
@@ -581,6 +583,123 @@ function FeedActions({
         </div>
       )}
     </>
+  );
+}
+
+// ===================================================================
+//  VoteButtons — Upvote/Downvote (Reddit-style)
+//  - يُرسل POST /api/feed/[id]/vote عند النقر
+//  - optimistic update للحالة المحلية
+//  - toggle: نقر نفس الزر يُلغي التصويت
+// ===================================================================
+
+function VoteButtons({
+  item,
+  theme,
+}: {
+  item: FeedItemData;
+  theme: { primary: string; secondary: string };
+}) {
+  const [voteValue, setVoteValue] = React.useState<number>(0); // 1 / -1 / 0
+  const [upvotes, setUpvotes] = React.useState(item.upvotes ?? 0);
+  const [downvotes, setDownvotes] = React.useState(item.downvotes ?? 0);
+  const [submitting, setSubmitting] = React.useState(false);
+
+  // عند mount: اجلب تصويت المستخدم الحالي
+  React.useEffect(() => {
+    fetch(`/api/feed/${item.id}/vote`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (typeof d.userVote === "number") setVoteValue(d.userVote);
+        if (typeof d.upvotes === "number") setUpvotes(d.upvotes);
+        if (typeof d.downvotes === "number") setDownvotes(d.downvotes);
+      })
+      .catch(() => {});
+  }, [item.id]);
+
+  const score = upvotes - downvotes;
+
+  const vote = async (value: 1 | -1) => {
+    if (submitting) return;
+    const newValue = voteValue === value ? 0 : value; // toggle
+
+    // optimistic update
+    const prevValue = voteValue;
+    const prevUp = upvotes;
+    const prevDown = downvotes;
+    setVoteValue(newValue);
+    if (prevValue === 1) setUpvotes((u) => u - 1);
+    if (prevValue === -1) setDownvotes((d) => d - 1);
+    if (newValue === 1) setUpvotes((u) => u + 1);
+    if (newValue === -1) setDownvotes((d) => d + 1);
+
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/feed/${item.id}/vote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ value: newValue }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        // rollback
+        setVoteValue(prevValue);
+        setUpvotes(prevUp);
+        setDownvotes(prevDown);
+      } else {
+        setVoteValue(data.userVote ?? 0);
+        setUpvotes(data.upvotes);
+        setDownvotes(data.downvotes);
+      }
+    } catch {
+      setVoteValue(prevValue);
+      setUpvotes(prevUp);
+      setDownvotes(prevDown);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const isUpvoted = voteValue === 1;
+  const isDownvoted = voteValue === -1;
+
+  return (
+    <div className="flex items-center gap-0.5 rounded-lg bg-muted/40 p-0.5">
+      <button
+        onClick={() => vote(1)}
+        disabled={submitting}
+        className="flex items-center gap-0.5 px-1.5 py-1 rounded-md transition-colors min-h-9 disabled:opacity-50"
+        style={isUpvoted ? { color: theme.primary, background: `${theme.primary}20` } : { color: "var(--muted-foreground)" }}
+        aria-label="تصويت إيجابي"
+        aria-pressed={isUpvoted}
+        title="Upvote"
+      >
+        <ArrowBigUp className={`size-4 ${isUpvoted ? "fill-current" : ""}`} />
+      </button>
+      <span
+        className="font-bold text-xs tabular-nums px-1 min-w-7 text-center"
+        style={{
+          color: isUpvoted
+            ? theme.primary
+            : isDownvoted
+            ? "#dc2626" // red-600
+            : "var(--foreground)",
+        }}
+      >
+        {formatNumber(score)}
+      </span>
+      <button
+        onClick={() => vote(-1)}
+        disabled={submitting}
+        className="flex items-center gap-0.5 px-1.5 py-1 rounded-md transition-colors min-h-9 disabled:opacity-50"
+        style={isDownvoted ? { color: "#dc2626", background: "#dc262620" } : { color: "var(--muted-foreground)" }}
+        aria-label="تصويت سلبي"
+        aria-pressed={isDownvoted}
+        title="Downvote"
+      >
+        <ArrowBigDown className={`size-4 ${isDownvoted ? "fill-current" : ""}`} />
+      </button>
+    </div>
   );
 }
 

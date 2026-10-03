@@ -324,6 +324,7 @@ model User {
   pointsLedger      PointsLedger[]
   pointsPurchases   PointsPurchase[]
   storeOrders       StoreOrder[]
+  feedVotes         FeedVote[]
 
   // ─────────── الإحالة والمرجع (v7.0) ───────────
   referrals         Referral[]
@@ -2162,16 +2163,41 @@ model FeedItem {
   comments    Int      @default(0)
   shares      Int      @default(0)
   views       Int      @default(0)
+  // v61.0 Part 5: Reddit-style upvote/downvote (Karma)
+  upvotes     Int      @default(0)
+  downvotes   Int      @default(0)
+  // Score = upvotes - downvotes (cached for performance)
+  score       Int      @default(0)
   visibility  String   @default("DISTRICT")
   districtId  String?
   createdAt   DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  votes FeedVote[]
 
   @@index([userId])
   @@index([type])
   @@index([districtId])
   @@index([createdAt])
+  @@index([score])
+}
+
+// v61.0 Part 5: سجلّ تصويتات المستخدمين على المنشورات (Reddit-style)
+model FeedVote {
+  id          String   @id @default(cuid())
+  userId      String
+  feedItemId  String
+  // value: 1 = upvote, -1 = downvote, 0 = removed (kept for history)
+  value       Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feedItem  FeedItem  @relation(fields: [feedItemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, feedItemId])
+  @@index([userId])
+  @@index([feedItemId])
 }
 
 // ===================================================================
