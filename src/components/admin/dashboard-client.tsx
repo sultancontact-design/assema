@@ -303,7 +303,7 @@ export function DashboardClient() {
         <PointsManager
           userId="cmuc8xfk3002ugm4vy4ix6mm5"
           userName="السوبر المراكشي"
-          currentPoints={data?.kpis?.totalPoints || 0}
+          currentPoints={0}
         />
         <PointsActivityWidget limit={5} />
       </div>
