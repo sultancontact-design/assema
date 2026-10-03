@@ -325,6 +325,7 @@ model User {
   pointsPurchases   PointsPurchase[]
   storeOrders       StoreOrder[]
   feedVotes         FeedVote[]
+  postAwards        PostAward[]
 
   // ─────────── الإحالة والمرجع (v7.0) ───────────
   referrals         Referral[]
@@ -2174,6 +2175,7 @@ model FeedItem {
 
   user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   votes FeedVote[]
+  awards PostAward[]
 
   @@index([userId])
   @@index([type])
@@ -2198,6 +2200,26 @@ model FeedVote {
   @@unique([userId, feedItemId])
   @@index([userId])
   @@index([feedItemId])
+}
+
+// v61.0 Part 5: Reddit-style Post Awards (جوائز المنشورات)
+model PostAward {
+  id          String   @id @default(cuid())
+  userId      String   // من يُعطي الجائزة
+  feedItemId  String   // المنشور المُكافأ
+  awardType   String   // GOLD, SILVER, BRONZE, HELPFUL, FUNNY, WHOLESOME, INSPIRING
+  karmaCost  Int      // كم كلّف الجائزة (يُخصم من المانح)
+  karmaReward Int      // كم ربح صاحب المنشور
+  note        String?  // ملاحظة اختيارية
+  createdAt   DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feedItem  FeedItem  @relation(fields: [feedItemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, feedItemId, awardType]) // جائزة واحدة من كل نوع لكل مستخدم لكل منشور
+  @@index([userId])
+  @@index([feedItemId])
+  @@index([awardType])
 }
 
 // ===================================================================

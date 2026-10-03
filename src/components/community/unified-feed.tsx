@@ -544,8 +544,8 @@ function FeedItemContent({
 }
 
 // ===================================================================
-//  FeedActions — أزرار التفاعل (Vote Reddit-style + تعليق + مشاركة + حفظ)
-//  v61.0 Part 5: استبدال زرّ الإعجاب بـ Upvote/Downvote (Reddit-style)
+//  FeedActions — أزرار التفاعل (Vote + Award + تعليق + مشاركة + حفظ)
+//  v61.0 Part 5: استبدال زرّ الإعجاب بـ Upvote/Downvote + Awards
 // ===================================================================
 
 function FeedActions({
@@ -558,6 +558,7 @@ function FeedActions({
   return (
     <>
       <VoteButtons item={item} theme={theme} />
+      <AwardButton item={item} theme={theme} />
       <ActionButton
         icon={MessageCircle}
         count={item.comments}
@@ -583,6 +584,150 @@ function FeedActions({
         </div>
       )}
     </>
+  );
+}
+
+// ===================================================================
+//  AwardButton — زر الجوائز (Reddit-style awards)
+//  - يفتح popover بـ 7 أنواع جوائز
+//  - كل جائزة: emoji + label + karma cost
+//  - عند النقر: POST /api/feed/[id]/award
+//  - يُظهر الجوائز المُعطاة (avatars + count)
+// ===================================================================
+
+const AWARD_OPTIONS = [
+  { type: "GOLD", emoji: "🥇", label: "ذهبية", cost: 100, color: "#F5B220" },
+  { type: "SILVER", emoji: "🥈", label: "فضية", cost: 50, color: "#9CA3AF" },
+  { type: "BRONZE", emoji: "🥉", label: "برونزية", cost: 25, color: "#92400E" },
+  { type: "HELPFUL", emoji: "❤️", label: "مفيدة", cost: 10, color: "#DC2626" },
+  { type: "FUNNY", emoji: "😂", label: "مضحكة", cost: 10, color: "#F59E0B" },
+  { type: "WHOLESOME", emoji: "🌟", label: "نبيلة", cost: 15, color: "#10B981" },
+  { type: "INSPIRING", emoji: "🚀", label: "ملهمة", cost: 20, color: "#8B5CF6" },
+] as const;
+
+function AwardButton({
+  item,
+  theme,
+}: {
+  item: FeedItemData;
+  theme: { primary: string; secondary: string };
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [awards, setAwards] = React.useState<Array<{ awardType: string; user: { fullName: string } }>>([]);
+  const [submitting, setSubmitting] = React.useState<string | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
+
+  // Fetch existing awards on mount
+  React.useEffect(() => {
+    fetch(`/api/feed/${item.id}/award`)
+      .then((r) => r.json())
+      .then((d) => setAwards(d.awards || []))
+      .catch(() => {});
+  }, [item.id]);
+
+  const giveAward = async (awardType: string) => {
+    if (submitting) return;
+    setSubmitting(awardType);
+    setError(null);
+    try {
+      const res = await fetch(`/api/feed/${item.id}/award`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ awardType }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "فشل");
+        return;
+      }
+      // Add to local state
+      setAwards((prev) => [
+        ...prev,
+        { awardType, user: { fullName: "أنت" } },
+      ]);
+      setOpen(false);
+    } catch {
+      setError("فشل الاتصال");
+    } finally {
+      setSubmitting(null);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((p) => !p)}
+        className="flex items-center gap-1 text-xs px-2 py-1.5 rounded-md hover:bg-muted transition-colors min-h-9"
+        style={{ color: theme.primary }}
+        aria-label="إعطاء جائزة"
+        title="جوائز"
+      >
+        <Award className="size-4" />
+        {awards.length > 0 && (
+          <span className="font-bold tabular-nums">{formatNumber(awards.length)}</span>
+        )}
+      </button>
+
+      {/* Display awards given */}
+      {awards.length > 0 && !open && (
+        <div className="absolute -top-1 -start-1 flex gap-0.5">
+          {awards.slice(0, 3).map((a, i) => {
+            const opt = AWARD_OPTIONS.find((o) => o.type === a.awardType);
+            return opt ? (
+              <span key={i} className="text-xs" title={`${opt.label} من ${a.user.fullName}`}>
+                {opt.emoji}
+              </span>
+            ) : null;
+          })}
+        </div>
+      )}
+
+      {/* Award picker popover */}
+      {open && (
+        <div className="absolute bottom-full mb-2 start-0 z-20 bg-card border border-border rounded-xl shadow-lg p-2 min-w-[260px]">
+          <div className="text-xs font-semibold text-muted-foreground mb-2 px-1">
+            اختر جائزة (تُخصم من رصيدك Karma)
+          </div>
+          <div className="grid grid-cols-2 gap-1">
+            {AWARD_OPTIONS.map((opt) => {
+              const given = awards.some((a) => a.awardType === opt.type && a.user.fullName === "أنت");
+              return (
+                <button
+                  key={opt.type}
+                  onClick={() => giveAward(opt.type)}
+                  disabled={submitting !== null || given}
+                  className="flex items-center gap-2 p-2 rounded-md hover:bg-muted transition-colors text-start disabled:opacity-50 disabled:cursor-not-allowed min-h-9"
+                  style={given ? { opacity: 0.4 } : undefined}
+                >
+                  <span className="text-lg">{opt.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold" style={{ color: opt.color }}>
+                      {opt.label}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {opt.cost} Karma
+                    </p>
+                  </div>
+                  {given && <span className="text-[10px] text-emerald-600">✓</span>}
+                  {submitting === opt.type && (
+                    <Loader2 className="size-3 animate-spin text-muted-foreground" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          {error && (
+            <p className="text-[11px] text-rose-600 mt-2 px-1">{error}</p>
+          )}
+          <button
+            onClick={() => setOpen(false)}
+            className="mt-2 w-full text-[11px] text-muted-foreground hover:text-foreground py-1"
+          >
+            إغلاق
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
