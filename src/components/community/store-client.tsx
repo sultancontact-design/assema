@@ -62,7 +62,7 @@ export function StoreClient({ userPoints, embedded = false }: { userPoints: numb
             <Coins className="size-6 text-amber-500" />
             <div>
               <p className="text-xs text-muted-foreground">رصيدك</p>
-              <p className="font-heading text-xl font-bold tabular-nums">{points} نقطة</p>
+              <p className="font-heading text-xl font-bold tabular-nums">{points} Karma</p>
             </div>
           </CardContent>
         </Card>

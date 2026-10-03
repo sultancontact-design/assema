@@ -6,6 +6,7 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { CollapsibleSidebar } from "@/components/layout/collapsible-sidebar";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { Fab } from "@/components/layout/fab";
 import { PwaInstallPrompt } from "@/components/community/pwa-install-prompt";
 import { CookieConsent } from "@/components/layout/cookie-consent";
 import { OnboardingFlow } from "@/components/community/onboarding-flow";
@@ -36,6 +37,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
       </div>
       <SiteFooter />
       <BottomNav />
+      <Fab />
       <PwaInstallPrompt />
       <CookieConsent />
       {isCommunity && <OnboardingFlow />}

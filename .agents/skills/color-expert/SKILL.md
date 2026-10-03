@@ -1,64 +1,43 @@
 ---
 name: color-expert
 description: |
-  286K words of color science applied to UI/UX design. Covers OKLCH/OKLAB color spaces,
-  palette generation, accessibility contrast ratios, color naming, pigment mixing,
-  and historical color theory. By meodai, creator of color-names.
+  Color science expert skill with 286K words of reference material covering OKLCH/OKLAB, palette generation, accessibility/contrast, color naming, pigment mixing, and historical color theory.
 triggers:
-  - "color expert"
-  - "colour expert"
-  - "OKLCH"
-  - "OKLAB"
-  - "color palette"
-  - "colour palette"
-  - "color science"
   - "color theory"
-  - "contrast ratio"
-das:
-  category: visual-components
+  - "palette generator"
+  - "color science"
+  - "oklch palette"
+  - "contrast check"
+od:
+  mode: design-system
+  category: design-systems
   upstream: "https://github.com/meodai/skill.color-expert"
-  upstream_path: "SKILL.md"
-  version: latest
-  install: true
 ---
 
 # color-expert
 
-> Catalogue stub — full skill: [meodai/skill.color-expert](https://github.com/meodai/skill.color-expert)
-
-## Decision tree
-
-1. **Is the full skill already installed?**
-   Check whether the skill at this location still has a `das:` block:
-   - Global: `grep -q "^das:" ~/.agents/skills/color-expert/SKILL.md 2>/dev/null && echo "pointer" || echo "installed"`
-   - Project: `grep -q "^das:" .agents/skills/color-expert/SKILL.md 2>/dev/null && echo "pointer" || echo "installed"`
-   - No `das:` block → full skill installed, invoke it and proceed
-   - `das:` block present → go to step 2
-
-2. **Detect scope, then install:**
-
-   To detect scope:
-   ```bash
-   [ -e ~/.agents/skills/color-expert ] && echo "global" || echo "project"
-   ```
-
-   **Global** (installed with `-g`):
-   ```bash
-   npx skills add meodai/skill.color-expert --skill color-expert -g -y
-   ```
-
-   **Project** (installed without `-g`):
-   ```bash
-   npx skills add meodai/skill.color-expert --skill color-expert -y
-   ```
-   > **Claude Code:** send either command as a chat message starting with `!` to run it without leaving the conversation.
-
-
-## Invoke after install
-
-- Skill name: `color-expert`
-- Trigger phrases: "color expert", "OKLCH", "color palette", "color science", "contrast ratio"
+> Curated from @meodai.
 
 ## What it does
 
-Brings 286K words of color science into design decisions. Covers perceptually uniform color spaces (OKLCH, OKLAB), palette generation algorithms, WCAG accessibility contrast, color naming conventions, pigment mixing theory, and the history of color in art and design. Ideal for building color systems, choosing palettes with correct contrast, or understanding why certain color combinations feel wrong.
+Color science expert skill with 286K words of reference material covering OKLCH/OKLAB, palette generation, accessibility/contrast, color naming, pigment mixing, and historical color theory.
+
+## Source
+
+- Upstream: https://github.com/meodai/skill.color-expert
+- Category: `design-systems`
+
+## How to use
+
+This catalogue entry advertises the skill in Open Design so the agent
+discovers it during planning. To run the full upstream workflow with
+its original assets, scripts, and references, install the upstream
+bundle into your active agent's skills directory:
+
+```bash
+# Inspect the upstream README for exact paths
+open https://github.com/meodai/skill.color-expert
+```
+
+Then ask the agent to invoke this skill by name (`color-expert`) or with
+one of the trigger phrases listed in this skill's frontmatter.

@@ -83,7 +83,7 @@ export function VideoFeed({ initialVideos }: { initialVideos: VideoItem[] }) {
           ref={containerRef}
           className="video-feed-container rounded-3xl"
           dir="rtl"
-          style={{ scrollbarWidth: "none", height: "calc(100vh - 180px)" }}
+          style={{ scrollbarWidth: "none", height: "calc(100vh - 80px)" }}
         >
           {videos.map((video, i) => (
             <div key={video.id} className="h-full w-full snap-start snap-always flex items-center justify-center relative">

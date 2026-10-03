@@ -1,0 +1,252 @@
+# Token shape
+
+The DTCG output of `scripts/stem.py --format tokens`, referenced from section 6
+of `SKILL.md`. Two token kinds: a **matched weight** per tier for the target
+family, and the **letter-spacing port factor** that scales the reference's
+tracking ramp for it. Both carry the derivation and the exact bytes they were
+measured from.
+
+The example below is the bundled Inter matched against itself at tier 400 —
+the one pair the selftest can run without a second font — exactly as emitted.
+A real pair reads the same way with two different `sha256`s and a
+`correctionValue` other than 1; Inter against Equinor at ×1.137288 gives
+`376.2 / 458.5 / 552.7` for tiers 300 / 400 / 500, re-measured with the current
+script on 2026-09-04 and unchanged from 2026-09-01. Equinor is proprietary, so
+that pair is not in the selftest; re-run the section 3 example to check it.
+
+```json
+{
+  "typography": {
+    "font-weight": {
+      "Inter": {
+        "400": {
+          "$type": "fontWeight",
+          "$value": 400.1,
+          "$extensions": {
+            "com.equinor.typography": {
+              "derived": {
+                "expression": "stem(target, w) = stem(reference, tier) / correction",
+                "inputs": {
+                  "tier": 400,
+                  "correction": 1.0,
+                  "correctionValue": 1.0,
+                  "instance": {
+                    "wght": 400
+                  }
+                }
+              },
+              "metrics": {
+                "reference": {
+                  "path": "assets/fonts/Inter.woff2",
+                  "sha256": "87a69aeae6290d8f4fc68e89eaca9a605defc155a3ea2bcb1f756fded1359722"
+                },
+                "target": {
+                  "path": "assets/fonts/Inter.woff2",
+                  "sha256": "87a69aeae6290d8f4fc68e89eaca9a605defc155a3ea2bcb1f756fded1359722"
+                },
+                "glyph": "l",
+                "method": "outline:mid-height-stem",
+                "extractedAt": "2026-09-04"
+              },
+              "family": "Inter"
+            },
+            "com.equinor.figma": {
+              "collection": "Typography",
+              "scopes": [
+                "FONT_WEIGHT"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "letter-spacing-port-factor": {
+      "Inter": {
+        "$type": "number",
+        "$value": 1.0,
+        "$extensions": {
+          "com.equinor.typography": {
+            "derived": {
+              "expression": "target.sideSpaceEm / reference.sideSpaceEm",
+              "inputs": {
+                "reference": {
+                  "advanceEm": 0.536339,
+                  "inkEm": 0.432185,
+                  "sideSpaceEm": 0.104154,
+                  "sideSpaceShare": 0.194194,
+                  "weight": 400.0
+                },
+                "target": {
+                  "advanceEm": 0.536339,
+                  "inkEm": 0.432185,
+                  "sideSpaceEm": 0.104154,
+                  "sideSpaceShare": 0.194194,
+                  "weight": 400.0
+                }
+              }
+            },
+            "metrics": {
+              "reference": {
+                "path": "assets/fonts/Inter.woff2",
+                "sha256": "87a69aeae6290d8f4fc68e89eaca9a605defc155a3ea2bcb1f756fded1359722"
+              },
+              "target": {
+                "path": "assets/fonts/Inter.woff2",
+                "sha256": "87a69aeae6290d8f4fc68e89eaca9a605defc155a3ea2bcb1f756fded1359722"
+              },
+              "glyphs": "a-z",
+              "method": "outline:advance-minus-ink",
+              "instance": {
+                "wght": 400.0
+              },
+              "extractedAt": "2026-09-08"
+            },
+            "family": "Inter"
+          }
+        }
+      }
+    },
+    "letter-spacing": {
+      "Inter": {
+        "400": {
+          "$type": "number",
+          "$value": -0.027287,
+          "$extensions": {
+            "com.equinor.typography": {
+              "derived": {
+                "expression": "reference.sideSpaceEm / correction - target.sideSpaceEm",
+                "inputs": {
+                  "reference": {
+                    "advanceEm": 0.489709,
+                    "inkEm": 0.412842,
+                    "sideSpaceEm": 0.076867,
+                    "sideSpaceShare": 0.156964,
+                    "weight": 400.0,
+                    "opsz": 32.0
+                  },
+                  "target": {
+                    "advanceEm": 0.536339,
+                    "inkEm": 0.432185,
+                    "sideSpaceEm": 0.104154,
+                    "sideSpaceShare": 0.194194,
+                    "weight": 400.0
+                  },
+                  "correction": 1.0,
+                  "correctionValue": 1.0
+                }
+              },
+              "metrics": {
+                "reference": {
+                  "path": "assets/fonts/Inter.woff2",
+                  "sha256": "87a69aeae6290d8f4fc68e89eaca9a605defc155a3ea2bcb1f756fded1359722"
+                },
+                "target": {
+                  "path": "assets/fonts/Inter.woff2",
+                  "sha256": "87a69aeae6290d8f4fc68e89eaca9a605defc155a3ea2bcb1f756fded1359722"
+                },
+                "glyphs": "a-z",
+                "method": "outline:advance-minus-ink",
+                "instance": {
+                  "wght": 400.0,
+                  "opsz": 32.0
+                },
+                "extractedAt": "2026-09-09"
+              },
+              "family": "Inter",
+              "tier": 400,
+              "units": {
+                "em": -0.027287,
+                "percent": -2.7287
+              },
+              "note": "em of the target's own size: CSS letter-spacing: <value>em. Figma and React Native take px, at the size the step renders at"
+            },
+            "com.equinor.figma": {
+              "collection": "Typography",
+              "scopes": [
+                "LETTER_SPACING"
+              ],
+              "unit": "PIXELS",
+              "value": null,
+              "note": "pass --px with the step's size; Figma binds letter-spacing in px only"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+## Field notes
+
+**`$value` is a plain number**, not a `100`–`900` keyword. CSS accepts any
+weight in 1–1000 including fractions, and a variable font renders it.
+Platforms that cannot — React Native rounds to hundreds — are the reason
+section 6 asks about the target before emitting: on those, `--snap 100` records
+the snapped value, the measured one and the residual rather than pretending
+458.5 was 500 all along, like this (Inter against itself, tier 400):
+
+```json
+{
+  "expression": "stem(target, w) = stem(reference, tier) / correction; value = round(w / 100) * 100",
+  "inputs": {
+    "tier": 400,
+    "correction": 1.0,
+    "correctionValue": 1.0,
+    "instance": {
+      "wght": 400
+    }
+  },
+  "measured": 400.1,
+  "residual": -0.1
+}
+```
+
+**`derived.inputs.correction`** is the DTCG alias of the x-height correction
+token when `--correction-token` names it, and the bare factor otherwise;
+`correctionValue` is always the resolved number. Pass the alias: a matched
+weight depends on the perceived size the pair is set at, and the alias is what
+lets an audit follow that dependency back to the fonts.
+
+**`metrics.method`.** `outline:mid-height-stem` means the widest ink run
+across the glyph at its vertical midpoint, from the outline, not a rendered
+bitmap and not the bounding box — the two diverge at axis extremes (section 1).
+`glyph` is the letter measured; `l` is the default because it is a single
+straight stem in almost every Latin design.
+
+**`instance`** records the reference's axis location the tier was measured at.
+With `--opsz` the optical size is pinned too, which is how the per-size table
+in section 4 is produced; without it the reference's default `opsz` applies and
+the token says so by omission. A pinned `opsz` changes the right `correction`
+as well as the stem: `correctionValue` must be the x-height correction sampled
+at that `opsz`, and `--correction-token` must then name the *per-step* token
+from `typography-x-height-alignment`'s outcome 2 (`x-height-correction.display.5xl`),
+not the flat one — the alias and the value agree only when both are the
+step's. With no per-step token in the project, pass the bare factor and let
+`instance.opsz` record where it holds.
+
+**The `letter-spacing` token is the missing-axis compensation** (section 4),
+one per tier, keyed by the reference tier. It is a plain `number` in the
+*target's* em — DTCG's `dimension` allows only `px` and `rem`, and this value
+is relative to the element's own size — with `units.px` at the `--px` size,
+which is what the `com.equinor.figma` block binds (a Figma variable bound to
+letter-spacing is applied in pixels whatever unit the layer shows; checked in
+the Plugin API 2026-09-09), and `units.percent` for humans beside it. Without
+`--px` the Figma block carries no value and says why. `reference`
+is the reference's side space at the pinned `opsz`, `target` the target's at
+its matched weight, `correction` the x-height correction at that same `opsz`
+(alias or bare factor, as for the weights). The self-pair example above pins
+Inter at opsz 32 against its own default opsz 14, which is why a face against
+itself comes out at −0.027em: that is the axis alone. Figma takes it with the
+`LETTER_SPACING` scope on the text style.
+
+**The port factor's inputs are both side-space records**, including the
+weights they were measured at, and `metrics.instance` records the reference's
+axis location: with `--opsz` pinned the factor moves (0.84 at Inter's default
+against 1.13 at opsz 32 for the EDS pair), so the token says which it is. Section 5 insists these are the *matched*
+weights; a factor computed with both faces at 400 is a different number, and
+the token shows which one you have.
+
+**Namespace.** Reverse-DNS, in code spelling. Use the project's existing one if
+it has one — grep for `"$extensions"` in the token files — otherwise ask for the
+organisation's domain rather than inventing one.

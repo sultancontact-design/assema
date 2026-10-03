@@ -65,68 +65,94 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-}
+  --animate-shimmer-slide: shimmer-slide var(--speed) ease-in-out infinite alternate;
+  --animate-spin-around: spin-around calc(var(--speed) * 2) infinite linear;
+  @keyframes shimmer-slide {
+  to {
+    transform: translate(calc(100cqw - 100%), 0);
+    }
+  }
+  @keyframes spin-around {
+  0% {
+    transform: translateZ(0) rotate(0);
+    }
+  15%, 35% {
+    transform: translateZ(0) rotate(90deg);
+    }
+  65%, 85% {
+    transform: translateZ(0) rotate(270deg);
+    }
+  100% {
+    transform: translateZ(0) rotate(360deg);
+    }
+  }
+  --animate-marquee: marquee var(--duration) infinite linear;
+  --animate-marquee-vertical: marquee-vertical var(--duration) linear infinite
+;
+  @keyframes marquee {
+  from {
+    transform: translateX(0);}
+  to {
+    transform: translateX(calc(-100% - var(--gap)));}}
+  @keyframes marquee-vertical {
+  from {
+    transform: translateY(0);}
+  to {
+    transform: translateY(calc(-100% - var(--gap)));}}}
 
 /* ─────────── لوحة "زليج مراكش" — الوضع الفاتح ─────────── */
 :root {
   --radius: 0.625rem;
 
-  /* الخلفية والنص */
-  --background: #FBF6EE;          /* كريم الجبس */
-  --foreground: #1F1A17;          /* أسود العتبة */
+  /* v66.0: خلفية محايدة هادئة (بدل كريم الجبس) */
+  --background: #FAFAFA;
+  --foreground: #1A1A1A;
 
-  /* البطاقات */
   --card: #FFFFFF;
-  --card-foreground: #1F1A17;
+  --card-foreground: #1A1A1A;
 
-  /* النوافذ المنبثقة */
   --popover: #FFFFFF;
-  --popover-foreground: #1F1A17;
+  --popover-foreground: #1A1A1A;
 
-  /* اللون الأساسي — ترابي الزليج */
-  --primary: #B8492B;
-  --primary-foreground: #FBF6EE;
+  /* v66.0: الأساسي Teal (أخضر مزرق هادئ) */
+  --primary: #0F766E;
+  --primary-foreground: #FFFFFF;
 
-  /* اللون الثانوي — أخضر الصنوبر */
-  --secondary: #2D5A3D;
-  --secondary-foreground: #FBF6EE;
+  --secondary: #0F766E;
+  --secondary-foreground: #FFFFFF;
 
-  /* المكتوم */
-  --muted: #F0E9DB;
-  --muted-foreground: #6B5D4E;
+  --muted: #F4F4F5;
+  --muted-foreground: #71717A;
 
-  /* اللمسة الذهبية — ذهبي النحاس */
-  --accent: #C8842A;
-  --accent-foreground: #1F1A17;
+  /* v66.0: التمييزي Amber (ذهبي دافئ للشارات فقط) */
+  --accent: #F59E0B;
+  --accent-foreground: #1A1A1A;
 
-  /* التدميري */
-  --destructive: #B91C1C;
-  --destructive-foreground: #FBF6EE;
+  --destructive: #DC2626;
+  --destructive-foreground: #FFFFFF;
 
-  /* الحواف والمدخلات */
-  --border: #E8DCC4;
-  --input: #E8DCC4;
-  --ring: #B8492B;
+  --border: #E4E4E7;
+  --input: #E4E4E7;
+  --ring: #0F766E;
 
-  /* الرسوم البيانية (تدرّج مغربي) */
-  --chart-1: #B8492B;   /* ترابي */
-  --chart-2: #2D5A3D;   /* أخضر صنوبر */
-  --chart-3: #C8842A;   /* ذهبي النحاس */
-  --chart-4: #8B5A2B;   /* بني القرفة */
-  --chart-5: #6B4E8E;   /* بنفسجي الياقوت */
+  --chart-1: #0F766E;
+  --chart-2: #F59E0B;
+  --chart-3: #3B82F6;
+  --chart-4: #8B5CF6;
+  --chart-5: #EC4899;
 
   /* الشريط الجانبي (لوحة الإدارة) */
   --sidebar: #FFFFFF;
   --sidebar-foreground: #1F1A17;
-  --sidebar-primary: #B8492B;
+  --sidebar-primary: #0F766E;
   --sidebar-primary-foreground: #FBF6EE;
   --sidebar-accent: #F0E9DB;
   --sidebar-accent-foreground: #1F1A17;
   --sidebar-border: #E8DCC4;
-  --sidebar-ring: #B8492B;
+  --sidebar-ring: #0F766E;
 
   /* الألوان المغربية المميّزة (مباشرة) */
-  --zellige: #B8492B;
+  --zellige: #0F766E;
   --zellige-foreground: #FBF6EE;
   --atlas: #2D5A3D;
   --atlas-foreground: #FBF6EE;
@@ -137,35 +163,35 @@
 
 /* ─────────── لوحة "زليج مراكش" — الوضع الداكن ─────────── */
 .dark {
-  --background: #15110D;          /* بني داكن عميق */
-  --foreground: #F5E9D5;          /* كريم دافئ */
+  --background: #0A0A0A;
+  --foreground: #FAFAFA;
 
-  --card: #1F1812;
-  --card-foreground: #F5E9D5;
+  --card: #18181B;
+  --card-foreground: #FAFAFA;
 
-  --popover: #1F1812;
-  --popover-foreground: #F5E9D5;
+  --popover: #18181B;
+  --popover-foreground: #FAFAFA;
 
-  --primary: #D4623E;             /* ترابي أكثر إشراقاً للداكن */
-  --primary-foreground: #FBF6EE;
+  --primary: #14B8A6;
+  --primary-foreground: #0A0A0A;
 
-  --secondary: #4A7A5D;           /* أخضر صنوبر أفتح */
-  --secondary-foreground: #FBF6EE;
+  --secondary: #14B8A6;
+  --secondary-foreground: #0A0A0A;
 
-  --muted: #2A1F16;
-  --muted-foreground: #B8A98C;
+  --muted: #27272A;
+  --muted-foreground: #A1A1AA;
 
-  --accent: #E0A847;              /* ذهبي النحاس أفتح */
-  --accent-foreground: #15110D;
+  --accent: #FBBF24;
+  --accent-foreground: #0A0A0A;
 
-  --destructive: #E0412E;
-  --destructive-foreground: #FBF6EE;
+  --destructive: #EF4444;
+  --destructive-foreground: #FAFAFA;
 
-  --border: #3A2E20;
-  --input: #3A2E20;
-  --ring: #D4623E;
+  --border: #27272A;
+  --input: #27272A;
+  --ring: #14B8A6;
 
-  --chart-1: #D4623E;
+  --chart-1: #14B8A6;
   --chart-2: #4A7A5D;
   --chart-3: #E0A847;
   --chart-4: #B58755;
@@ -173,14 +199,14 @@
 
   --sidebar: #1F1812;
   --sidebar-foreground: #F5E9D5;
-  --sidebar-primary: #D4623E;
+  --sidebar-primary: #14B8A6;
   --sidebar-primary-foreground: #FBF6EE;
   --sidebar-accent: #2A1F16;
   --sidebar-accent-foreground: #F5E9D5;
   --sidebar-border: #3A2E20;
-  --sidebar-ring: #D4623E;
+  --sidebar-ring: #14B8A6;
 
-  --zellige: #D4623E;
+  --zellige: #14B8A6;
   --zellige-foreground: #FBF6EE;
   --atlas: #4A7A5D;
   --atlas-foreground: #FBF6EE;
@@ -439,39 +465,39 @@
 
 /* ═══════════ v11.0 — ألوان نابضة محسّنة ═══════════ */
 :root {
-  --primary: #C9492B;
-  --primary-light: #E85A38;
-  --secondary: #1D4D2D;
-  --accent: #D4A017;
+  --primary: #0F766E;
+  --primary-light: #14B8A6;
+  --secondary: #0F766E;
+  --accent: #F59E0B;
   --success: #10B981;
   --warning: #F59E0B;
   --error: #EF4444;
 }
 
 .hero-gradient {
-  background: linear-gradient(135deg, #C9492B 0%, #D4A017 50%, #1D4D2D 100%) !important;
+  background: linear-gradient(135deg, #0F766E 0%, #14B8A6 100%) !important;
 }
 
 .text-gradient-zellige {
-  background: linear-gradient(90deg, #C9492B, #D4A017) !important;
+  background: linear-gradient(90deg, #0F766E, #F59E0B) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   background-clip: text !important;
 }
 
 .card-glow {
-  box-shadow: 0 4px 20px rgba(201, 73, 43, 0.12) !important;
+  box-shadow: 0 4px 20px rgba(15, 118, 110, 0.12) !important;
   transition: box-shadow 0.3s ease, transform 0.2s ease !important;
 }
 
 .card-glow:hover {
-  box-shadow: 0 8px 40px rgba(201, 73, 43, 0.25) !important;
+  box-shadow: 0 8px 40px rgba(15, 118, 110, 0.25) !important;
   transform: translateY(-2px) !important;
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(201, 73, 43, 0.4); }
-  50% { box-shadow: 0 0 0 12px rgba(201, 73, 43, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(15, 118, 110, 0.4); }
+  50% { box-shadow: 0 0 0 12px rgba(15, 118, 110, 0); }
 }
 
 .animate-pulse-glow {
@@ -966,4 +992,75 @@ html, body {
 /* Tabular numbers for stats */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
+}
+/* v64.0 — Video sizing fix: fill container properly */
+.video-phone-frame {
+  width: 100%;
+  max-width: 100%;
+  position: relative;
+}
+@media (min-width: 768px) {
+  .video-phone-frame {
+    max-width: 480px;
+    border-radius: 1.5rem;
+  }
+}
+.video-feed-container {
+  width: 100% !important;
+}
+.video-feed-container > div {
+  width: 100% !important;
+  height: 100% !important;
+}
+.video-feed-container iframe,
+.video-feed-container video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+/* v64.0 — Video detail page (16:9 aspect ratio) */
+.video-detail-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+.video-detail-container iframe,
+.video-detail-container video {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  border: 0 !important;
+}
+
+/* v64.0 — Force iframe to fill video container properly */
+/* height: 100% doesn't work inside absolute positioned parents */
+/* Fix: make iframe itself absolute positioned */
+.h-screen iframe[src*="youtube"],
+.h-screen iframe[src*="vimeo"],
+.h-screen iframe[src*="tiktok"],
+.h-full iframe[src*="youtube"],
+.h-full iframe[src*="vimeo"],
+.h-full iframe[src*="tiktok"] {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  border: 0 !important;
+}
+
+/* Also fix the video detail page container */
+.aspect-\\[9\\/16\\] iframe,
+.aspect-\\[16\\/9\\] iframe {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  border: 0 !important;
 }

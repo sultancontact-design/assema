@@ -47,7 +47,6 @@ import { AdPlacement } from "@/components/ads/ad-placement";
 import { FeedComposerWrapper } from "@/components/feed/feed-composer-wrapper";
 import { UnifiedFeedClient } from "@/components/community/unified-feed-client";
 import { CommunityTabs } from "@/components/community/community-tabs";
-import { SuggestionsCard } from "@/components/community/suggestions-card";
 import type {
   ContributionStatus,
   FundRequestStatus,
@@ -592,10 +591,10 @@ export default async function CommunityDashboardPage() {
               id="unified-feed-heading"
               className="font-heading text-2xl md:text-3xl font-extrabold text-foreground"
             >
-              شريط الحي الموحّد
+              المجتمع
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
-              كل أنشطة الحي في مكان واحد — مساهمات، فعاليات، منشورات، شارات، وأكثر.
+              {formatNumber(membersCount)} عضو · {formatNumber(familiesCount)} أسرة · {upcomingEvents.length} فعالية
             </p>
           </div>
 
@@ -609,14 +608,15 @@ export default async function CommunityDashboardPage() {
                 level={userLevel}
               />
               <QuickLinksCard userId={user.id} districtId={user.districtId} />
-              <SuggestionsCard />
               <TrendingTopicsCard />
             </aside>
 
-            {/* العمود الأوسط — Composer + UnifiedFeed */}
+            {/* العمود الأوسط — Tabs + Feed */}
             <main className="lg:col-span-6 space-y-4 order-1 lg:order-2">
               <FeedComposerWrapper />
-              <UnifiedFeedClient currentUserId={user.id} />
+              <CommunityTabs>
+                <UnifiedFeedClient currentUserId={user.id} />
+              </CommunityTabs>
             </main>
 
             {/* العمود الأيسر (RTL) — النشاط + الفعاليات + الشفافية */}
@@ -788,7 +788,7 @@ function ProfileMiniCard({
         </p>
         <div className="mt-3 pt-3 border-t border-border/60 grid grid-cols-2 gap-2">
           <div>
-            <p className="text-xs text-muted-foreground">النقاط</p>
+            <p className="text-xs text-muted-foreground">Karma</p>
             <p className="font-heading font-bold text-primary text-lg tabular-nums">{formatNumber(points)}</p>
           </div>
           <div>

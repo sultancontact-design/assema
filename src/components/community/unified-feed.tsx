@@ -27,6 +27,9 @@ import {
   Video,
   UserPlus,
   ShieldCheck,
+  ArrowBigUp,
+  ArrowBigDown,
+  Play,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,6 +66,10 @@ interface FeedItemData {
   comments: number;
   shares: number;
   views: number;
+  // v61.0 Part 5: Reddit-style voting
+  upvotes?: number;
+  downvotes?: number;
+  score?: number;
   createdAt: string;
   user?: {
     id: string;
@@ -253,27 +260,42 @@ function FeedItemCard({ item }: { item: FeedItemData }) {
     }
   })();
 
+  // v66.0: 5 visually distinct card types
+  const cardStyles: Record<string, { className: string; showTopBar: boolean; showHeader: boolean }> = {
+    POST: { className: "bg-white border border-gray-200 rounded-xl", showTopBar: false, showHeader: true },
+    STATUS: { className: "bg-white border border-gray-200 rounded-xl", showTopBar: false, showHeader: true },
+    CONTRIBUTION: { className: "bg-green-50 border border-green-200 rounded-xl", showTopBar: false, showHeader: true },
+    FUND_REQUEST: { className: "bg-white border border-gray-200 rounded-xl", showTopBar: false, showHeader: true },
+    EVENT: { className: "bg-white border border-gray-200 rounded-xl overflow-hidden", showTopBar: false, showHeader: true },
+    VIDEO: { className: "bg-white border border-gray-200 rounded-xl", showTopBar: false, showHeader: true },
+    BLOG: { className: "bg-white border border-gray-200 rounded-xl overflow-hidden", showTopBar: false, showHeader: true },
+    BADGE_EARNED: { className: "bg-amber-50 border border-amber-200 rounded-xl", showTopBar: false, showHeader: false },
+    LEVEL_UP: { className: "bg-amber-50 border border-amber-200 rounded-xl", showTopBar: false, showHeader: false },
+    GROUP_JOINED: { className: "bg-white border border-gray-200 rounded-xl", showTopBar: false, showHeader: true },
+    SERVICE: { className: "bg-white border border-gray-200 rounded-xl", showTopBar: false, showHeader: true },
+    INITIATIVE: { className: "bg-white border border-gray-200 rounded-xl", showTopBar: false, showHeader: true },
+  };
+  const cardStyle = cardStyles[item.type] ?? cardStyles.POST;
+
   return (
     <Card
-      className="card-2026 overflow-hidden"
+      className={`${cardStyle.className} transition-shadow hover:shadow-md`}
       style={{
         ["--section-primary" as string]: theme.primary,
         ["--section-secondary" as string]: theme.secondary,
-        ["--section-accent" as string]: theme.accent,
-        borderColor: `${theme.primary}40`,
       }}
     >
-      {/* شريط علوي ملوّن بحسب نوع المنشور */}
-      <div
-        className="h-1.5"
-        style={{
-          background: `linear-gradient(to right, ${theme.primary}, ${theme.secondary})`,
-        }}
-        aria-hidden
-      />
+      {cardStyle.showTopBar && (
+        <div
+          className="h-1.5"
+          style={{ background: `linear-gradient(to right, ${theme.primary}, ${theme.secondary})` }}
+          aria-hidden
+        />
+      )}
 
       <CardContent className="p-4 md:p-5">
-        {/* الرأس: avatar + اسم + نوع + وقت */}
+        {/* الرأس: avatar + اسم + نوع + وقت (تخطى للبطاقات الاحتفالية) */}
+        {cardStyle.showHeader && (
         <div className="flex items-start gap-3 mb-3">
           <Link href={user?.id ? `/u/${user.id}` : "/community/members"}>
             <Avatar className="size-10 ring-2" style={{ ["--tw-ring-color" as string]: `${theme.primary}30` }}>
@@ -312,6 +334,7 @@ function FeedItemCard({ item }: { item: FeedItemData }) {
             </p>
           </div>
         </div>
+        )}
 
         {/* المحتوى — يختلف حسب النوع */}
         <FeedItemContent item={item} config={config} theme={theme} mediaArr={mediaArr} />
@@ -426,23 +449,34 @@ function FeedItemContent({
     );
   }
 
-  // 5) VIDEO — بطاقة فيديو
+  // 5) VIDEO — بطاقة فيديو مع صورة مصغرة
   if (item.type === "VIDEO") {
+    const videoId = item.targetId || "";
+    const youtubeThumb = (() => {
+      if (!item.metadata?.sourceUrl) return null;
+      const match = String(item.metadata.sourceUrl).match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|shorts\/)([^&?/]+)/);
+      return match ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : null;
+    })();
     return (
-      <div className="rounded-xl p-4 border" style={{ borderColor: `${theme.primary}40` }}>
-        <p className="text-xs text-muted-foreground mb-1">{config.action}</p>
-        <p className="font-heading text-base font-bold text-foreground line-clamp-2">
-          {item.metadata?.title ?? item.content ?? "فيديو جديد"}
-        </p>
-        <Link
-          href={item.targetId ? `/videos/${item.targetId}` : "/videos"}
-          className="inline-flex items-center gap-1 mt-2 text-xs font-medium"
-          style={{ color: theme.primary }}
-        >
-          <Video className="size-3" />
-          مشاهدة
-        </Link>
-      </div>
+      <Link href={videoId ? `/videos/${videoId}` : "/videos"} className="block">
+        <div className="relative w-full rounded-xl overflow-hidden" style={{ aspectRatio: "16/9" }}>
+          {youtubeThumb ? (
+            <img src={youtubeThumb} alt={item.metadata?.title || "فيديو"} className="absolute inset-0 w-full h-full object-cover" />
+          ) : (
+            <div className="absolute inset-0 grid place-items-center" style={{ background: `linear-gradient(135deg, ${theme.primary}, ${theme.secondary})` }}>
+              <Video className="size-12 text-white/50" />
+            </div>
+          )}
+          <div className="absolute inset-0 grid place-items-center">
+            <div className="size-12 rounded-full bg-white/90 grid place-items-center shadow-lg">
+              <Play className="size-5 text-primary ms-0.5" fill="currentColor" />
+            </div>
+          </div>
+          <div className="absolute bottom-0 inset-x-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
+            <p className="text-sm font-bold text-white line-clamp-1">{item.metadata?.title ?? item.content ?? "فيديو جديد"}</p>
+          </div>
+        </div>
+      </Link>
     );
   }
 
@@ -538,7 +572,8 @@ function FeedItemContent({
 }
 
 // ===================================================================
-//  FeedActions — أزرار التفاعل (إعجاب، تعليق، مشاركة، حفظ)
+//  FeedActions — أزرار التفاعل (Vote + Award + تعليق + مشاركة + حفظ)
+//  v61.0 Part 5: استبدال زرّ الإعجاب بـ Upvote/Downvote + Awards
 // ===================================================================
 
 function FeedActions({
@@ -550,30 +585,11 @@ function FeedActions({
 }) {
   return (
     <>
-      <ActionButton
-        icon={Heart}
-        count={item.likes}
-        theme={theme}
-        label="إعجاب"
-      />
-      <ActionButton
-        icon={MessageCircle}
-        count={item.comments}
-        theme={theme}
-        label="تعليق"
-      />
-      <ActionButton
-        icon={Share2}
-        count={item.shares}
-        theme={theme}
-        label="مشاركة"
-      />
-      <ActionButton
-        icon={Bookmark}
-        count={0}
-        theme={theme}
-        label="حفظ"
-      />
+      <VoteButtons item={item} theme={theme} />
+      <AwardButton item={item} theme={theme} />
+      <CommentButton item={item} theme={theme} />
+      <ShareMenu item={item} />
+      <BookmarkButton item={item} theme={theme} />
       {item.views > 0 && (
         <div className="flex items-center gap-1 text-xs text-muted-foreground ms-auto">
           <TrendingUp className="size-3" />
@@ -581,6 +597,508 @@ function FeedActions({
         </div>
       )}
     </>
+  );
+}
+
+// ===================================================================
+//  CommentButton — opens inline comment section
+//  v68.0: Actually works! Toggles comment form + fetches comments
+// ===================================================================
+
+function CommentButton({
+  item,
+  theme,
+}: {
+  item: FeedItemData;
+  theme: { primary: string; secondary: string };
+}) {
+  const [showComments, setShowComments] = React.useState(false);
+  const [comments, setComments] = React.useState<any[]>([]);
+  const [newComment, setNewComment] = React.useState("");
+  const [posting, setPosting] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+
+  const toggleComments = async () => {
+    const next = !showComments;
+    setShowComments(next);
+    if (next && comments.length === 0) {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/comments?targetType=FeedItem&targetId=${item.id}`);
+        const data = await res.json();
+        setComments(data.comments || []);
+      } catch {
+        // silent
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const submitComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newComment.trim() || posting) return;
+    setPosting(true);
+    try {
+      const res = await fetch("/api/comments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetType: "FeedItem", targetId: item.id, content: newComment.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok && data.comment) {
+        setComments((prev) => [...prev, data.comment]);
+        setNewComment("");
+      }
+    } catch {
+      // silent
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={toggleComments}
+        className="flex items-center gap-1.5 text-xs px-2 py-1.5 rounded-md transition-colors hover:bg-muted min-h-9"
+        style={showComments ? { color: theme.primary } : undefined}
+        aria-label="تعليق"
+        aria-pressed={showComments}
+      >
+        <MessageCircle className={`size-4 ${showComments ? "fill-current" : ""}`} />
+        {item.comments > 0 && <span className="tabular-nums">{formatNumber(item.comments)}</span>}
+      </button>
+
+      {/* Inline comment section */}
+      {showComments && (
+        <div className="absolute bottom-full mb-2 start-0 z-20 bg-card border border-border rounded-lg shadow-lg p-3 min-w-[300px] max-h-[400px] overflow-y-auto" dir="rtl">
+          {/* comment form */}
+          <form onSubmit={submitComment} className="flex gap-2 mb-3">
+            <input
+              type="text"
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="اكتب تعليقاً..."
+              className="flex-1 h-9 px-3 rounded-md border border-border bg-background text-sm resize-none"
+              disabled={posting}
+            />
+            <button
+              type="submit"
+              disabled={posting || !newComment.trim()}
+              className="px-3 h-9 rounded-md text-white text-sm font-medium disabled:opacity-50"
+              style={{ backgroundColor: "var(--primary)" }}
+            >
+              {posting ? "..." : "إرسال"}
+            </button>
+          </form>
+
+          {/* comments list */}
+          {loading ? (
+            <div className="text-center text-xs text-muted-foreground py-4">جاري التحميل...</div>
+          ) : comments.length === 0 ? (
+            <div className="text-center text-xs text-muted-foreground py-4">لا توجد تعليقات بعد</div>
+          ) : (
+            <div className="space-y-2">
+              {comments.map((c: any) => {
+                const name = c.user?.name || c.user?.fullName || "مستخدم";
+                return (
+                <div key={c.id} className="flex gap-2">
+                  <div className="grid size-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary to-accent text-white text-xs font-bold">
+                    {name.slice(0, 1)}
+                  </div>
+                  <div className="flex-1">
+                    <div className="bg-muted/50 rounded-lg p-2">
+                      <div className="text-xs font-semibold mb-0.5">{name}</div>
+                      <p className="text-xs">{c.content}</p>
+                    </div>
+                  </div>
+                </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ===================================================================
+//  ShareMenu — مشاركة المنشور (Facebook/X/WhatsApp/Copy)
+// ===================================================================
+
+function ShareMenu({ item }: { item: FeedItemData }) {
+  const [open, setOpen] = React.useState(false);
+
+  const share = (platform: string) => {
+    const url = `${window.location.origin}/feed`;
+    const title = item.content?.slice(0, 50) || "منشور من الحي";
+    const u = encodeURIComponent(url);
+    const t = encodeURIComponent(title);
+    const links: Record<string, string> = {
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${u}`,
+      twitter: `https://twitter.com/intent/tweet?url=${u}&text=${t}`,
+      whatsapp: `https://wa.me/?text=${t}%20${u}`,
+    };
+    if (platform === "copy") {
+      navigator.clipboard.writeText(url);
+      setOpen(false);
+      return;
+    }
+    window.open(links[platform], "_blank", "width=600,height=500");
+    setOpen(false);
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((p) => !p)}
+        className="flex items-center gap-1 text-xs px-2 py-1.5 rounded-md hover:bg-muted transition-colors min-h-9"
+        aria-label="مشاركة"
+        title="مشاركة"
+      >
+        <Share2 className="size-4" />
+      </button>
+      {open && (
+        <div className="absolute bottom-full mb-2 start-0 z-20 bg-card border border-border rounded-lg shadow-lg p-1 min-w-[160px]">
+          <button onClick={() => share("facebook")} className="flex items-center gap-2 w-full px-3 py-2 rounded hover:bg-muted text-sm">
+            <span className="text-base">📘</span> فيسبوك
+          </button>
+          <button onClick={() => share("twitter")} className="flex items-center gap-2 w-full px-3 py-2 rounded hover:bg-muted text-sm">
+            <span className="text-base">🐦</span> X (تويتر)
+          </button>
+          <button onClick={() => share("whatsapp")} className="flex items-center gap-2 w-full px-3 py-2 rounded hover:bg-muted text-sm">
+            <span className="text-base">💬</span> واتساب
+          </button>
+          <button onClick={() => share("copy")} className="flex items-center gap-2 w-full px-3 py-2 rounded hover:bg-muted text-sm">
+            <span className="text-base">🔗</span> نسخ الرابط
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ===================================================================
+//  BookmarkButton — Save/unsave feed item (toggle behavior)
+//  v61.0: uses /api/social/bookmark with targetType=FeedItem
+// ===================================================================
+
+function BookmarkButton({
+  item,
+  theme,
+}: {
+  item: FeedItemData;
+  theme: { primary: string; secondary: string };
+}) {
+  const [bookmarked, setBookmarked] = React.useState(false);
+  const [submitting, setSubmitting] = React.useState(false);
+
+  React.useEffect(() => {
+    fetch(`/api/social/bookmark?targetType=FeedItem&targetId=${item.id}`)
+      .then((r) => r.json())
+      .then((d) => setBookmarked(!!d.bookmarked))
+      .catch(() => {});
+  }, [item.id]);
+
+  const toggle = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    const prev = bookmarked;
+    setBookmarked(!prev); // optimistic
+    try {
+      const res = await fetch("/api/social/bookmark", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetType: "FeedItem", targetId: item.id }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setBookmarked(!!data.bookmarked);
+      } else {
+        setBookmarked(prev); // rollback
+      }
+    } catch {
+      setBookmarked(prev);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={toggle}
+      disabled={submitting}
+      className="flex items-center gap-1 text-xs px-2 py-1.5 rounded-md hover:bg-muted transition-colors min-h-9 disabled:opacity-50"
+      style={bookmarked ? { color: theme.primary } : undefined}
+      aria-label="حفظ"
+      aria-pressed={bookmarked}
+      title={bookmarked ? "إزالة من المحفوظات" : "حفظ"}
+    >
+      <Bookmark className={`size-4 ${bookmarked ? "fill-current" : ""}`} />
+    </button>
+  );
+}
+
+// ===================================================================
+//  AwardButton — زر الجوائز (Reddit-style awards)
+//  - يفتح popover بـ 7 أنواع جوائز
+//  - كل جائزة: emoji + label + karma cost
+//  - عند النقر: POST /api/feed/[id]/award
+//  - يُظهر الجوائز المُعطاة (avatars + count)
+// ===================================================================
+
+const AWARD_OPTIONS = [
+  { type: "GOLD", emoji: "🥇", label: "ذهبية", cost: 100, color: "#F5B220" },
+  { type: "SILVER", emoji: "🥈", label: "فضية", cost: 50, color: "#9CA3AF" },
+  { type: "BRONZE", emoji: "🥉", label: "برونزية", cost: 25, color: "#92400E" },
+  { type: "HELPFUL", emoji: "❤️", label: "مفيدة", cost: 10, color: "#DC2626" },
+  { type: "FUNNY", emoji: "😂", label: "مضحكة", cost: 10, color: "#F59E0B" },
+  { type: "WHOLESOME", emoji: "🌟", label: "نبيلة", cost: 15, color: "#10B981" },
+  { type: "INSPIRING", emoji: "🚀", label: "ملهمة", cost: 20, color: "#8B5CF6" },
+] as const;
+
+function AwardButton({
+  item,
+  theme,
+}: {
+  item: FeedItemData;
+  theme: { primary: string; secondary: string };
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [awards, setAwards] = React.useState<Array<{ awardType: string; user: { fullName: string } }>>([]);
+  const [submitting, setSubmitting] = React.useState<string | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
+
+  // Fetch existing awards on mount
+  React.useEffect(() => {
+    fetch(`/api/feed/${item.id}/award`)
+      .then((r) => r.json())
+      .then((d) => setAwards(d.awards || []))
+      .catch(() => {});
+  }, [item.id]);
+
+  const giveAward = async (awardType: string) => {
+    if (submitting) return;
+    setSubmitting(awardType);
+    setError(null);
+    try {
+      const res = await fetch(`/api/feed/${item.id}/award`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ awardType }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "فشل");
+        return;
+      }
+      // Add to local state
+      setAwards((prev) => [
+        ...prev,
+        { awardType, user: { fullName: "أنت" } },
+      ]);
+      setOpen(false);
+    } catch {
+      setError("فشل الاتصال");
+    } finally {
+      setSubmitting(null);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((p) => !p)}
+        className="flex items-center gap-1 text-xs px-2 py-1.5 rounded-md hover:bg-muted transition-colors min-h-9"
+        style={{ color: theme.primary }}
+        aria-label="إعطاء جائزة"
+        title="جوائز"
+      >
+        <Award className="size-4" />
+        {awards.length > 0 && (
+          <span className="font-bold tabular-nums">{formatNumber(awards.length)}</span>
+        )}
+      </button>
+
+      {/* Display awards given */}
+      {awards.length > 0 && !open && (
+        <div className="absolute -top-1 -start-1 flex gap-0.5">
+          {awards.slice(0, 3).map((a, i) => {
+            const opt = AWARD_OPTIONS.find((o) => o.type === a.awardType);
+            return opt ? (
+              <span key={i} className="text-xs" title={`${opt.label} من ${a.user.fullName}`}>
+                {opt.emoji}
+              </span>
+            ) : null;
+          })}
+        </div>
+      )}
+
+      {/* Award picker popover */}
+      {open && (
+        <div className="absolute bottom-full mb-2 start-0 z-20 bg-card border border-border rounded-xl shadow-lg p-2 min-w-[260px]">
+          <div className="text-xs font-semibold text-muted-foreground mb-2 px-1">
+            اختر جائزة (تُخصم من رصيدك Karma)
+          </div>
+          <div className="grid grid-cols-2 gap-1">
+            {AWARD_OPTIONS.map((opt) => {
+              const given = awards.some((a) => a.awardType === opt.type && a.user.fullName === "أنت");
+              return (
+                <button
+                  key={opt.type}
+                  onClick={() => giveAward(opt.type)}
+                  disabled={submitting !== null || given}
+                  className="flex items-center gap-2 p-2 rounded-md hover:bg-muted transition-colors text-start disabled:opacity-50 disabled:cursor-not-allowed min-h-9"
+                  style={given ? { opacity: 0.4 } : undefined}
+                >
+                  <span className="text-lg">{opt.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold" style={{ color: opt.color }}>
+                      {opt.label}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {opt.cost} Karma
+                    </p>
+                  </div>
+                  {given && <span className="text-[10px] text-emerald-600">✓</span>}
+                  {submitting === opt.type && (
+                    <Loader2 className="size-3 animate-spin text-muted-foreground" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          {error && (
+            <p className="text-[11px] text-rose-600 mt-2 px-1">{error}</p>
+          )}
+          <button
+            onClick={() => setOpen(false)}
+            className="mt-2 w-full text-[11px] text-muted-foreground hover:text-foreground py-1"
+          >
+            إغلاق
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ===================================================================
+//  VoteButtons — Upvote/Downvote (Reddit-style)
+//  - يُرسل POST /api/feed/[id]/vote عند النقر
+//  - optimistic update للحالة المحلية
+//  - toggle: نقر نفس الزر يُلغي التصويت
+// ===================================================================
+
+function VoteButtons({
+  item,
+  theme,
+}: {
+  item: FeedItemData;
+  theme: { primary: string; secondary: string };
+}) {
+  const [voteValue, setVoteValue] = React.useState<number>(0); // 1 / -1 / 0
+  const [upvotes, setUpvotes] = React.useState(item.upvotes ?? 0);
+  const [downvotes, setDownvotes] = React.useState(item.downvotes ?? 0);
+  const [submitting, setSubmitting] = React.useState(false);
+
+  // عند mount: اجلب تصويت المستخدم الحالي
+  React.useEffect(() => {
+    fetch(`/api/feed/${item.id}/vote`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (typeof d.userVote === "number") setVoteValue(d.userVote);
+        if (typeof d.upvotes === "number") setUpvotes(d.upvotes);
+        if (typeof d.downvotes === "number") setDownvotes(d.downvotes);
+      })
+      .catch(() => {});
+  }, [item.id]);
+
+  const score = upvotes - downvotes;
+
+  const vote = async (value: 1 | -1) => {
+    if (submitting) return;
+    const newValue = voteValue === value ? 0 : value; // toggle
+
+    // optimistic update
+    const prevValue = voteValue;
+    const prevUp = upvotes;
+    const prevDown = downvotes;
+    setVoteValue(newValue);
+    if (prevValue === 1) setUpvotes((u) => u - 1);
+    if (prevValue === -1) setDownvotes((d) => d - 1);
+    if (newValue === 1) setUpvotes((u) => u + 1);
+    if (newValue === -1) setDownvotes((d) => d + 1);
+
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/feed/${item.id}/vote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ value: newValue }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        // rollback
+        setVoteValue(prevValue);
+        setUpvotes(prevUp);
+        setDownvotes(prevDown);
+      } else {
+        setVoteValue(data.userVote ?? 0);
+        setUpvotes(data.upvotes);
+        setDownvotes(data.downvotes);
+      }
+    } catch {
+      setVoteValue(prevValue);
+      setUpvotes(prevUp);
+      setDownvotes(prevDown);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const isUpvoted = voteValue === 1;
+  const isDownvoted = voteValue === -1;
+
+  return (
+    <div className="flex items-center gap-0.5 rounded-lg bg-muted/40 p-0.5">
+      <button
+        onClick={() => vote(1)}
+        disabled={submitting}
+        className="flex items-center gap-0.5 px-1.5 py-1 rounded-md transition-colors min-h-9 disabled:opacity-50"
+        style={isUpvoted ? { color: theme.primary, background: `${theme.primary}20` } : { color: "var(--muted-foreground)" }}
+        aria-label="تصويت إيجابي"
+        aria-pressed={isUpvoted}
+        title="Upvote"
+      >
+        <ArrowBigUp className={`size-4 ${isUpvoted ? "fill-current" : ""}`} />
+      </button>
+      <span
+        className="font-bold text-xs tabular-nums px-1 min-w-7 text-center"
+        style={{
+          color: isUpvoted
+            ? theme.primary
+            : isDownvoted
+            ? "#dc2626" // red-600
+            : "var(--foreground)",
+        }}
+      >
+        {formatNumber(score)}
+      </span>
+      <button
+        onClick={() => vote(-1)}
+        disabled={submitting}
+        className="flex items-center gap-0.5 px-1.5 py-1 rounded-md transition-colors min-h-9 disabled:opacity-50"
+        style={isDownvoted ? { color: "#dc2626", background: "#dc262620" } : { color: "var(--muted-foreground)" }}
+        aria-label="تصويت سلبي"
+        aria-pressed={isDownvoted}
+        title="Downvote"
+      >
+        <ArrowBigDown className={`size-4 ${isDownvoted ? "fill-current" : ""}`} />
+      </button>
+    </div>
   );
 }
 

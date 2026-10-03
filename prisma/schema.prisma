@@ -322,7 +322,12 @@ model User {
 
   // ─────────── الاقتصاد والمتجر (v5.0) ───────────
   pointsLedger      PointsLedger[]
+  pointsPurchases   PointsPurchase[]
   storeOrders       StoreOrder[]
+  feedVotes         FeedVote[]
+  postAwards        PostAward[]
+  userSkills        Skill[]
+  skillEndorsements SkillEndorsement[]
 
   // ─────────── الإحالة والمرجع (v7.0) ───────────
   referrals         Referral[]
@@ -443,7 +448,7 @@ model PointsLedger {
   id           String   @id @default(cuid())
   userId       String
   amount       Int      // موجب=كسب، سالب=صرف
-  type         String   // EARN, SPEND, ADJUST, PURCHASE, TRANSFER
+  type         String   // EARN, SPEND, ADJUST, PURCHASE, TRANSFER, ADMIN_ADD, ADMIN_REMOVE, REFUND
   reason       String
   adminId      String?  // من قام بالتعديل اليدوي
   balanceAfter Int      // رصيد المستخدم بعد هذه المعاملة
@@ -456,6 +461,27 @@ model PointsLedger {
   @@index([userId])
   @@index([type])
   @@index([createdAt])
+}
+
+// v61.0 — سجل عمليات شراء النقاط (بيع/استرداد)
+model PointsPurchase {
+  id          String   @id @default(cuid())
+  userId      String
+  amount      Int      // موجب للبيع، سالب للاسترداد
+  pricePaid   Float    // بالدرهم (موجب للبيع، سالب للاسترداد)
+  method      String   // CASH, BANK_TRANSFER, CMI, REFUND
+  status      String   @default("PENDING") // PENDING, COMPLETED, REFUNDED
+  adminId     String?  // الأدمن الذي نفّذ العملية
+  metadata    String?  // JSON
+  completedAt DateTime?
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([status])
+  @@index([method])
 }
 
 // ===================================================================
@@ -2140,16 +2166,91 @@ model FeedItem {
   comments    Int      @default(0)
   shares      Int      @default(0)
   views       Int      @default(0)
+  // v61.0 Part 5: Reddit-style upvote/downvote (Karma)
+  upvotes     Int      @default(0)
+  downvotes   Int      @default(0)
+  // Score = upvotes - downvotes (cached for performance)
+  score       Int      @default(0)
   visibility  String   @default("DISTRICT")
   districtId  String?
   createdAt   DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  votes FeedVote[]
+  awards PostAward[]
 
   @@index([userId])
   @@index([type])
   @@index([districtId])
   @@index([createdAt])
+  @@index([score])
+}
+
+// v61.0 Part 5: سجلّ تصويتات المستخدمين على المنشورات (Reddit-style)
+model FeedVote {
+  id          String   @id @default(cuid())
+  userId      String
+  feedItemId  String
+  // value: 1 = upvote, -1 = downvote, 0 = removed (kept for history)
+  value       Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feedItem  FeedItem  @relation(fields: [feedItemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, feedItemId])
+  @@index([userId])
+  @@index([feedItemId])
+}
+
+// v61.0 Part 5: Reddit-style Post Awards (جوائز المنشورات)
+model PostAward {
+  id          String   @id @default(cuid())
+  userId      String   // من يُعطي الجائزة
+  feedItemId  String   // المنشور المُكافأ
+  awardType   String   // GOLD, SILVER, BRONZE, HELPFUL, FUNNY, WHOLESOME, INSPIRING
+  karmaCost  Int      // كم كلّف الجائزة (يُخصم من المانح)
+  karmaReward Int      // كم ربح صاحب المنشور
+  note        String?  // ملاحظة اختيارية
+  createdAt   DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feedItem  FeedItem  @relation(fields: [feedItemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, feedItemId, awardType]) // جائزة واحدة من كل نوع لكل مستخدم لكل منشور
+  @@index([userId])
+  @@index([feedItemId])
+  @@index([awardType])
+}
+
+// v61.0 Part 5: LinkedIn-style Skills + Endorsements
+model Skill {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String   // lowercase skill name (e.g. "تعليم", "نجارة")
+  createdAt DateTime @default(now())
+
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endorsements SkillEndorsement[]
+
+  @@unique([userId, name]) // لا تكرار لنفس المهارة لنفس المستخدم
+  @@index([userId])
+  @@index([name])
+}
+
+model SkillEndorsement {
+  id        String   @id @default(cuid())
+  skillId   String
+  endorserId String   // من يُصادق على المهارة
+  createdAt DateTime @default(now())
+
+  skill    Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  endorser User @relation(fields: [endorserId], references: [id], onDelete: Cascade)
+
+  @@unique([skillId, endorserId]) // صادقة واحدة لكل مستخدم لكل مهارة
+  @@index([skillId])
+  @@index([endorserId])
 }
 
 // ===================================================================

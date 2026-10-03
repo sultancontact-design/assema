@@ -24,6 +24,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   if (!user || user.role !== "SUPER_ADMIN") return NextResponse.json({ error: "غير مصرّح" }, { status: 403 });
   const { id } = await params;
   if (id === user.id) return NextResponse.json({ error: "لا يمكن حذف حسابك" }, { status: 400 });
-  await db.user.update({ where: { id }, data: { deletedAt: new Date(), isLocked: true, status: "SUSPENDED" } }).catch(() => null);
+  // v61.0: use lockedUntil + status (isLocked column not in schema)
+  await db.user.update({ where: { id }, data: { deletedAt: new Date(), lockedUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), status: "SUSPENDED" } }).catch(() => null);
   return NextResponse.json({ success: true });
 }

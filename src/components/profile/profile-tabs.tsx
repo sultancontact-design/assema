@@ -115,24 +115,33 @@ export function ProfileTabs({ videos = [], posts = [] }: ProfileTabsGridProps) {
         return <EmptyState icon={BookOpen} label="لا توجد مقالات بعد" />;
       }
       return (
-        <div className="grid grid-cols-3 gap-1 md:gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {posts.map((post: any) => {
             const [c1, c2] = CATEGORY_COLORS[post.category || "OTHER"] || CATEGORY_COLORS.OTHER;
             const img = post.coverImage || CATEGORY_IMAGES[post.category || ""] || CATEGORY_IMAGES.default;
 
             return (
-              <Link key={post.id} href={`/blog/${post.slug}`} className="relative aspect-square group overflow-hidden rounded-sm">
-                <img src={img} alt={post.title} className="absolute inset-0 w-full h-full object-cover" loading="lazy"
-                  onError={(e) => { const t = e.target as HTMLImageElement; t.style.display = "none"; t.nextElementSibling?.classList.remove("hidden"); }} />
-                <div className="absolute inset-0 hidden flex items-center justify-center"
-                  style={{ background: `linear-gradient(135deg, ${c1}, ${c2})` }}>
-                  <BookOpen className="size-8 text-white/40" />
+              <Link key={post.id} href={`/blog/${post.slug}`} className="group flex gap-3 rounded-xl overflow-hidden border border-border hover:shadow-md transition-shadow">
+                {/* صورة الغلاف */}
+                <div className="relative w-24 h-24 shrink-0">
+                  <img src={img} alt={post.title} className="absolute inset-0 w-full h-full object-cover" loading="lazy"
+                    onError={(e) => { const t = e.target as HTMLImageElement; t.style.display = "none"; t.nextElementSibling?.classList.remove("hidden"); }} />
+                  <div className="absolute inset-0 hidden flex items-center justify-center"
+                    style={{ background: `linear-gradient(135deg, ${c1}, ${c2})` }}>
+                    <BookOpen className="size-6 text-white/40" />
+                  </div>
                 </div>
-                <div className="absolute top-1.5 start-1.5 px-1.5 py-0.5 bg-black/70 backdrop-blur-sm rounded-full text-[8px] font-bold text-white">مقال</div>
-                <BookOpen className="absolute top-1.5 end-1.5 size-3 text-white/80" />
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                  <div className="flex items-center gap-1 text-white text-xs font-bold"><Heart className="size-3.5 fill-current" />{post.likes || 0}</div>
-                  <div className="flex items-center gap-1 text-white text-xs font-bold"><Eye className="size-3.5" />{post.views || 0}</div>
+                {/* المحتوى */}
+                <div className="flex-1 min-w-0 py-2 pe-2">
+                  <h3 className="text-sm font-bold text-foreground line-clamp-2 mb-1">{post.title || "بدون عنوان"}</h3>
+                  {post.excerpt && (
+                    <p className="text-xs text-muted-foreground line-clamp-2">{post.excerpt}</p>
+                  )}
+                  <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground">
+                    <span className="flex items-center gap-0.5"><Eye className="size-3" />{post.views || 0}</span>
+                    <span className="flex items-center gap-0.5"><Heart className="size-3" />{post.likes || 0}</span>
+                    {post.category && <span className="px-1.5 py-0.5 rounded-full bg-muted text-[9px]">{post.category}</span>}
+                  </div>
                 </div>
               </Link>
             );
