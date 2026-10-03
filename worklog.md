@@ -8398,3 +8398,56 @@ All tested on /community (1440px, logged in as admin):
 - Responsive 4 sizes: 0 overflow ✅
 - Teal colors: #0f766e applied ✅
 - ZelligeDivider: 0 patterns ✅
+
+---
+Task ID: v68.0
+Agent: Main (Z.ai Code)
+Task: v68.0 — إصلاح التفاعلات بالتحقق الفعلي (Interactive Verification)
+
+INTERACTIVE TEST RESULTS (actual clicks, not just DOM checks):
+
+Task 1 — Comment: ✅ FIXED + VERIFIED BY CLICK
+- Old: ActionButton just toggled color (no form opened)
+- New: CommentButton component with real popup
+- Root cause: was sending 'feedItemId' to API that expects 'targetType'+'targetId'
+- Fix: changed API params + user.name (not user.fullName)
+- Interactive test:
+  1. Click comment button → popup opened (hasInput: true) ✅
+  2. Fill "اختبار تفاعلي v68" in input ✅
+  3. Click submit → comment appeared (hasComment: true) ✅
+  4. Input cleared after submit (inputCleared: true) ✅
+
+Task 2 — Bookmark: ✅ WORKS (was already working from v62.0)
+- Interactive test:
+  1. Click bookmark button ✅
+  2. aria-pressed changed to "true" (toggled) ✅
+  3. Button color changed (fill-current) ✅
+
+Task 3 — Share: ✅ WORKS (was already working from v64.0)
+- Interactive test:
+  1. Click share button ✅
+  2. Dropdown opened with Facebook/X/WhatsApp/Copy ✅
+  3. hasShareMenu: true (menu shows "فيسبوك" + "نسخ الرابط") ✅
+
+Task 4 — Video in Feed: ✅ FIXED
+- Old: showed text link "مشاهدة" (no thumbnail)
+- New: proper 16:9 video thumbnail card:
+  * YouTube thumbnail (img.youtube.com/vi/ID/hqdefault.jpg)
+  * Fallback gradient with Video icon
+  * Play button overlay (white circle)
+  * Title at bottom (gradient from black)
+  * Links to /videos/[id]
+
+Task 5 — Profile Articles: ✅ FIXED
+- Old: 3-column grid of square images (no titles/excerpts)
+- New: 2-column list with:
+  * Cover image (96x96)
+  * Title (text-sm font-bold, line-clamp-2)
+  * Excerpt (text-xs, line-clamp-2)
+  * Views + likes + category badge
+  * hover:shadow-md
+
+Commits:
+- d13d8ca — v68.0: fix interactions (comment form, video thumbnail, profile titles)
+- feb32a2 — v68.0-fix: add missing Play import
+- 15728ea — v68.0-fix2: fix comment API params (targetType+targetId, not feedItemId)
