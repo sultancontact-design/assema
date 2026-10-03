@@ -6,12 +6,15 @@ import { motion, useReducedMotion } from "motion/react";
 import { ArrowLeft, ArrowUpRight, Sparkles, TrendingUp, Users, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { NumberTicker } from "@/components/ui/number-ticker";
+import { ShimmerButton } from "@/components/ui/shimmer-button";
 
 // ===================================================================
-//  HomeHero v59.0 — 2026 Aurora + Glass Split Layout
-//  - Aurora gradient background (replacing dark unsplash photo)
-//  - Glass-strong KPI card on the left (RTL) with live counters
-//  - Display typography (clamp 2rem → 3.5rem — not too huge on big screens)
+//  HomeHero v62.0 — Elite 2026 Design (Magic UI + Aurora + Glass)
+//  - Aurora gradient background + subtle grid overlay
+//  - Glass-strong KPI card with NumberTicker animated counters
+//  - ShimmerButton for primary CTA (Magic UI shine effect)
+//  - Display typography (clamp 2rem → 3.5rem)
 //  - Staggered motion animation (one coordinated load)
 //  - Bento-style: 7/5 columns (content + KPI card)
 // ===================================================================
@@ -95,12 +98,12 @@ export function HomeHero() {
               variants={prefersReduced ? undefined : itemVariants}
               className="mt-8 flex flex-col sm:flex-row items-start sm:items-center gap-3"
             >
-              <Button asChild size="lg" className="btn-shine h-12 px-6 text-base font-semibold bg-primary hover:bg-primary/90 border-0 text-primary-foreground">
+              <ShimmerButton asChild className="h-12 px-6 text-base font-semibold" shimmerColor="#ffffff">
                 <Link href="/community">
                   انضمّ إلى الحيّ
                   <ArrowLeft className="size-4" />
                 </Link>
-              </Button>
+              </ShimmerButton>
               <Button asChild size="lg" variant="outline" className="glass h-12 px-6 text-base border-border/60 hover:bg-background/30">
                 <Link href="/community/fund">
                   تعرّف على الصندوق
@@ -162,60 +165,60 @@ function KpiMini({ icon: Icon, label, value }: { icon: React.ComponentType<{ cla
 }
 
 // ===================================================================
-//  Live counters — fetch from /api/public/stats
+//  Live counters — fetch from /api/public/stats (v62.0: NumberTicker)
 // ===================================================================
 function LiveFundTotal() {
-  const [value, setValue] = React.useState<string>("— —");
+  const [value, setValue] = React.useState<number>(0);
   React.useEffect(() => {
     fetch("/api/public/stats")
       .then((r) => r.json())
       .then((d) => {
         if (typeof d?.contributionsTotal === "number") {
-          setValue(new Intl.NumberFormat("ar-MA").format(d.contributionsTotal));
+          setValue(d.contributionsTotal);
         }
       })
-      .catch(() => setValue("— —"));
+      .catch(() => {});
   }, []);
-  return <>{value}</>;
+  return <NumberTicker value={value} />;
 }
 
 function LiveFamiliesCount() {
-  const [value, setValue] = React.useState<number | string>("—");
+  const [value, setValue] = React.useState<number>(0);
   React.useEffect(() => {
     fetch("/api/public/stats")
       .then((r) => r.json())
       .then((d) => {
         if (typeof d?.families === "number") setValue(d.families);
       })
-      .catch(() => setValue("—"));
+      .catch(() => {});
   }, []);
-  return <>{value}</>;
+  return <NumberTicker value={value} />;
 }
 
 function LiveEventsCount() {
-  const [value, setValue] = React.useState<number | string>("—");
+  const [value, setValue] = React.useState<number>(0);
   React.useEffect(() => {
     fetch("/api/public/stats")
       .then((r) => r.json())
       .then((d) => {
         if (typeof d?.events === "number") setValue(d.events);
       })
-      .catch(() => setValue("—"));
+      .catch(() => {});
   }, []);
-  return <>{value}</>;
+  return <NumberTicker value={value} />;
 }
 
 function LiveContribCount() {
-  const [value, setValue] = React.useState<number | string>("—");
+  const [value, setValue] = React.useState<number>(0);
   React.useEffect(() => {
     fetch("/api/public/stats")
       .then((r) => r.json())
       .then((d) => {
         if (typeof d?.contributions === "number") setValue(d.contributions);
       })
-      .catch(() => setValue("—"));
+      .catch(() => {});
   }, []);
-  return <>{value}</>;
+  return <NumberTicker value={value} />;
 }
 
 export default HomeHero;
