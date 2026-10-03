@@ -624,7 +624,7 @@ function CommentButton({
     if (next && comments.length === 0) {
       setLoading(true);
       try {
-        const res = await fetch(`/api/comments?feedItemId=${item.id}`);
+        const res = await fetch(`/api/comments?targetType=FeedItem&targetId=${item.id}`);
         const data = await res.json();
         setComments(data.comments || []);
       } catch {
@@ -643,7 +643,7 @@ function CommentButton({
       const res = await fetch("/api/comments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ feedItemId: item.id, content: newComment.trim() }),
+        body: JSON.stringify({ targetType: "FeedItem", targetId: item.id, content: newComment.trim() }),
       });
       const data = await res.json();
       if (res.ok && data.comment) {
@@ -700,19 +700,22 @@ function CommentButton({
             <div className="text-center text-xs text-muted-foreground py-4">لا توجد تعليقات بعد</div>
           ) : (
             <div className="space-y-2">
-              {comments.map((c: any) => (
+              {comments.map((c: any) => {
+                const name = c.user?.name || c.user?.fullName || "مستخدم";
+                return (
                 <div key={c.id} className="flex gap-2">
                   <div className="grid size-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary to-accent text-white text-xs font-bold">
-                    {(c.user?.fullName || "U").slice(0, 1)}
+                    {name.slice(0, 1)}
                   </div>
                   <div className="flex-1">
                     <div className="bg-muted/50 rounded-lg p-2">
-                      <div className="text-xs font-semibold mb-0.5">{c.user?.fullName || "مستخدم"}</div>
+                      <div className="text-xs font-semibold mb-0.5">{name}</div>
                       <p className="text-xs">{c.content}</p>
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
