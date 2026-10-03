@@ -8451,3 +8451,27 @@ Commits:
 - d13d8ca — v68.0: fix interactions (comment form, video thumbnail, profile titles)
 - feb32a2 — v68.0-fix: add missing Play import
 - 15728ea — v68.0-fix2: fix comment API params (targetType+targetId, not feedItemId)
+
+---
+Task ID: v69.0
+Agent: Main (Z.ai Code)
+Task: v69.0 — Community restructure with 4 Tabs + interactive verification
+
+Task 1 — Community Tabs: ✅ VERIFIED BY CLICK
+Created: src/components/community/community-tabs.tsx (~230 lines)
+- 4 tabs: الكل / الأعضاء / المجموعات / الفعاليات
+- Each tab fetches from existing APIs
+- MembersTab: Avatar + name + district + followers + follow/unfollow toggle
+- GroupsTab: Image + name + description + member count + link
+- EventsTab: Date badge + title + location + type badge + details link
+
+Interactive verification (actual clicks):
+1. Click "الأعضاء" → tab active ✅, 58 member elements rendered ✅
+2. Click "المجموعات" → tab active ✅, 24 group cards rendered ✅
+3. Click "الفعاليات" → tab active ✅ (0 events — date selector)
+4. Click "الكل" → tab active ✅, 46 feed cards rendered ✅
+
+Each click changed the content — tabs work!
+
+Commits:
+- 9186929 — v69.0 task1: restructure /community with 4 Tabs
