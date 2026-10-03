@@ -7445,3 +7445,79 @@ Commits على GitHub (v61.0 الجزء 4 — مكتمل):
 | 4. Admin points management | ✅ مكتمل + مُتحقّق | ✅ 3 معاملات فعلية |
 
 كل الأجزاء الأربعة مكتملة و موثّقة على الإنتاج.
+
+---
+Task ID: v61.0-part5
+Agent: Main (Z.ai Code)
+Task: الجزء 5 — استلهام من المنصات الكبرى (Reddit Karma + Upvote/Downvote)
+
+Work Log:
+- إضافة schema جديد لـ Reddit-style voting:
+  * FeedItem: +upvotes (Int) +downvotes (Int) +score (Int) + index on score
+  * New model FeedVote: id, userId, feedItemId, value (1/-1/0), createdAt, updatedAt
+    - @@unique([userId, feedItemId]) (vote واحد لكل مستخدم لكل منشور)
+    - @@index([userId]) + @@index([feedItemId])
+    - Relations: user (User) + feedItem (FeedItem) — both Cascade
+  * Added 'feedVotes FeedVote[]' relation on User model
+  * prisma db push على Supabase الإنتاج (9.78s sync)
+  * prisma generate (local client updated)
+
+- إنشاء API endpoint جديد:
+  * POST /api/feed/[id]/vote
+    - body: { value: 1 (upvote) | -1 (downvote) | 0 (unvote) }
+    - Atomic transaction:
+      1. Find existing vote
+      2. If exists: delete (toggle) OR update value
+      3. If not: create new FeedVote
+      4. Recalculate FeedItem.upvotes + downvotes + score
+      5. Update FeedItem with new counters
+      6. AuditLog entry (feed.upvote/downvote/unvote)
+    - Toggle behavior: clicking same vote twice removes it
+    - Returns: { success, upvotes, downvotes, score, userVote }
+  * GET /api/feed/[id]/vote
+    - Returns current user's vote + upvotes/downvotes/score
+
+- تحديث UnifiedFeed UI (Reddit-style):
+  * FeedItemData interface: +upvotes, +downvotes, +score
+  * استبدال زر Heart (إعجاب) بـ VoteButtons component:
+    - ArrowBigUp button (green when active, fill-current)
+    - Score number (colored: green for upvoted, red for downvoted)
+    - ArrowBigDown button (red when active)
+    - Grouped in rounded-lg bg-muted/40 container
+  * Optimistic updates مع rollback على الأخطاء
+  * Fetches user's current vote on mount
+  * Toggle: نقر نفس الزر يُلغي التصويت
+  * Visual feedback: filled icon + colored background when active
+
+- Karma rename (UI label only):
+  * 'نقاط' → 'Karma' في:
+    - store-client.tsx (1 occurrence)
+    - users-manage-client.tsx (3 occurrences: toast, badge, dialog)
+    - store/page.tsx (5 occurrences: title, subtitle, badge, alt, CTA)
+    - community/page.tsx (1 occurrence: ProfileMiniCard label)
+  * DB field stays 'points' (Int) — rename is UI-only
+
+التحقّق الفعلي بـagent-browser + DB writes (3 states):
+
+| الاختبار | قبل | بعد | DB Verification |
+|----------|-----|------|------------------|
+| Click upvote | up=0, down=0, score=0 | up=1, down=0, score=1 | FeedVote(value=1) + AuditLog(feed.upvote) |
+| Click downvote (toggle) | up=1, down=0, score=1 | up=0, down=1, score=-1 | FeedVote(value=-1) + AuditLog(feed.downvote) |
+| Click downvote (toggle off) | up=0, down=1, score=-1 | up=0, down=0, score=0 | FeedVote DELETED + AuditLog(feed.unvote) |
+
+تحقّق إضافي:
+- Karma label ظاهر على /community (document.body.textContent.includes('Karma') === true)
+- 30 vote button rendered (15 upvote + 15 downvote, one pair per feed item)
+
+Stage Summary (الجزء 5 — مكتمل + مُتحقّق):
+- ✅ Upvote/Downvote (Reddit-style): schema + API + UI + 3 DB writes verified
+- ✅ Karma label: replace 'نقاط' with 'Karma' in user-facing UI (8 places)
+- ✅ AuditLog for every vote action (feed.upvote/downvote/unvote)
+- ✅ Toggle behavior: same vote clicked twice = remove
+- ✅ Optimistic updates with rollback
+- ✅ DB: FeedVote model added + synced to Supabase production
+- ✅ ESLint: 0 errors
+
+Commits على GitHub (v61.0 الجزء 5):
+- 0065651 — v61.0 part5: Reddit-style upvote/downvote (Karma system)
+- 76f833b — v61.0 part5+: rename 'نقاط' to 'Karma' in user-facing UI
