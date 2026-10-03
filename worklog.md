@@ -7692,3 +7692,82 @@ v61.0 مكتمل بالكامل — 5 أجزاء + إضافات:
 5. Reddit Karma + Voting + Awards + Challenges (full social engagement loop) ✅
 
 كل الأجزاء منفّذة + موثّقة على الإنتاج مع DB writes فعلية.
+
+---
+Task ID: v61.0-part5-skills
+Agent: Main (Z.ai Code)
+Task: الجزء 5 (تابع) — LinkedIn-style Skills + Endorsements
+
+Work Log:
+- إضافة 2 models جديدة إلى schema:
+  * Skill: id, userId, name (lowercase), createdAt
+    - @@unique([userId, name]) — no duplicate skills per user
+    - Relations: user (User) — Cascade
+  * SkillEndorsement: id, skillId, endorserId, createdAt
+    - @@unique([skillId, endorserId]) — one endorsement per user per skill
+    - Relations: skill (Skill) + endorser (User) — both Cascade
+  * Added 'userSkills Skill[]' + 'skillEndorsements SkillEndorsement[]' on User
+    (renamed from 'skills' to avoid conflict with existing String field)
+  * prisma db push على Supabase الإنتاج (10.52s)
+
+- إنشاء 3 API endpoints:
+  1. POST/GET /api/users/[id]/skills
+     * POST: add skill to OWN profile (self only)
+       - Validates name length (>= 2)
+       - Prevents duplicates (case-insensitive)
+       - Limits to 30 skills per user
+       - AuditLog (skill.add)
+       - Returns 201 with skill object
+     * GET: list user's skills with endorsement counts
+       - Returns: { skills: [{id, name, endorsements}] }
+
+  2. DELETE /api/users/[id]/skills/[skillId]
+     * Self only — can only delete own skills
+     * Validates skill belongs to target user
+     * Cascade delete: removes all SkillEndorsements for that skill
+     * AuditLog (skill.remove)
+
+  3. POST /api/users/[id]/skills/[skillId]/endorse
+     * LinkedIn-style endorsement
+     * Prevents self-endorsement (returns 400: "لا يمكنك المصادقة على مهاراتك")
+     * Validates skill belongs to target user
+     * Toggle behavior: endorsing again removes it
+     * AuditLog (skill.endorse / skill.unendorse)
+     * Returns: { success, endorsed: boolean, message }
+
+التحقّق الفعلي بـagent-browser + DB writes:
+
+| الخطوة | قبل | بعد | التحقّق |
+|--------|-----|------|--------|
+| **Step 1: Add skill "تعليم"** | Skill count: 0 | Skill count: **1** | ✅ HTTP 201 + AuditLog(skill.add) |
+| **Step 2: GET skills** | — | Returns skill + endorsements=0 | ✅ HTTP 200 |
+| **Step 3: Self-endorse (blocked)** | — | HTTP 400 "لا يمكنك..." | ✅ Validation works |
+| **Step 4: Endorse from different user** | SkillEndorsement: 0 | SkillEndorsement: **1** | ✅ Endorsement created |
+| **Step 5: GET shows endorsement count** | endorsements=0 | endorsements=**1** | ✅ Count returned correctly |
+| **Step 6: DELETE own skill** | Skill count: 1, Endorsement: 1 | Skill count: **0**, Endorsement: **0** (cascade) | ✅ HTTP 200 + AuditLog(skill.remove) |
+
+Stage Summary (v61.0 الجزء 5 — Skills مكتمل):
+- ✅ Schema: 2 new models (Skill + SkillEndorsement) with proper indexes + unique constraints
+- ✅ 3 API endpoints (add skill, list skills, delete skill, endorse/unendorse)
+- ✅ Self-endorsement prevention
+- ✅ Toggle behavior (endorse → unendorse)
+- ✅ Cascade delete (delete skill removes all endorsements)
+- ✅ AuditLog for all actions (skill.add/remove/endorse/unendorse)
+- ✅ Endorsement count via Prisma _count
+- ✅ DB writes موثّقة فعلياً (add + endorse + delete + cascade)
+
+Commits على GitHub:
+- b2bcfc1 — v61.0 part5++++: LinkedIn-style Skills + Endorsements
+
+الخلاصة النهائية v61.0 (5 أجزاء + 4 إضافات):
+1. Sidebar overlay fix (3 modes) ✅
+2. Per-section color themes (22 themes) ✅
+3. Unified social feed (10 post types, 3-column) ✅
+4. Admin points management (5 APIs + UI + widget) ✅
+5a. Reddit Upvote/Downvote (Karma system) ✅
+5b. Karma rename (نقاط → Karma) ✅
+5c. Reddit Awards (7 types, atomic economy) ✅
+5d. Challenges مع مكافآت (Mighty Networks) ✅
+5e. LinkedIn Skills + Endorsements ✅ NEW
+
+v61.0 مكتمل بالكامل — 5 أجزاء + 5 إضافات منفّذة + موثّقة على الإنتاج مع DB writes فعلية.
