@@ -7617,3 +7617,78 @@ Commits على GitHub:
 | 5. Reddit Karma + Voting + Awards | ✅ مكتمل + مُتحقّق | ✅ 4 معاملات (vote×3 + award×1) |
 
 v61.0 مكتمل بالكامل — 5 أجزاء منفّذة + موثّقة على الإنتاج مع DB writes فعلية.
+
+---
+Task ID: v61.0-part5-challenges
+Agent: Main (Z.ai Code)
+Task: الجزء 5 (تابع) — Challenges مع المكافآت (Mighty Networks + Reddit inspiration)
+
+Work Log:
+- اكتشاف أن Challenge + UserChallenge models موجودة في الـschema بالفعل
+- اكتشاف أن /admin/challenges CRUD endpoints موجودة (create/update/delete)
+- اكتشاف أن /community/gamification page تعرض التحديات (read-only)
+- الإكتشاف: لا توجد user-facing APIs لـ join/progress/complete
+
+- إنشاء 3 API endpoints جديدة للمستخدمين:
+  1. POST /api/community/challenges/[id]/join (~75 سطر)
+     * يتحقق: challenge نشط + ليس منتهي + لم يبدأ بعد
+     * يمنع التكرار (unique constraint على userId + challengeId)
+     * يُنشئ UserChallenge (progress=0, completed=false)
+     * AuditLog (challenge.join)
+     * Returns: participationId, progress, requiredCount, pointsReward, badgeId
+
+  2. POST /api/community/challenges/[id]/progress (~135 سطر)
+     * Body: { increment?: number (default 1) }
+     * يحدّث progress (capped at requiredCount)
+     * Auto-complete عند الوصول لـrequiredCount:
+       - Atomic transaction:
+         a) يمنح Karma (pointsReward) للمستخدم
+         b) ينشئ PointsLedger (type=EARN, balanceAfter=newBalance)
+         c) يمنح Badge (إذا وُجد badgeId) + UserBadge entry
+         d) يزيد badge.currentRecipients
+         e) AuditLog (challenge.complete)
+     * Returns: progress, completed, karmaAwarded, badgeAwarded, isJustCompleted
+
+  3. GET /api/community/challenges/[id]/complete (~55 سطر)
+     * Returns participation info + challenge details
+     * للاستعلام عن الحالة (منضم؟ progress؟ مكتمل؟ مكافأة مأخوذة؟)
+
+التحقّق الفعلي بـagent-browser + DB writes:
+
+| الخطوة | قبل | بعد | التحقق |
+|--------|-----|------|--------|
+| **Step 1: Join challenge** | UserChallenge count: 0 | UserChallenge created (progress=0) | ✅ HTTP 200 |
+| **Step 2: Progress (+1)** | progress=0, completed=false | progress=**1**, completed=**true** | ✅ HTTP 200 + isJustCompleted=true |
+| **Admin Karma** | 1 | **1001** | ✅ +1000 (challenge reward) |
+| **UserBadge** | count: 0 | count: **1** — "مؤسس" (founder, legendary) | ✅ |
+| **PointsLedger** | — | amount=1000, type=EARN, balanceAfter=1001 | ✅ |
+| **AuditLog** | — | challenge.complete (info) | ✅ |
+
+التحدي المُختبَر:
+- id: challenge-founder-100
+- title: "تحدي المؤسس: أول 100 مسجّل"
+- requiredCount: 1 (سهل للاختبار)
+- pointsReward: 1000 Karma
+- badgeId: مؤسس (legendary)
+
+Stage Summary (v61.0 الجزء 5 — Karma + Voting + Awards + Challenges مكتمل):
+- ✅ Upvote/Downvote (Reddit-style): 3 states موثّقة
+- ✅ Karma label: 'نقاط' → 'Karma' في 8 مواقع
+- ✅ Awards (Reddit-style): 7 أنواع، atomic Karma economy
+- ✅ Challenges (Mighty Networks): join + progress + auto-complete + rewards
+- ✅ Atomic transactions لكل عملية (Karma + badge + ledger + auditLog)
+- ✅ AuditLog لكل action (challenge.join/complete + feed.upvote/downvote/unvote/award)
+- ✅ 4 أنظمة موثّقة فعلياً على الإنتاج مع DB writes
+
+Commits على GitHub:
+- 739b16e — v61.0 part5+++: Challenges with rewards (3 user APIs)
+
+الخلاصة النهائية v61.0:
+v61.0 مكتمل بالكامل — 5 أجزاء + إضافات:
+1. Sidebar overlay fix (3 modes) ✅
+2. Per-section color themes (22 themes) ✅
+3. Unified social feed (10 post types, 3-column) ✅
+4. Admin points management (5 APIs + UI + widget) ✅
+5. Reddit Karma + Voting + Awards + Challenges (full social engagement loop) ✅
+
+كل الأجزاء منفّذة + موثّقة على الإنتاج مع DB writes فعلية.
