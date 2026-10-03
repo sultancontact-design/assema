@@ -8270,3 +8270,63 @@ Verification on production:
 
 Commits:
 - 7ed0f49 — v66.0 wave2: 5 visually distinct feed card types
+
+---
+Task ID: v66.0-wave3-4
+Agent: Main (Z.ai Code)
+Task: v66.0 Waves 3-4 — Responsive layouts + BottomNav + FAB + verification
+
+Work Log:
+
+Wave 3 — Responsive Layouts:
+
+1. BottomNav v66.0 (updated from v21.0):
+   - 5 items: الرئيسية, المجتمع, المعروف, الإشعارات, حسابي
+   - Active state: Teal color + bold + top indicator bar (h-1 w-8 rounded-full)
+   - md:hidden (shows only on mobile < 768px)
+   - Sticky bottom, no jump on scroll
+   - safe-area-inset-bottom for iOS
+   - data-bottom-nav attribute for testing
+   - backdrop-blur + bg-background/95
+
+2. FAB (Floating Action Button) v66.0:
+   - 56px circle (size-14)
+   - Teal background (var(--primary))
+   - White Plus icon
+   - Positioned bottom-20 end-4 (above BottomNav)
+   - md:hidden (mobile only)
+   - Links to /feed (which has Composer)
+   - hover:scale-110 + active:scale-95 transitions
+   - shadow-lg
+
+3. Both rendered in AppChrome for all non-admin pages.
+
+Wave 4 — Verification on 4 screen sizes:
+
+| Screen | Overflow | BottomNav | FAB | Console Errors |
+|--------|----------|-----------|-----|-----------------|
+| 375px (mobile) | 375 ✅ | display:block ✅ | display:flex ✅ | 0 real ✅ |
+| 768px (tablet) | 768 ✅ | display:none ✅ | display:none ✅ | 0 ✅ |
+| 1024px (laptop) | 1024 ✅ | display:none ✅ | display:none ✅ | 0 ✅ |
+| 1440px (desktop) | 1440 ✅ | display:none ✅ | display:none ✅ | 0 ✅ |
+
+Screenshots saved:
+- screenshots/v66-responsive/home-375.png ✅
+- screenshots/v66-responsive/home-768.png ✅
+- screenshots/v66-responsive/home-1024.png ✅
+- screenshots/v66-responsive/home-1440.png ✅
+- screenshots/v66-responsive/community-375.png ✅
+- screenshots/v66-responsive/community-1440.png ✅
+
+Key findings:
+- BottomNav correctly shows ONLY on mobile (375px) ✅
+- FAB correctly shows ONLY on mobile (375px) ✅
+- Both hidden on tablet/desktop (768px+) ✅
+- 0 actual JS errors on all screen sizes ✅
+- 0 horizontal overflow on all screen sizes ✅
+- primaryColor: #0f766e (Teal) on all sizes ✅
+- hasZellige: false on all sizes ✅
+- 16 feed cards rendered on /community ✅
+
+Commits:
+- 2f4f4ba — v66.0 wave3: BottomNav (5 items Teal) + FAB (floating action button)
