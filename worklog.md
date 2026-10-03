@@ -7521,3 +7521,99 @@ Stage Summary (الجزء 5 — مكتمل + مُتحقّق):
 Commits على GitHub (v61.0 الجزء 5):
 - 0065651 — v61.0 part5: Reddit-style upvote/downvote (Karma system)
 - 76f833b — v61.0 part5+: rename 'نقاط' to 'Karma' in user-facing UI
+
+---
+Task ID: v61.0-part5-awards
+Agent: Main (Z.ai Code)
+Task: الجزء 5 (تابع) — Reddit-style Awards (جوائز المنشورات)
+
+Work Log:
+- إضافة PostAward model إلى schema:
+  * id, userId (giver), feedItemId, awardType (GOLD/SILVER/BRONZE/HELPFUL/FUNNY/WHOLESOME/INSPIRING)
+  * karmaCost (Int — deducted from giver), karmaReward (Int — added to author = 25% of cost)
+  * note (optional), createdAt
+  * @@unique([userId, feedItemId, awardType]) — one award per type per user per post
+  * Relations: user (User) + feedItem (FeedItem) — both Cascade
+  * 3 indexes
+- prisma db push على Supabase الإنتاج (9.56s)
+- prisma generate (local)
+
+- إنشاء API endpoint:
+  * POST /api/feed/[id]/award
+    - 7 أنواع جوائز: GOLD (100), SILVER (50), BRONZE (25), HELPFUL (10), FUNNY (10), WHOLESOME (15), INSPIRING (20)
+    - معاملة ذرّية (10 steps):
+      1. Validate award type
+      2. Check giver has enough Karma
+      3. Prevent self-awards (cannot award own post)
+      4. Check unique constraint (no duplicate awards)
+      5. Decrement giver's points (karmaCost)
+      6. Increment author's points (karmaReward = 25% of cost)
+      7. Create PostAward entry
+      8. PointsLedger for giver (SPEND, -cost)
+      9. PointsLedger for author (EARN, +reward)
+      10. AuditLog (feed.award)
+    - Returns: awardId, awardType, emoji, label, karmaCost, karmaReward, giverBalance, authorBalance
+  * GET /api/feed/[id]/award
+    - Returns list of awards given to a post (with giver name)
+
+- تحديث UnifiedFeed UI (Reddit-style AwardButton):
+  * Award icon (lucide) + count of awards
+  * Displays up to 3 award emojis as badges
+  * Popover with 7 award options (2-col grid)
+  * كل خيار: emoji + label + Karma cost
+  * Disabled state if user already gave that award type
+  * Loading spinner during submission
+  * Error message display
+  * Auto-closes on successful award
+  * Updates local state optimistically
+
+التحقّق الفعلي بـagent-browser + DB writes:
+
+| الخطوة | قبل | بعد | التحقّق |
+|--------|-----|------|--------|
+| Admin (giver) Karma | 191 | **181** | ✅ -10 (HELPFUL cost) |
+| هند بنشقرون (recipient) Karma | 150 | **153** | ✅ +3 (25% reward) |
+| PostAward entry | 0 | **1** | ✅ (HELPFUL, cost 10, reward 3) |
+| PointsLedger entries | 6 | **8** | ✅ +2 (SPEND -10 for admin, EARN +3 for هند) |
+| AuditLog | — | feed.award (info) | ✅ |
+| UI award popover | 7 award options rendered | ✅ |
+
+الجوائز المتاحة (Reddit-inspired):
+| النوع | emoji | التكلفة | المكافأة | اللون |
+|------|-------|--------|--------|------|
+| GOLD | 🥇 | 100 | 25 | #F5B220 |
+| SILVER | 🥈 | 50 | 12 | #9CA3AF |
+| BRONZE | 🥉 | 25 | 6 | #92400E |
+| HELPFUL | ❤️ | 10 | 3 | #DC2626 |
+| FUNNY | 😂 | 10 | 3 | #F59E0B |
+| WHOLESOME | 🌟 | 15 | 4 | #10B981 |
+| INSPIRING | 🚀 | 20 | 5 | #8B5CF6 |
+
+Stage Summary (v61.0 الجزء 5 — Karma + Voting + Awards مكتمل):
+- ✅ Upvote/Downvote (Reddit-style): schema + API + UI + 3 DB writes verified
+- ✅ Karma label: 'نقاط' → 'Karma' in 8 user-facing places
+- ✅ Awards (Reddit-style): schema + API + UI + DB writes verified
+- ✅ Atomic transactions (Karma economy: giver loses, author gains 25%)
+- ✅ AuditLog for every action (feed.upvote/downvote/unvote/award)
+- ✅ 7 award types with different costs + rewards + emojis + colors
+- ✅ Unique constraint (no duplicate awards of same type)
+- ✅ Self-award prevention
+- ✅ Optimistic updates + rollback
+- ✅ ESLint: 0 errors
+
+Commits على GitHub:
+- 0065651 — v61.0 part5: Reddit-style upvote/downvote (Karma system)
+- 76f833b — v61.0 part5+: rename 'نقاط' to 'Karma' in user-facing UI
+- f06be0a — v61.0-part5-verified: worklog (3 vote states)
+- 9f2fdaf — v61.0 part5++: Reddit-style Awards (PostAward model + API + UI)
+
+الخلاصة النهائية v61.0 (5 أجزاء كاملة):
+| الجزء | الحالة | DB Writes موثّقة |
+|------|---------|-------------------|
+| 1. Sidebar overlay fix | ✅ مكتمل + مُتحقّق | — |
+| 2. Per-section color themes | ✅ مكتمل + مُتحقّق | — |
+| 3. Unified social feed | ✅ مكتمل + مُتحقّق | — |
+| 4. Admin points management | ✅ مكتمل + مُتحقّق | ✅ 3 معاملات |
+| 5. Reddit Karma + Voting + Awards | ✅ مكتمل + مُتحقّق | ✅ 4 معاملات (vote×3 + award×1) |
+
+v61.0 مكتمل بالكامل — 5 أجزاء منفّذة + موثّقة على الإنتاج مع DB writes فعلية.
