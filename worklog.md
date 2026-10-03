@@ -8475,3 +8475,37 @@ Each click changed the content — tabs work!
 
 Commits:
 - 9186929 — v69.0 task1: restructure /community with 4 Tabs
+
+---
+Task ID: v69.0-tasks-2-3
+Agent: Main (Z.ai Code)
+Task: v69.0 Tasks 2-3 — Profile followers/following + Suggestions
+
+Task 2 — Profile Followers/Following: ✅ VERIFIED
+- Added followersCount + followingCount to User query in profile page
+- Stats bar now shows:
+  * "متابِعون" (clickable → /community/profile/followers)
+  * "متابَعون" (clickable → /community/profile/following)
+- Verified on production:
+  * hasFollowers: true ✅
+  * hasFollowing: true ✅
+  * followersLink: 1 (clickable link exists) ✅
+  * followingLink: 2 (clickable links exist) ✅
+- Both /followers and /following pages already existed from v55.0
+
+Task 3 — Suggestions (Instagram-style): ✅ VERIFIED
+- New API: GET /api/users/suggestions?limit=10
+  * Algorithm: same-district users not yet followed (ordered by points)
+  * Fallback: other-district users (ordered by followers)
+  * Excludes: already-followed + self
+- New component: src/components/community/suggestions-card.tsx
+  * Shows 5 mini cards with Avatar + name + follow button
+  * 'View all →' link to /discover
+  * Hidden if no suggestions
+- Added to community page left sidebar
+- Verified on production:
+  * hasSuggestionsCard: true (link to /discover exists) ✅
+  * Card rendered in sidebar ✅
+
+Commits:
+- d2536f6 — merge: resolve conflicts + tasks 2-3
