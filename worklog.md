@@ -7771,3 +7771,64 @@ Commits على GitHub:
 5e. LinkedIn Skills + Endorsements ✅ NEW
 
 v61.0 مكتمل بالكامل — 5 أجزاء + 5 إضافات منفّذة + موثّقة على الإنتاج مع DB writes فعلية.
+
+---
+Task ID: v61.0-part5-bookmarks
+Agent: Main (Z.ai Code)
+Task: الجزء 5 (تابع) — Bookmarks (save feed items) — working bookmark button
+
+Work Log:
+- Bookmark model موجود بالفعل (targetType + targetId generic)
+- API موجود بالفعل (POST + DELETE)
+- المشكلة: زرّ الـBookmark في UnifiedFeed كان no-op (فقط يُبدّل local state بدون API call)
+
+الإصلاحات المنفّذة:
+1. src/app/api/social/bookmark/route.ts:
+   * Added GET endpoint:
+     - If targetType + targetId: check single bookmark status
+     - Otherwise: list all user's bookmarks (filtered by targetType)
+   * Updated POST to toggle behavior:
+     - If already bookmarked: delete + return { bookmarked: false }
+     - If not: create + return { bookmarked: true }
+     (was using upsert which didn't toggle)
+
+2. src/components/community/unified-feed.tsx:
+   * Replaced generic ActionButton(Bookmark) with BookmarkButton component:
+     - Fetches bookmark status on mount (GET /api/social/bookmark)
+     - Click toggles via POST /api/social/bookmark (targetType=FeedItem)
+     - Optimistic update + rollback on error
+     - Visual: filled icon + themed color when bookmarked
+     - Title: 'حفظ' / 'إزالة من المحفوظات'
+     - Loading state during submission
+     - aria-pressed for accessibility
+
+التحقّق الفعلي بـagent-browser + DB writes:
+
+| الخطوة | قبل | بعد | التحقق |
+|--------|-----|------|--------|
+| **Click bookmark** | count: 0 | count: **1** | ✅ Bookmark created (userId + targetId + targetType=FeedItem) |
+| **Click again (toggle off)** | count: 1 | count: **0** | ✅ Bookmark deleted (toggle works) |
+
+Stage Summary:
+- ✅ Bookmark button يعمل فعلياً (was no-op)
+- ✅ Toggle behavior (save → unsave with single click)
+- ✅ GET endpoint for status check + list all bookmarks
+- ✅ Optimistic updates + rollback
+- ✅ DB writes موثّقة فعلياً (create + delete)
+
+Commits على GitHub:
+- 4d913d4 — v61.0 part5+++++: Bookmarks (save feed items) — working bookmark button
+
+الخلاصة النهائية v61.0 (5 أجزاء + 6 إضافات):
+1. Sidebar overlay fix ✅
+2. Per-section color themes ✅
+3. Unified social feed ✅
+4. Admin points management ✅
+5a. Reddit Upvote/Downvote ✅
+5b. Karma rename ✅
+5c. Reddit Awards (7 types) ✅
+5d. Challenges مع مكافآت ✅
+5e. LinkedIn Skills + Endorsements ✅
+5f. Bookmarks (save feed items) ✅ NEW
+
+v61.0 مكتمل بالكامل — 5 أجزاء + 6 إضافات منفّذة + موثّقة على الإنتاج مع DB writes فعلية.
