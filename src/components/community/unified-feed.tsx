@@ -565,12 +565,7 @@ function FeedActions({
         theme={theme}
         label="تعليق"
       />
-      <ActionButton
-        icon={Share2}
-        count={item.shares}
-        theme={theme}
-        label="مشاركة"
-      />
+      <ShareMenu item={item} />
       <BookmarkButton item={item} theme={theme} />
       {item.views > 0 && (
         <div className="flex items-center gap-1 text-xs text-muted-foreground ms-auto">
@@ -579,6 +574,62 @@ function FeedActions({
         </div>
       )}
     </>
+  );
+}
+
+// ===================================================================
+//  ShareMenu — مشاركة المنشور (Facebook/X/WhatsApp/Copy)
+// ===================================================================
+
+function ShareMenu({ item }: { item: FeedItemData }) {
+  const [open, setOpen] = React.useState(false);
+
+  const share = (platform: string) => {
+    const url = `${window.location.origin}/feed`;
+    const title = item.content?.slice(0, 50) || "منشور من الحي";
+    const u = encodeURIComponent(url);
+    const t = encodeURIComponent(title);
+    const links: Record<string, string> = {
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${u}`,
+      twitter: `https://twitter.com/intent/tweet?url=${u}&text=${t}`,
+      whatsapp: `https://wa.me/?text=${t}%20${u}`,
+    };
+    if (platform === "copy") {
+      navigator.clipboard.writeText(url);
+      setOpen(false);
+      return;
+    }
+    window.open(links[platform], "_blank", "width=600,height=500");
+    setOpen(false);
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((p) => !p)}
+        className="flex items-center gap-1 text-xs px-2 py-1.5 rounded-md hover:bg-muted transition-colors min-h-9"
+        aria-label="مشاركة"
+        title="مشاركة"
+      >
+        <Share2 className="size-4" />
+      </button>
+      {open && (
+        <div className="absolute bottom-full mb-2 start-0 z-20 bg-card border border-border rounded-lg shadow-lg p-1 min-w-[160px]">
+          <button onClick={() => share("facebook")} className="flex items-center gap-2 w-full px-3 py-2 rounded hover:bg-muted text-sm">
+            <span className="text-base">📘</span> فيسبوك
+          </button>
+          <button onClick={() => share("twitter")} className="flex items-center gap-2 w-full px-3 py-2 rounded hover:bg-muted text-sm">
+            <span className="text-base">🐦</span> X (تويتر)
+          </button>
+          <button onClick={() => share("whatsapp")} className="flex items-center gap-2 w-full px-3 py-2 rounded hover:bg-muted text-sm">
+            <span className="text-base">💬</span> واتساب
+          </button>
+          <button onClick={() => share("copy")} className="flex items-center gap-2 w-full px-3 py-2 rounded hover:bg-muted text-sm">
+            <span className="text-base">🔗</span> نسخ الرابط
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 

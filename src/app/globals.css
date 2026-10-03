@@ -1000,3 +1000,46 @@ html, body {
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
+/* v64.0 — Video sizing fix: fill container properly */
+.video-phone-frame {
+  width: 100%;
+  max-width: 100%;
+  position: relative;
+}
+@media (min-width: 768px) {
+  .video-phone-frame {
+    max-width: 480px;
+    border-radius: 1.5rem;
+  }
+}
+.video-feed-container {
+  width: 100% !important;
+}
+.video-feed-container > div {
+  width: 100% !important;
+  height: 100% !important;
+}
+.video-feed-container iframe,
+.video-feed-container video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+/* v64.0 — Video detail page (16:9 aspect ratio) */
+.video-detail-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+.video-detail-container iframe,
+.video-detail-container video {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  border: 0 !important;
+}
