@@ -2261,9 +2261,34 @@ model Region {
   id        String  @id @default(cuid())
   name      String
   nameAr    String
+  nameFr    String?
+  code      String?  // HCP code
   slug      String  @unique
+  population Int?
+  latitude  Float?
+  longitude Float?
+  provinces Province[]
   cities    City[]
   createdAt DateTime @default(now())
+}
+
+// v70.0: Province/Préfecture (83) — المستوى الإداري الثاني
+model Province {
+  id        String  @id @default(cuid())
+  name      String
+  nameAr    String
+  nameFr    String?
+  code      String?  // HCP code
+  slug      String  @unique
+  regionId  String
+  region    Region  @relation(fields: [regionId], references: [id])
+  population Int?
+  latitude  Float?
+  longitude Float?
+  cities    City[]
+  createdAt DateTime @default(now())
+
+  @@index([regionId])
 }
 
 model City {
@@ -2274,6 +2299,8 @@ model City {
   slug        String   @unique
   regionId    String?
   region      Region?  @relation(fields: [regionId], references: [id])
+  provinceId String?
+  province    Province? @relation(fields: [provinceId], references: [id])
   population  Int?
   latitude    Float?
   longitude   Float?
