@@ -8599,3 +8599,53 @@ Features verified on production:
 30. ✅ Performance: TTFB 11ms, Load 1.3s, 25KB transfer (v67.0)
 
 Platform is production-ready with 30+ features.
+
+---
+Task ID: v70.0
+Agent: Main (Z.ai Code)
+Task: v70.0 — التحول إلى شبكة تواصل مغربية وطنية (Sections 1-2)
+
+Section 1 — Brand Identity: ✅
+- Name: وَصَل (Wassal) — "to connect, to reach, to link"
+- Tagline: "من طنجة إلى الكويرة، من حي إلى وطن"
+- package.json: name = "wassal"
+- layout.tsx metadata updated:
+  * title: "وَصَل — الشبكة الاجتماعية المغربية" ✅
+  * description: "وَصَل — منصة مغربية للتعارف والتضامن والتبادل..."
+  * keywords: وصل, شبكة اجتماعية مغربية, التعارف, التضامن, المغرب, الوداديات, الجمعيات, التعاونيات, المغاربة, المهجر
+  * applicationName: وَصَل ✅
+  * openGraph title: "وَصَل — الشبكة الاجتماعية المغربية" ✅
+  * twitter title: updated ✅
+  * appleWebApp title: وَصَل ✅
+- BRAND.md created (brand identity guide)
+
+Production verification:
+- title: "وَصَل — الشبكة الاجتماعية المغربية" ✅
+- metaDesc: "وَصَل — منصة مغربية للتعارف..." ✅
+- appName: "وَصَل" ✅
+- ogTitle: "وَصَل — الشبكة الاجتماعية المغربية" ✅
+
+Section 2 — GIS Expansion: ✅
+- New Prisma model: Province (83 planned, 30 seeded)
+  * Fields: id, name, nameAr, nameFr, code (HCP), slug, regionId
+  * + population, latitude, longitude
+  * Relations: region (Region) + cities (City[])
+- Updated Region model: added nameFr, code, population, lat/lng, provinces[]
+- Updated City model: added provinceId + province relation
+- prisma db push on Supabase (9.92s) ✅
+- Seed script: prisma/seed-provinces.ts (~180 lines)
+  * 12 regions with official HCP province data
+  * 30 provinces seeded (partial — 53 remaining can be added)
+  * City-to-province linking by name match
+- Final DB counts:
+  * Regions: 13 (12 official + 1 from earlier)
+  * Provinces: 30 (new)
+  * Cities: 50 (existing)
+  * Districts: 5 (existing)
+
+Commits:
+- 882b404 — v70.0: brand rename to وَصَل + Province model + GIS expansion
+
+Hierarchical GIS now:
+Country (MA) → Region (12) → Province (30+) → City (50) → District (5)
+Next steps: seed remaining 53 provinces + 1503 communes + add geo APIs
