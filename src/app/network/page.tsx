@@ -49,7 +49,7 @@ export default async function NetworkPage() {
       const candidatesRaw = await db.user.findMany({
         where: {
           id: { not: me.id },
-          isActive: true,
+          status: { not: "SUSPENDED" },
           OR: [
             { profileTags: { some: {} } },
             ...(meFull.regionId ? [{ regionId: meFull.regionId }] : []),
@@ -116,7 +116,6 @@ export default async function NetworkPage() {
   const publicFigures = me
     ? []
     : await db.user.findMany({
-        where: { isActive: true },
         take: 6,
         orderBy: { createdAt: "desc" },
         select: {
@@ -131,7 +130,7 @@ export default async function NetworkPage() {
 
   // Stats
   const stats = {
-    members: await db.user.count({ where: { isActive: true } }),
+    members: await db.user.count(),
     organizations: await db.organization.count({ where: { isActive: true } }),
     regions: await db.region.count(),
     communes: await db.commune.count(),

@@ -2270,6 +2270,12 @@ model Region {
   cities        City[]
   communes      Commune[]
   organizations Organization[]
+  solidarityOffers SolidarityOffer[]
+  solidarityNeeds  SolidarityNeed[]
+  civicReports   CivicReport[]
+  audioRooms     AudioRoom[]
+  crises         Crisis[]
+  sosAlerts      SosAlert[]
   createdAt     DateTime @default(now())
 }
 
@@ -2578,4 +2584,415 @@ model ResourceVote {
 
   @@unique([resourceId, userId])
   @@index([resourceId])
+}
+
+// ===================================================================
+//  v71.0 Section 7 — Solidarity Match Engine
+//  Bidirectional offers/needs marketplace with smart matching
+//  Inspired by TimeBanks USA + Mutual Aid Networks
+// ===================================================================
+
+model SolidarityOffer {
+  id            String   @id @default(cuid())
+  userId        String?                       // nullable for guest submissions
+  userName      String?
+  title         String
+  description   String?
+  category      String   @default("skill")     // skill | good | time | service | shelter
+  tags          String?                        // comma-separated
+  // Geographic scope
+  communeId     String?
+  provinceId     String?
+  regionId      String?
+  region        Region?  @relation(fields: [regionId], references: [id])
+  // Match criteria
+  estimatedValueHours Float?                   // for time-banking equivalence
+  isUrgent      Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  isFulfilled  Boolean  @default(false)
+  fulfilledAt  DateTime?
+  // Metadata
+  publishedAt   DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([category])
+  @@index([regionId])
+  @@index([publishedAt])
+}
+
+model SolidarityNeed {
+  id            String   @id @default(cuid())
+  userId        String?
+  userName      String?
+  title         String
+  description   String?
+  category      String   @default("skill")
+  tags          String?
+  communeId     String?
+  provinceId    String?
+  regionId      String?
+  region        Region?  @relation(fields: [regionId], references: [id])
+  estimatedValueHours Float?
+  isUrgent      Boolean  @default(true)
+  isActive     Boolean  @default(true)
+  isFulfilled  Boolean  @default(false)
+  fulfilledAt  DateTime?
+  matchedOfferId String?
+  publishedAt   DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([category])
+  @@index([regionId])
+  @@index([publishedAt])
+}
+
+model SwapLedger {
+  id            String   @id @default(cuid())
+  offerId      String
+  needId       String?
+  fromUserId    String?
+  toUserId      String?
+  fromName      String?
+  toName        String?
+  hoursExchanged Float
+  description   String?
+  status        String   @default("pending")    // pending | confirmed | completed | disputed
+  confirmedAt   DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([offerId])
+  @@index([fromUserId])
+  @@index([toUserId])
+}
+
+// ===================================================================
+//  v71.0 Section 8 — Civic Reporting (FixMyStreet-style)
+//  Report infrastructure issues + track to resolution
+// ===================================================================
+
+model CivicReport {
+  id            String   @id @default(cuid())
+  reportNumber  String   @unique               // readable: CR-MA-YYYY-XXXX
+  title         String
+  description   String?
+  category      String                          // pothole | lighting | waste | water | road | park | other
+  status        String   @default("submitted") // submitted | verified | assigned | in_progress | resolved | rejected
+  priority      String   @default("normal")    // low | normal | high | critical
+  // Location
+  latitude      Float?
+  longitude     Float?
+  address       String?
+  communeId     String?
+  provinceId    String?
+  regionId      String?
+  region        Region?  @relation(fields: [regionId], references: [id])
+  // Reporter
+  reportedById  String?
+  reportedByName String?
+  contactPhone   String?
+  // Photo evidence
+  photoUrl      String?
+  // Assignment / resolution
+  assignedTo    String?                          // commune/contractor name
+  assignedAt    DateTime?
+  resolvedAt    DateTime?
+  resolutionNote String?
+  // Voting
+  upvotes      Int      @default(0)
+  viewsCount   Int      @default(0)
+  // Metadata
+  isVerified    Boolean  @default(false)         // verified by moderator
+  isActive      Boolean  @default(true)
+  publishedAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([status])
+  @@index([category])
+  @@index([regionId])
+  @@index([publishedAt])
+}
+
+// ===================================================================
+//  v71.0 Section 9 — Trust Score (composite)
+// ===================================================================
+
+model TrustEvent {
+  id            String   @id @default(cuid())
+  userId        String
+  eventType     String                            // karma | verified | endorsement | tenure | civic_report | swap_complete
+  delta         Int      @default(0)
+  description   String?
+  source        String?                            // 'system' | 'admin' | 'cron'
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([eventType])
+}
+
+// ===================================================================
+//  v71.0 Section 10 — Voice Notes / Audio Rooms (Clubhouse-style)
+// ===================================================================
+
+model AudioRoom {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  topic         String?                            // main topic tag
+  hostId        String?
+  hostName      String?
+  coHostIds     String?                            // comma-separated user IDs
+  scheduledFor  DateTime?
+  startedAt     DateTime?
+  endedAt       DateTime?
+  // LiveKit room name (LiveKit is managed service; we store room name + token reference)
+  livekitRoomName String?
+  // Participants stats
+  peakListeners Int      @default(0)
+  currentListeners Int   @default(0)
+  speakersCount Int      @default(0)
+  // Geographic scope (optional — e.g., "تضامن الحسيمة")
+  regionId      String?
+  region        Region?  @relation(fields: [regionId], references: [id])
+  // Access
+  isLive        Boolean  @default(false)
+  isPublic      Boolean  @default(true)
+  isActive      Boolean  @default(true)
+  recordingUrl  String?
+  transcriptUrl String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([isLive])
+  @@index([scheduledFor])
+  @@index([regionId])
+}
+
+// ===================================================================
+//  v71.0 Section 11 — Disaster Response Module
+//  Crisis + ResourceNeeds + MissingPersons + VolunteerSlots + SOS
+// ===================================================================
+
+model Crisis {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  crisisType    String                              // earthquake | flood | fire | storm | drought | other
+  severity      String   @default("moderate")        // low | moderate | high | critical
+  status        String   @default("active")          // active | contained | resolved | closed
+  // Geographic scope
+  regionId      String?
+  region        Region?  @relation(fields: [regionId], references: [id])
+  provinceIds   String?                              // comma-separated province IDs affected
+  communeIds    String?
+  // Location
+  latitude      Float?
+  longitude     Float?
+  // Tracking
+  affectedPeople Int?
+  casualties    Int?
+  startedAt     DateTime @default(now())
+  containedAt   DateTime?
+  resolvedAt    DateTime?
+  // Verification
+  isVerified    Boolean  @default(false)
+  verifiedBy    String?
+  verifiedAt    DateTime?
+  sourceUrl     String?                              // official source link (HCP/CRTS/Ministry)
+  // Metadata
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  resourceNeeds ResourceNeed[]
+  volunteerSlots VolunteerSlot[]
+
+  @@index([status])
+  @@index([crisisType])
+  @@index([regionId])
+}
+
+model ResourceNeed {
+  id            String   @id @default(cuid())
+  crisisId      String
+  crisis        Crisis   @relation(fields: [crisisId], references: [id], onDelete: Cascade)
+  category      String                              // water | food | medical | shelter | clothing | fuel | tools
+  description   String?
+  quantityNeeded Int     @default(1)
+  quantityFulfilled Int  @default(0)
+  unit          String?                              // "liters", "meals", "kits"
+  urgency       String   @default("high")           // low | medium | high | critical
+  fulfilledBy   String?                              // org or donor name
+  fulfilledAt   DateTime?
+  isFulfilled   Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([crisisId])
+  @@index([category])
+  @@index([urgency])
+}
+
+model VolunteerSlot {
+  id            String   @id @default(cuid())
+  crisisId      String
+  crisis        Crisis   @relation(fields: [crisisId], references: [id], onDelete: Cascade)
+  role          String                               // medic | driver | translator | coordinator | logistics | search_rescue
+  description   String?
+  slotsNeeded   Int      @default(1)
+  slotsFilled   Int      @default(0)
+  organizationId String?                             // partner org, nullable
+  isFilled      Boolean  @default(false)
+  startsAt      DateTime?
+  endsAt        DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([crisisId])
+  @@index([role])
+}
+
+model MissingPerson {
+  id            String   @id @default(cuid())
+  crisisId      String?
+  fullName      String
+  age           Int?
+  gender        String?
+  description   String?
+  photoUrl      String?
+  lastSeenLocation String?
+  lastSeenAt    DateTime?
+  contactName   String?
+  contactPhone  String?
+  status        String   @default("missing")          // missing | found | reunited | deceased
+  isVerified    Boolean  @default(false)
+  matchedFoundId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([status])
+  @@index([crisisId])
+}
+
+model SosAlert {
+  id            String   @id @default(cuid())
+  alertNumber   String   @unique                      // SOS-MA-YYYY-XXXX
+  userId        String?
+  userName      String?
+  userPhone     String?
+  // Location
+  latitude      Float?
+  longitude     Float?
+  address       String?
+  regionId      String?
+  region        Region?  @relation(fields: [regionId], references: [id])
+  // Trigger
+  triggerType   String   @default("manual_long_press") // manual_long_press | voice_command | sms_code
+  audioUrl      String?                                  // 3s audio confirmation (anti-false-alarm)
+  // Status
+  status        String   @default("active")            // active | responded | resolved | cancelled | false_alarm
+  respondedAt   DateTime?
+  resolvedAt    DateTime?
+  responseNote  String?
+  // Verification
+  isVerified    Boolean  @default(false)              // 2-step verify (long press + audio)
+  // Metadata
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([status])
+  @@index([regionId])
+  @@index([createdAt])
+}
+
+// ===================================================================
+//  v71.0 Section E — Time Banking (بنك الوقت)
+//  Inspired by TimeBanks USA + hOurworld Community Weaver
+//  1 hour = 1 time-credit (egalitarian, non-monetary)
+// ===================================================================
+
+model TimeOffer {
+  id            String   @id @default(cuid())
+  userId        String
+  // user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title         String                          // "أعطي دروس في اللغة الإنجليزية"
+  description   String?
+  category      String   @default("general")    // education | tech | health | craft | transport | other
+  hoursOffered  Float    @default(1.0)           // how many hours the user offers
+  regionId      String?
+  regionName    String?                          // denormalized
+  provinceName  String?
+  communeName   String?
+  status        String   @default("open")        // open | matched | completed | cancelled
+  matchedWith   String?                          // userId of the matched requester
+  transactions  TimeTransaction[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([category])
+}
+
+model TimeRequest {
+  id            String   @id @default(cuid())
+  userId        String
+  // user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title         String                          // "أحتاج مساعدة في ملأ طلب عمل"
+  description   String?
+  category      String   @default("general")
+  hoursNeeded   Float    @default(1.0)
+  urgency       String   @default("normal")    // low | normal | high | urgent
+  regionId      String?
+  regionName    String?
+  provinceName  String?
+  communeName   String?
+  status        String   @default("open")       // open | matched | fulfilled | cancelled
+  matchedWith   String?                          // userId of the matched offerer
+  transactions  TimeTransaction[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([urgency])
+  @@index([category])
+}
+
+model TimeTransaction {
+  id            String    @id @default(cuid())
+  offerId       String
+  request       TimeRequest @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  offer         TimeOffer   @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  giverId       String                            // userId of the offerer
+  receiverId    String                            // userId of the requester
+  hours         Float                              // actual hours exchanged
+  status        String    @default("pending")   // pending | completed | disputed | cancelled
+  rating        Int?                               // 1-5 stars rating after completion
+  feedback      String?
+  occurredAt    DateTime @default(now())
+  completedAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([giverId])
+  @@index([receiverId])
+  @@index([status])
+}
+
+model TimeLedger {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  // user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creditHours   Float    @default(0)            // hours given to others
+  debitHours    Float    @default(0)             // hours received from others
+  balance       Float    @default(0)            // credit - debit (can be negative — egalitarian)
+  transactionCount Int @default(0)
+  updatedAt     DateTime @updatedAt
 }

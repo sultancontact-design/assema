@@ -43,7 +43,7 @@ export async function GET(req: Request) {
     const candidatesRaw = await db.user.findMany({
       where: {
         id: { not: me.id },
-        isActive: true,
+        status: { not: "SUSPENDED" },
         OR: [
           { profileTags: { some: {} } },
           ...(me.regionId ? [{ regionId: me.regionId }] : []),

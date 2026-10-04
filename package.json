@@ -98,6 +98,7 @@
     "serwist": "^9.5.12",
     "sharp": "^0.34.3",
     "smtp-server": "^3.19.13",
+    "socket.io-client": "^4.8.4",
     "sonner": "^2.0.6",
     "speakeasy": "^2.0.0",
     "tailwind-merge": "^3.3.1",

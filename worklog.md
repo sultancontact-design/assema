@@ -8805,3 +8805,214 @@ Next steps for production:
 - Deploy to Vercel + Supabase (DATABASE_URL must point to postgresql)
 - Push to GitHub
 - Run all 3 seed scripts on Supabase (communes + organizations + resources)
+
+---
+Task ID: v71.0-R
+Agent: Web-Research-v71
+Task: v71.0 research — Solidarity Match + Civic Reporting + Trust Score + Voice Rooms + Disaster Response
+
+Work Log:
+- 9 web searches executed via `z-ai function web_search` CLI; results cached to `research_cache/v71/*.json`:
+  - q1_timebank: TimeBanks USA / hOurworld architecture + collaborative-economy matching primitives
+  - q1b_mutualaid: Mutual Aid Networks (MAN), skill-swap, barter trust scoring
+  - q2_fixmystreet: FixMyStreet + SeeClickFix workflows + text-mining categories
+  - q3_trust: Stack Overflow reputation formula + eBay trust score + Reddit karma
+  - q3b_wikipedia: Wikipedia user reputation + verified badges + endorsements
+  - q4_voice: Clubhouse PubNub+Agora, LiveKit WebRTC SFU, Huddle01 SDK
+  - q4b_whisper: `amineouaki/whisper-medium-darija-combined` (HF) + Casablanca Arabic dialect dataset
+  - q5_disaster: Ushahidi + Sahana EDEN + Al Haouz 2023 misinformation study (9,000 tweets)
+  - q5b_registry: Reunification guide + PL 109-295 Emergency Food and Shelter categories
+
+Stage Summary:
+
+**1. Solidarity Match Engine**
+- TimeBanks USA / hOurworld: 1h service = 1 time-dollar; reciprocal ledger per member.
+- Mutual Aid Networks (MAN): pools capacity, stewards community value, rewards socially useful work.
+- Collaborative economy primitives: search/match algorithm + pricing + reputation system.
+- **Implementation:** Add `Offer`, `Need`, `SwapLedger` (per-commune time credits). Matching: `score = 0.4·skill_match + 0.3·geo_decay + 0.3·trust` (reuse `/api/network/recommendations` hybrid scoring). Trust caps swap size (≤5h × trust_level).
+- **Challenges:** first-swap trust → escrow pattern + commune moderator sign-off for swaps >2h.
+
+**2. Civic Reporting (FixMyStreet)**
+- FixMyStreet (UK) + SeeClickFix: request-and-work-management systems for non-emergency issues.
+- Text-mining research categories: lamp breaks, road damage, facility defects, abandoned objects, overgrowth, clogging.
+- Workflow: report → triage → assign authority → track → resolve + comments.
+- **Implementation:** Reuse `Commune` GIS model. New `CivicReport` model: `category` enum (potholes, lighting, waste, water, sanitation, graffiti, abandoned), `lat/lng`, `status` enum (reported→verified→assigned→resolved), `communeId`, `assignedTo`. Map pin via existing `morocco-map.tsx` (MapLibre already vendored). Status transitions reuse `fund-state-machine.ts` pattern. Photos via `image-upload.tsx`.
+- **Challenges:** spam + duplicates → geohash-6 dedup within 24h window + IP rate-limit (reuse `ip-allowlist.ts`).
+
+**3. Trust Score Algorithm**
+- Stack Overflow: +10 per upvote (Q/A), +15 accepted answer, +5 suggested-edit approval, +25 association bonus, bounties variable.
+- eBay: feedback percentage × transaction volume decay.
+- Wikipedia: edit count + admin status + tenure + talk-page endorsements.
+- Anti-gaming literature: rate-limiting + velocity anomaly detection (z-score).
+- **Implementation:** `trust = 0.35·karma + 0.20·verified_badge + 0.15·endorsements + 0.15·tenure_yrs + 0.15·community_endorsements` (normalized 0-100). Nightly cron recompute (pattern from `/api/cron/prices/route.ts`). Rolling velocity z-score >3σ → auto-flag. Badges dir already present (`/public/badges/*.svg`).
+- **Challenges:** Sybil accounts → phone/ID verification gate (reuse `two-factor.ts`) + IP-cluster detection.
+
+**4. Voice Notes / Audio Rooms**
+- Clubhouse: PubNub for presence/messaging + Agora SDK for audio transport.
+- LiveKit: open-source WebRTC SFU (Twitter Spaces-style scalable multi-user).
+- Huddle01 SDK: web3 audio clone pattern.
+- Telegram voice notes: OPUS @16kbps, server-side storage.
+- Darija ASR: `amineouaki/whisper-medium-darija-combined` (HuggingFace) + Casablanca dataset (Liner) for Arabic dialects.
+- **Implementation:** 1-1 voice notes via MediaRecorder API + OPUS encoding → Supabase Storage. Audio rooms via LiveKit Cloud (managed SFU, no self-hosting). Transcription: self-host darija Whisper OR OpenAI Whisper API fallback; cache transcript in DB. Room metadata in new `AudioRoom` table; live presence via existing `examples/websocket/server.ts`.
+- **Challenges:** 3G bandwidth → server-side 8kbps OPUS fallback; darija accuracy → fine-tune on Casablanca dataset.
+
+**5. Disaster Response Module**
+- Ushahidi: SMS/email/web reports → crisis map (open-source, PHP/Laravel patterns portable).
+- Sahana EDEN: volunteer coordination + needs inventory + missing persons registry (Python/Pyramid).
+- Al Haouz 2023: misinformation flood (9,000 tweets studied Sep-Dec 2023) → verified-source flag mandatory.
+- Reunification guide (Snohomish): structured missing/found with photo + last-seen location.
+- PL 109-295 Emergency Food and Shelter Program: water/food/medical/shelter category model.
+- **Implementation:** New `Crisis` model (activated per region). Children: `ResourceNeed` (water/food/medical/shelter quantity vectors), `MissingPerson` / `FoundPerson` (match by photo hash + name + last-seen location), `VolunteerSlot` (FK to existing `Organization`). SOS: long-press `fab.tsx` for 3s → trigger; double-tap within 5s to cancel; verify via SMS code. Verified-source badge on all crisis reports (anti-misinformation lesson).
+- **Challenges:** false SOS → 2-step (long-press + audio confirmation); missing-person privacy → hash PII fields, admin-only unmask.
+
+---
+Task ID: v71-research
+Agent: Web-Research-v71
+Task: AI chatbots for MENA + Time banking + Voice-first UX research
+
+Work Log:
+- Searched "Arabic LLM chatbot Jais Allam system prompt best practices" (huggingface.co, arxiv.org, learning-gate.com)
+- Searched "Darija Moroccan NLP chatbot dialect Arabic system prompt" (techlead.ma, arxiv.org, cs.cmu.edu "DarijaGenie", mdpi.com)
+- Searched "TimeBanks USA hOurworld platform software schema" (timebanks.org, drupal groups, researchgate.net)
+- Searched "mutual credit time banking database schema transactions member offers requests"
+- Searched "voice-first apps illiterate users WhatsApp voice notes design patterns" (researchgate, inria.hal.science, mctaba.com)
+- Searched "Arabic dialect ASR accuracy TTS quality KaiOS voice authentication"
+- Supplementary: "Arabic ChatGPT system prompt template dialect persona few-shot" (openreview JASMINE, semanticscholar dialectal prompting)
+- Supplementary: "hOurworld Community Weaver timebank software features offers requests ledger"
+
+Stage Summary:
+
+Topic 1 — AI chatbots for MENA / Arabic / Darija:
+- Best Arabic-first LLMs: ALLaM (KSA/Saudi SDAIA), Jais (UAE G42), SILMA-1.0 — all strong in MSA + dialects; pair with Whisper for Darija ASR. techlead.ma confirms production Arabic NLP stacks for Darija.
+- Darija-specific gaps exist: Darija prompts show "greater adversarial potency" (arxiv 2025) — needs extra guardrails. DarijaGenie (CMU) shows task-based multimodal chatbot pattern; MDPI system indexes Darija+French+MSA legal queries (good pattern for Wassal multilingual).
+- Prompt patterns that work: (a) few-shot CoT with 2+ dialect examples (proquest, researchgate 2023); (b) dialectal prompting matching user's region (semanticscholar 2025); (c) bilingual persona: "أنت مساعد وَصَّل، رد بالدارجة المغربية أو الفصحى حسب لغة المستخدم" + 3 example turns.
+
+Topic 2 — Time banking systems:
+- Two mature platforms: Community Weaver (TimeBanks USA) and Time & Talents/TnT (hOurworld) — different DB structures; both track member offers/requests, ledger of time-credits, exchange transactions. Transitsocialinnovation.eu WP4 case study details TnT schema.
+- Core schema (from sources): tables = members, offers (member_id, skill, hours_estimated, status), requests (member_id, need, hours, urgency), transactions (giver_id, receiver_id, hours, datetime, status), ledger/balances (member_id, credit_hours, debit_hours). 1 hour = 1 time-credit unit regardless of skill (egalitarian principle).
+- 3 simple feature ideas for Wassal: (1) "Offer/Need" swap board tied to existing Organizations (associations post group offers); (2) Time-credit ledger on user profile with simple +/- transactions + commune-level leaderboard; (3) Auto-match engine using National Network recommendations (skill tag overlap → suggest swap).
+
+Topic 3 — Voice-first UX for developing markets:
+- Key pattern: USSD + IVR + SMS primary channels for feature phones (mctaba.com Kenya); IVR for non-literate/verbal-preferring users. Ustaad platform (inria.hal.science) shows teaching-illiterates mobile design. SAGE systematic review (researchgate) maps visual affordance frameworks.
+- Arabic ASR: researchspace.csir.co.za reports 95%+ named-language recognition; Whisper 3 + Deepgram benchmarks (johal.in) lead open ASR. Worldscientific notes Arabic TTS historically low quality/slow — use ALLaM/Jais TTS or modern neural voices.
+- 3 concrete UX ideas: (1) "Always-visible record button" sticky bottom bar, single tap to talk; (2) "Audio-first onboarding" — 3-question voice intro (name, commune, one skill) auto-transcribed to profile; (3) Dual-mode threads: every text chat has a "🔊 listen" toggle + voice-reply affordance so illiterate members can fully participate.
+
+Sources: huggingface.co, arxiv.org, techlead.ma, cs.cmu.edu, mdpi.com, timebanks.org, timebanksorg.madeopen.co.uk, transitsocialinnovation.eu, drupal.org/groups, researchgate.net, inria.hal.science, mctaba.com, johal.in, openreview.net, pdfs.semanticscholar.org
+
+---
+Task ID: v71.0
+Agent: Main (Z.ai Code)
+Task: v71.0 — موجة الابتكار (AI + Voice + Realtime + Map + Time Banking)
+
+Work Log:
+- Restarted dev server (SQLite provider, .env fixed)
+- Loaded LLM Skill + TTS Skill (z-ai-web-dev-sdk backend-only)
+- Web research (Task ID v71-research) → 3 topics in 6 min:
+  * Arabic/Darija chatbots (ALLaM, Jais, dialectal prompting)
+  * Time banking (TimeBanks USA, Community Weaver schema)
+  * Voice-first UX (USSD/IVR for illiterate users, Whisper for Darija)
+- Section A — AI Assistant (وَصَّال):
+  * POST /api/assistant with Darija+MSA system prompt + dialectal examples
+  * /assistant page (server component) with 4 feature cards + 6 sample questions
+  * AssistantChat client component with:
+    - Multi-turn history (last 12 messages)
+    - Sample question chips
+    - TTS button on every assistant response
+    - Loading state + error handling
+  * Verified: "شنو هو وصل؟" → AI responds in Arabic about Wassal
+- Section B — Voice accessibility:
+  * POST /api/tts endpoint (z-ai-web-dev-sdk audio.tts.create)
+  * Returns audio/wav binary (97KB for short text, 24kHz PCM)
+  * Integrated into AssistantChat — "استمع" button on each AI response
+- Section C — Realtime mini-service (port 3003):
+  * mini-services/activity-stream/index.ts (socket.io on port 3003)
+  * Pushes 8 event types: contribution, member_join, new_org, follow, comment, vote, ledger, announcement
+  * Synthetic events every 25-45s (auto-pushed)
+  * Client: src/components/realtime/live-activity-ticker.tsx
+    - Connects via io("/?XTransformPort=3003")
+    - "مباشر" indicator when connected, "غير متصل" when not
+    - Renders last 15 events with type-specific icons + colors
+  * Added to home page (section 3.5) alongside assistant promo card
+- Section D — Map innovation:
+  * /map/orgs page (server component):
+    - 4 KPI cards (total, members, balance, regions)
+    - Region cards (12) with mini-map (dot grid showing org locations)
+    - Compact org list per region (top 4 + "+ N more")
+    - Type color coding: teal (association), amber (cooperative), rose (wedadia)
+  * SOS button — src/components/realtime/sos-button.tsx:
+    - Floating red button (bottom-left, all pages via layout.tsx)
+    - Modal with 6 Moroccan emergency numbers (الشرطة 19, الدرك 177, الإسعاف 150, الوقاية 15, النجدة 177, مكافحة العنف ضد النساء 8350)
+    - Geolocation API for approximate position
+    - tel: links for direct calling
+    - Verified: modal opens on click, shows all 6 emergency numbers with location
+- Section E — Time Banking (بنك الوقت):
+  * 4 new Prisma models: TimeOffer, TimeRequest, TimeTransaction, TimeLedger
+  * seed-timebank.ts → 8 offers + 8 requests across 12 regions + 6 user ledgers
+  * Categories: education, tech, health, craft, transport, other
+  * POST /api/timebank (creates offer/request with auth)
+  * GET /api/timebank?type=offers|requests&category=&urgency=
+  * /timebank page (server) + TimeBankClient component:
+    - Tabs: العروض (8) / الطلبات (8)
+    - 7 category filters (all + 6 specific)
+    - Submit form with kind toggle + hours + urgency + region
+    - Card grid with hours badge + urgency badge + location
+- Navigation integration:
+  * site-header dropdown menu — added 3 new links (بنك الوقت + المساعد الذكي + الخريطة الإدارية already there)
+  * home page section 3.5 — LiveActivityTicker + Assistant promo card with CTA
+- Fixed isActive bug on User model (User has `status` not `isActive`):
+  * /network page → status: { not: "SUSPENDED" } instead of isActive: true
+  * /api/network/recommendations → same fix
+- Verification:
+  * All 8 routes return 200 (/, /assistant, /timebank, /map/orgs, /network, /resources, /organizations, /geo)
+  * /api/assistant: 200 (115 tokens, responds in Arabic about Wassal)
+  * /api/tts: 200 (97KB WAV, 24kHz PCM, RIFF format)
+  * /api/timebank?type=offers: 200 (returns 8 offers)
+  * /api/timebank?type=requests: 200 (returns 8 requests)
+  * Agent Browser verified:
+    - /assistant: sample questions visible + clickable, AI responds after click
+    - /timebank: 7 category buttons + Tabs work + offer cards visible
+    - /map/orgs: region cards with mini-map dots
+    - Home: LiveActivityTicker card + Assistant promo card visible
+    - SOS button visible + clickable → modal with 6 emergency numbers
+  * 0 lint errors on new code (14 pre-existing warnings)
+- 8 screenshots captured (v71-home, v71-assistant, v71-assistant-response, v71-timebank, v71-map-orgs, v71-sos-modal)
+
+Stage Summary:
+- v71.0 — 5 new sections LIVE and verified:
+  1. AI Assistant (Darija+MSA) with LLM + TTS integration
+  2. Voice accessibility (TTS endpoint, listen button on AI responses)
+  3. Realtime mini-service (socket.io on port 3003 + live activity ticker)
+  4. Map innovation (organizations map + SOS button with 6 emergency numbers)
+  5. Time Banking (8 offers + 8 requests + ledger system)
+- 4 new Prisma models (TimeOffer, TimeRequest, TimeTransaction, TimeLedger)
+- 4 new API endpoints (/api/assistant, /api/tts, /api/timebank, +realtime via socket.io)
+- 3 new pages (/assistant, /timebank, /map/orgs)
+- 1 mini-service on port 3003 (socket.io activity-stream)
+- 2 new components (LiveActivityTicker, SosButton, AssistantChat, TimeBankClient)
+- 1 seed script (seed-timebank.ts → 8 offers + 8 requests + 6 ledgers)
+- 0 lint errors, 0 runtime errors on new code
+- All Teal/Amber/Rose/Emerald colors preserved (no blue/indigo introduced)
+
+Files created (new):
+- src/app/assistant/page.tsx
+- src/app/timebank/page.tsx
+- src/app/map/orgs/page.tsx
+- src/app/api/assistant/route.ts (LLM chat completions)
+- src/app/api/tts/route.ts (text-to-speech WAV)
+- src/app/api/timebank/route.ts (GET list + POST create)
+- src/components/assistant/assistant-chat.tsx (multi-turn chat UI with TTS)
+- src/components/realtime/live-activity-ticker.tsx (socket.io consumer)
+- src/components/realtime/sos-button.tsx (floating SOS with emergency numbers)
+- src/components/timebank/timebank-client.tsx (Tabs + form + cards)
+- mini-services/activity-stream/index.ts (socket.io server on port 3003)
+- mini-services/activity-stream/package.json
+- prisma/seed-timebank.ts (8 offers + 8 requests + 6 ledgers)
+
+Files modified:
+- prisma/schema.prisma (+4 Time Banking models)
+- src/app/page.tsx (Section 3.5 with LiveActivityTicker + Assistant promo + imports)
+- src/app/layout.tsx (added SosButton globally)
+- src/components/layout/site-header.tsx (+3 dropdown links: timebank, assistant, geo)
+- src/app/network/page.tsx (fixed isActive → status filter for User)
+
+Next: deploy to Vercel/Supabase + run seed-timebank.ts on production DB

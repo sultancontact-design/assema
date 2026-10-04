@@ -20,6 +20,8 @@ import {
   Lock,
   Handshake,
   Github,
+  Bot,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,6 +39,7 @@ import {
   HomeLiveStatsSkeleton,
 } from "@/components/community/home-live-stats";
 import { HomePrinciples } from "@/components/community/home-principles";
+import { LiveActivityTicker } from "@/components/realtime/live-activity-ticker";
 import { ActivityTicker } from "@/components/community/activity-ticker";
 import { FomoBanner } from "@/components/community/fomo-banner";
 import {
@@ -755,6 +758,29 @@ export default async function HomePage() {
         aria-label="آخر نشاطات الحي"
       >
         <ActivityTicker />
+      </section>
+
+      {/* ─────────── 3.5. Live Activity Ticker (v71.0 — realtime) ─────────── */}
+      <section className="container-fluid pb-6">
+        <div className="grid md:grid-cols-2 gap-4 items-start">
+          <LiveActivityTicker />
+          <Card className="bg-gradient-to-br from-amber-50/30 to-background dark:from-amber-950/10 border-amber-300/40">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="h-5 w-5 text-amber-600" />
+                <h3 className="font-semibold text-sm">جرّب وَصَّال — المساعد الذكي</h3>
+                <Badge variant="outline" className="text-[10px] mr-auto">v71</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                مساعد ذكي يجاوب بالدارجة والفصحى. اسأله أي سؤال عن المنصة، الجمعيات، التعاونيات، أو الإجراءات المغربية.
+              </p>
+              <Link href="/assistant" className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-teal-700 text-white text-xs hover:bg-teal-800 transition-colors">
+                <Bot className="h-3.5 w-3.5" />
+                ابدأ المحادثة
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
       </section>
 
       {/* ─────────── 4. بانر الإلحاح الأخلاقي ─────────── */}

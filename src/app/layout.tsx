@@ -16,6 +16,7 @@ import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/layout/theme-provider";
 import { SessionProvider } from "@/components/providers/session-provider";
 import { AppChrome } from "@/components/layout/app-chrome";
+import { SosButton } from "@/components/realtime/sos-button";
 import { AdsProvider, type AdPlacementType } from "@/components/ads/ads-provider";
 import { db } from "@/lib/db";
 
@@ -190,6 +191,7 @@ export default async function RootLayout({
               slots={adsense.slots}
             >
               <AppChrome>{children}</AppChrome>
+              <SosButton />
               <Toaster />
               <SonnerToaster position="top-center" />
             </AdsProvider>

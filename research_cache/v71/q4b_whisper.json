@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://huggingface.co",
+    "name": "amineouaki/whisper-medium-darija-combined at a085813",
+    "snippet": "Aug 2, 2026 — Automatic Speech Recognition . Arabic whisper darija moroccan - arabic Eval Results (legacy) Model card a085813 (dialecte marocain), tuning de [` ...",
+    "host_name": "huggingface.co",
+    "rank": 0,
+    "date": "Aug 2, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://blog.futuresmart.ai",
+    "name": "A Comprehensive Guide to OpenAI's Text-to-Speech and",
+    "snippet": "Dec 18, 2023 — This demonstration illustrates Whisper's prowess in accurately transcribing and translating spoken words from different languages.",
+    "host_name": "blog.futuresmart.ai",
+    "rank": 1,
+    "date": "Dec 18, 2023",
+    "favicon": ""
+  },
+  {
+    "url": "https://gotranscript.com",
+    "name": "Exploring OpenAI's Whisper Speech-to-Text Model",
+    "snippet": "Jan 29, 2025 — Join us as we test OpenAI's Whisper , a new multilingual speech-to-text model, and explore its features, setup, and performance on various models ... Read more",
+    "host_name": "gotranscript.com",
+    "rank": 2,
+    "date": "Jan 29, 2025",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com",
+    "name": "stillaish/speech-to-text-converter-using-whisper-model",
+    "snippet": "AI-powered speech-to-text web app built with OpenAI Whisper and Flask. Users can upload audio files and get accurate transcriptions instantly through a minimal ... Read more",
+    "host_name": "github.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://liner.com",
+    "name": "Data and Models for Multidialectal Arabic Speech",
+    "snippet": "Oct 6, 2024 — We introduce Casablanca, the largest fully supervised speech dataset for Arabic dialects , meticulously labeled with transcriptions , code- ... Read more",
+    "host_name": "liner.com",
+    "rank": 4,
+    "date": "Oct 6, 2024",
+    "favicon": ""
+  }
+]

@@ -1,0 +1,56 @@
+[
+  {
+    "url": "https://www.softermii.com",
+    "name": "Clubhouse-Like App Development: Cost, Features & Stack",
+    "snippet": "Dec 10, 2021 — In this article you will learn how to develop a Clubhouse -like app, You can use audio API and SDK and integrate cloud-based SIP & VoIP calling.",
+    "host_name": "www.softermii.com",
+    "rank": 0,
+    "date": "Dec 10, 2021",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.pubnub.com",
+    "name": "How Clubhouse Scaled Live, Real-Time Conversations",
+    "snippet": "PubNub empowers Clubhouse to deliver seamless, real-time interactions in their live rooms . Clubhouse's users connect to PubNub to receive messages when they ...",
+    "host_name": "www.pubnub.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://community.livekit.io",
+    "name": "Topics tagged livekit-cloud",
+    "snippet": "Seeking strategies to optimize connection reliability and audio quality for users in strict GCC network environments experiencing aggressive UDP throttling ...",
+    "host_name": "community.livekit.io",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://huddle01.hashnode.dev",
+    "name": "Build a web3 Clubhouse clone using the Huddle01 SDK",
+    "snippet": "Sep 14, 2023 — Vraj Desai pens down a detailed tutorial on how to build your own Clubhouse like app using the Huddle01 Audio SDK .",
+    "host_name": "huddle01.hashnode.dev",
+    "rank": 3,
+    "date": "Sep 14, 2023",
+    "favicon": ""
+  },
+  {
+    "url": "https://swiftpackageregistry.com",
+    "name": "livekit - Swift Package Registry",
+    "snippet": "Jun 5, 2025 — LiveKit is an open source project that provides scalable, multi-user conferencing based on WebRTC . It's designed to provide everything you need ... Read more",
+    "host_name": "swiftpackageregistry.com",
+    "rank": 4,
+    "date": "Jun 5, 2025",
+    "favicon": ""
+  },
+  {
+    "url": "https://webrtc.ventures",
+    "name": "Mobile SDK for Live Audio Streaming",
+    "snippet": "We built WebRTC mobile and web SDKs to allow for easy integration and to have full control over how their real time audio app works without being attached to a ... Read more",
+    "host_name": "webrtc.ventures",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  }
+]

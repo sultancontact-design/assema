@@ -152,6 +152,12 @@ export function SiteHeader() {
                   <Link href="/resources" className="cursor-pointer">الموارد والأدوات</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
+                  <Link href="/timebank" className="cursor-pointer">بنك الوقت</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/assistant" className="cursor-pointer">المساعد الذكي وَصَّال</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link href="/geo" className="cursor-pointer">الخريطة الإدارية</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
