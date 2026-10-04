@@ -18,6 +18,8 @@ import {
   MessageSquare,
   Quote,
   Lock,
+  Handshake,
+  Github,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -869,6 +871,76 @@ export default async function HomePage() {
           </p>
         </div>
         <HomePrinciples />
+      </section>
+
+      {/* ─────────── 6.5. وَصَل — الشبكة الوطنية (v70.0 — 4 بطاقات) ─────────── */}
+      <section className="bg-gradient-to-br from-teal-50/40 via-background to-amber-50/30 dark:from-teal-950/20 dark:via-background dark:to-amber-950/10" aria-labelledby="national-heading">
+        <div className="container-fluid py-10 md:py-14">
+          <div className="mb-8 max-w-3xl">
+            <Badge variant="outline" className="mb-3 text-primary border-primary/30">
+              v70.0 — التحول الوطني
+            </Badge>
+            <h2
+              id="national-heading"
+              className="font-heading text-3xl md:text-4xl lg:text-5xl font-extrabold text-foreground mb-3 leading-[1.1]"
+            >
+              من حي إلى وطن
+            </h2>
+            <p className="text-muted-foreground leading-relaxed max-w-2xl">
+              أربع طبقات جديدة تجعل وَصَل شبكة وطنية مغربية حقيقية: خريطة إدارية، منظمات قانونية، تعارف وطني، وموارد منسّقة.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Link href="/geo" className="group block">
+              <Card className="h-full hover:border-primary/40 hover:shadow-lg transition-all">
+                <CardContent className="p-6">
+                  <div className="h-12 w-12 rounded-xl bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center mb-3">
+                    <MapPin className="h-6 w-6 text-teal-700 dark:text-teal-300" />
+                  </div>
+                  <h3 className="font-bold text-lg mb-1 group-hover:text-teal-700 dark:group-hover:text-teal-300 transition-colors">الخريطة الإدارية</h3>
+                  <p className="text-sm text-muted-foreground mb-2">12 جهة، 68 إقليم، 131 جماعة — هرم إداري كامل من طنجة إلى الكويرة.</p>
+                  <span className="text-xs font-medium text-teal-700 dark:text-teal-300">تصفّح ←</span>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/organizations" className="group block">
+              <Card className="h-full hover:border-amber-400/60 hover:shadow-lg transition-all">
+                <CardContent className="p-6">
+                  <div className="h-12 w-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-3">
+                    <Handshake className="h-6 w-6 text-amber-700 dark:text-amber-300" />
+                  </div>
+                  <h3 className="font-bold text-lg mb-1 group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors">المنظمات الوطنية</h3>
+                  <p className="text-sm text-muted-foreground mb-2">جمعيات وتعاونيات وتعاضديات بقياس مزدوج (Double-Entry Ledger) شفاف.</p>
+                  <span className="text-xs font-medium text-amber-700 dark:text-amber-300">استكشف ←</span>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/network" className="group block">
+              <Card className="h-full hover:border-rose-400/60 hover:shadow-lg transition-all">
+                <CardContent className="p-6">
+                  <div className="h-12 w-12 rounded-xl bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center mb-3">
+                    <Users className="h-6 w-6 text-rose-700 dark:text-rose-300" />
+                  </div>
+                  <h3 className="font-bold text-lg mb-1 group-hover:text-rose-700 dark:group-hover:text-rose-300 transition-colors">شبكة التعارف</h3>
+                  <p className="text-sm text-muted-foreground mb-2">توصيات هجينة: اهتمامات + قرب جغرافي + منظمات مشتركة + رسم بياني.</p>
+                  <span className="text-xs font-medium text-rose-700 dark:text-rose-300">تعرّف ←</span>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/resources" className="group block">
+              <Card className="h-full hover:border-emerald-400/60 hover:shadow-lg transition-all">
+                <CardContent className="p-6">
+                  <div className="h-12 w-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-3">
+                    <Github className="h-6 w-6 text-emerald-700 dark:text-emerald-300" />
+                  </div>
+                  <h3 className="font-bold text-lg mb-1 group-hover:text-emerald-700 dark:group-hover:text-emerald-300 transition-colors">الموارد والأدوات</h3>
+                  <p className="text-sm text-muted-foreground mb-2">روابط منسّقة بأسلوب Product Hunt وShow HN — للواقعين المغاربة.</p>
+                  <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">تصدّق ←</span>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+        </div>
       </section>
 
       {/* ─────────── 7. باقات الإعلانات — بطاقة بارزة ─────────── */}

@@ -1,0 +1,20 @@
+[
+  {
+    "url": "https://domino.ai",
+    "name": "Collaborative Filtering Recommender Systems Guide",
+    "snippet": "Jul 14, 2017 — Collaborative Filtering : For each user, recommender systems recommend items based on how similar users liked the item.",
+    "host_name": "domino.ai",
+    "rank": 0,
+    "date": "Jul 14, 2017",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.linkedin.com",
+    "name": "How to Use Modern Techniques for Recommender Systems",
+    "snippet": "Apr 17, 2023 — Learn about collaborative filtering , deep learning, and hybrid methods for recommender systems, and how they can enhance your platform and ...",
+    "host_name": "www.linkedin.com",
+    "rank": 1,
+    "date": "Apr 17, 2023",
+    "favicon": ""
+  }
+]

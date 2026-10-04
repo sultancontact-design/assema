@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://reporanker.com",
+    "name": "RepoRanker vs Product Hunt, GitHub Trending, Show HN",
+    "snippet": "Show HN is a single high-variance shot at a dev/founder audience . Awesome lists give you a durable mention if a curator agrees. RepoRanker sells the thing none ... Read more",
+    "host_name": "reporanker.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://news.ycombinator.com",
+    "name": "Hackerhunt – categorised curation of Show HN submissions",
+    "snippet": "Jun 28, 2017 — A lot of cool and useful stuff people have actually made themselves gets lost in /shownew without a real chance to get to the right audience. Read more",
+    "host_name": "news.ycombinator.com",
+    "rank": 1,
+    "date": "Jun 28, 2017",
+    "favicon": ""
+  },
+  {
+    "url": "https://daily.dev",
+    "name": "The best Product Hunt alternatives for developers",
+    "snippet": "Aug 16, 2026 — Hacker News ( Show HN ), Strong conversion rates for technical products ... GitHub awesome lists : the underrated way to discover developer tools. Read more",
+    "host_name": "daily.dev",
+    "rank": 2,
+    "date": "Aug 16, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://hashmeta.com",
+    "name": "HackerNews and Product Hunt: The Developer Community",
+    "snippet": "Aug 30, 2026 — Show HN is the dedicated section of Hacker News where founders post what they have actually built, inviting the technical community to evaluate ... Read more",
+    "host_name": "hashmeta.com",
+    "rank": 3,
+    "date": "Aug 30, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com",
+    "name": "Awesome lists about all kinds of interesting topics [NOTE:",
+    "snippet": "Awesome lists about all kinds of interesting topics. Product Management - Learn how to be a better product manager. Running fun and productive hackathons. ...",
+    "host_name": "github.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

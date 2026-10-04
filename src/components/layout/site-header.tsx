@@ -143,6 +143,18 @@ export function SiteHeader() {
                   <Link href="/community/profile" className="cursor-pointer">الملف الشخصي</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
+                  <Link href="/organizations" className="cursor-pointer">المنظمات الوطنية</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/network" className="cursor-pointer">شبكة التعارف</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/resources" className="cursor-pointer">الموارد والأدوات</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/geo" className="cursor-pointer">الخريطة الإدارية</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link href="/wallet" className="cursor-pointer">المحفظة</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>

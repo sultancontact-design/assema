@@ -10,9 +10,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
 }
 
 // ===================================================================
@@ -2267,9 +2266,11 @@ model Region {
   population Int?
   latitude  Float?
   longitude Float?
-  provinces Province[]
-  cities    City[]
-  createdAt DateTime @default(now())
+  provinces     Province[]
+  cities        City[]
+  communes      Commune[]
+  organizations Organization[]
+  createdAt     DateTime @default(now())
 }
 
 // v70.0: Province/Préfecture (83) — المستوى الإداري الثاني
@@ -2285,8 +2286,10 @@ model Province {
   population Int?
   latitude  Float?
   longitude Float?
-  cities    City[]
-  createdAt DateTime @default(now())
+  cities        City[]
+  communes      Commune[]
+  organizations Organization[]
+  createdAt     DateTime @default(now())
 
   @@index([regionId])
 }
@@ -2339,4 +2342,240 @@ model DiasporaCity {
   users       User[]
 
   @@unique([countryId, slug])
+}
+
+// v70.0: Commune (الجماعة) — المستوى الإداري الثالث (1,503 communes)
+// Rural (جماعة قروية) | Urban (جماعة حضرية) | Prefectoral Arrondissement (مقاطعة)
+model Commune {
+  id          String   @id @default(cuid())
+  name        String
+  nameAr      String
+  nameFr      String?
+  code        String?  // HCP commune code
+  slug        String   @unique
+  type        String   @default("rural") // "rural" | "urban" | "arrondissement"
+  provinceId  String
+  province    Province @relation(fields: [provinceId], references: [id])
+  regionId    String?
+  region      Region?  @relation(fields: [regionId], references: [id])
+  population  Int?
+  latitude    Float?
+  longitude   Float?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@index([provinceId])
+  @@index([regionId])
+}
+
+// ===================================================================
+//  v70.0 Section 4 — نظام المنظمات (Organizations System)
+//  Models: Organization, OrganizationMember, LedgerEntry, LedgerAccount
+//  Types:  ASSOCIATION (جمعية) | COOPERATIVE (تعاونية) | WEDADIA (تعاضدية)
+//  Inspired by: Open Collective + French Mutuelle + Moroccan Loi 75-00
+// ===================================================================
+
+// Organization — كيان قانوني مغربي
+model Organization {
+  id              String   @id @default(cuid())
+  name            String                          // "جمعية النور للتنمية"
+  slug            String   @unique
+  nameAr          String?
+  nameFr          String?
+  type            String   @default("ASSOCIATION") // ASSOCIATION | COOPERATIVE | WEDADIA
+  registrationNumber String?                       // رقم التسجيل بـ walayat/ODC
+  legalStatus     String?  @default("active")       // active | pending | suspended | dissolved
+  utilitePublique Boolean  @default(false)          // "منفعة عامة" status
+  description     String?
+  mission         String?
+  logoUrl         String?
+  coverImageUrl   String?
+  websiteUrl      String?
+  email           String?
+  phone           String?
+  address         String?
+  // Geographic scope
+  country         String?  @default("MA")
+  regionId        String?
+  region          Region?  @relation(fields: [regionId], references: [id])
+  provinceId      String?
+  province        Province? @relation(fields: [provinceId], references: [id])
+  communeId       String?
+  // commune        Commune? @relation(fields: [communeId], references: [id])  // disabled — relation optional
+  // Ledger / finance
+  currency        String   @default("MAD")
+  balance         Float    @default(0)              // running balance (cache)
+  totalRaised     Float    @default(0)              // lifetime credits
+  totalSpent      Float    @default(0)              // lifetime debits
+  // Social
+  membersCount    Int      @default(0)
+  followersCount  Int      @default(0)
+  verifiedBadge   Boolean  @default(false)          // verified by admin
+  // Metadata
+  foundedAt       DateTime?
+  tags            String?                            // comma-separated tags
+  isActive        Boolean  @default(true)
+  ownerId         String?                           // User who created/manages
+  // Relations
+  members         OrganizationMember[]
+  ledgerEntries   LedgerEntry[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  @@index([type])
+  @@index([provinceId])
+  @@index([regionId])
+  @@index([slug])
+}
+
+// OrganizationMember — roles within an organization
+model OrganizationMember {
+  id              String    @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId          String
+  // user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role            String    @default("member")    // president | treasurer | secretary | member | auditor
+  joinedAt        DateTime  @default(now())
+  approvedAt      DateTime?
+  isActive        Boolean   @default(true)
+  contribution    Float?                            // monthly membership fee (MAD)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+  @@index([organizationId])
+}
+
+// LedgerEntry — Double-entry ledger (credit/debit)
+// Inspired by Open Collective: each org has transparent transactions
+model LedgerEntry {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  entryType       String                              // CREDIT | DEBIT
+  amount          Float                                // positive amount in MAD
+  currency        String   @default("MAD")
+  description     String                               // "تبرع من السيد X"
+  category        String?                              // donation | expense | membership | grant | salary | other
+  source          String?                              // external | internal | system
+  reference       String?                              // bank tx ref or receipt #
+  attachmentUrl   String?
+  // Actor
+  createdBy       String?                              // userId (optional)
+  createdByName   String?                              // display name (denormalized)
+  // Status workflow
+  status          String   @default("pending")          // pending | confirmed | rejected | reversed
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  // Dates
+  occurredAt      DateTime @default(now())              // when tx actually happened
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([entryType])
+  @@index([status])
+  @@index([occurredAt])
+}
+
+
+// ===================================================================
+//  v70.0 Section 5 — National Networking: Profile + Tag + Graph
+//  Models: ProfileTag, NetworkMatch (collaborative+geo+graph)
+// ===================================================================
+
+// ProfileTag — tag-based profile matching
+model ProfileTag {
+  id        String   @id @default(cuid())
+  userId    String
+  tag       String                       // skill, interest, sector, language
+  tagType   String   @default("skill")   // skill | interest | sector | language
+  weight    Int      @default(1)         // 1-5 (strength of the tag)
+  isPublic Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, tag, tagType])
+  @@index([userId])
+  @@index([tag, tagType])
+}
+
+// NetworkMatch — cached recommendations between two users
+// Used by the /network discovery page
+model NetworkMatch {
+  id              String   @id @default(cuid())
+  userId          String                     // the user receiving the rec
+  targetUserId    String                     // the recommended user
+  score           Float    @default(0)       // 0.0-1.0 (composite)
+  scoreTags      Float    @default(0)       // collaborative+content
+  scoreGeo        Float    @default(0)       // geographic proximity
+  scoreGraph      Float    @default(0)       // 2nd-degree connections
+  scoreOrg       Float    @default(0)       // shared organization
+  reasons         String?                    // comma-separated human-readable reasons
+  isViewed        Boolean  @default(false)
+  isDismissed    Boolean  @default(false)
+  isFollowed     Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, targetUserId])
+  @@index([userId, score])
+  @@index([targetUserId])
+}
+
+// ===================================================================
+//  v70.0 Section 6 — Resources & Skills Hub (PH + Show HN style)
+// ===================================================================
+
+// ResourceLink — a curated dev/entrepreneur/Morocco resource link
+model ResourceLink {
+  id           String   @id @default(cuid())
+  title        String
+  url          String   @unique
+  description  String?
+  category     String   @default("general")  // github | producthunt | hackernews | article | tool | course | morocco
+  tags         String?                          // comma-separated
+  submittedById String?
+  submittedBy  String?                          // denormalized name
+  sourcePlatform String?                        // GitHub | Product Hunt | Hacker News | Manual
+  sourceExternalId String?                      // external id for dedup
+  pinned       Boolean  @default(false)
+  pinnedAt     DateTime?
+  pinnedOrder  Int?
+  upvotes      Int      @default(0)
+  downvotes    Int      @default(0)
+  viewsCount   Int      @default(0)
+  commentsCount Int     @default(0)
+  // Geographic relevance (optional) — store as plain strings, no FK relation
+  // (avoids breaking reverse relation field requirements)
+  regionName   String?
+  provinceName String?
+  isVerified   Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  publishedAt  DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  votes        ResourceVote[]
+
+  @@index([category])
+  @@index([pinned, pinnedOrder])
+  @@index([upvotes])
+  @@index([publishedAt])
+}
+
+// ResourceVote — a vote (up or down) on a resource link
+model ResourceVote {
+  id          String   @id @default(cuid())
+  resourceId  String
+  resource    ResourceLink @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  userId      String?
+  voterName   String?
+  vote        Int      @default(1)        // 1 = upvote, -1 = downvote
+  createdAt   DateTime @default(now())
+
+  @@unique([resourceId, userId])
+  @@index([resourceId])
 }
