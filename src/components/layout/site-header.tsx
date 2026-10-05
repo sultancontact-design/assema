@@ -143,6 +143,9 @@ export function SiteHeader() {
                   <Link href="/community/profile" className="cursor-pointer">الملف الشخصي</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
+                  <Link href="/neighborhoods" className="cursor-pointer">🏅 الأحياء المتنافسة</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link href="/organizations" className="cursor-pointer">المنظمات الوطنية</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>

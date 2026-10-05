@@ -3154,3 +3154,164 @@ model ReputationScore {
 
 // Add relation from Carpool to bookings
 // (Carpool already has implicit reverse relation via CarpoolBooking.carpool)
+
+// ===================================================================
+//  v73.0 — نظام منافسة الأحياء والعائلات (Neighborhood Pride & Competition)
+//  Vision: شبكة مغربية من طنجة لكويرة — أحياء وعائلات متنافسة
+// ===================================================================
+
+// DistrictPride — مؤشرات فخر الحي (محدثة بشكل دوري)
+model DistrictPride {
+  id                String   @id @default(cuid())
+  districtId        String   @unique
+  districtName      String
+  // Composite Pride Score (0-1000)
+  prideScore        Int      @default(0)
+  prideLevel        String   @default("جديد")   // جديد | نشيط | متضامن | بطل | أسطورة
+  // Sub-scores (each 0-200)
+  solidarityScore   Int      @default(0)   // مساهمات + أعمال خيرية
+  activityScore     Int      @default(0)   // فعاليات + نقاشات + منشورات
+  engagementScore   Int      @default(0)   // تفاعل + تصويت + متابعة
+  familyPrideScore  Int      @default(0)   // إنجازات العائلات
+  growthScore       Int      @default(0)   // أعضاء جدد + نمو
+  // Achievement badges (JSON array)
+  achievements      String   @default("[]")
+  // Comparison ranking
+  cityRank          Int      @default(0)    // ترتيب الحي في مدينته
+  nationalRank      Int      @default(0)    // ترتيب الحي وطنياً
+  totalFamilies     Int      @default(0)
+  totalMembers      Int      @default(0)
+  weeksAsLeader     Int      @default(0)    // أسابيع متتالية كأفضل حي
+  streak            Int      @default(0)    // أيام النشاط المتتالية
+  lastActivityAt    DateTime?
+  updatedAt         DateTime @updatedAt
+
+  @@index([prideScore])
+  @@index([nationalRank])
+  @@index([cityRank])
+}
+
+// DistrictChallenge — منافسة بين حيين أو أكثر
+model DistrictChallenge {
+  id              String   @id @default(cuid())
+  title           String
+  description     String?
+  type            String   @default("solidarity")  // solidarity | activity | sports | cultural | ramadan | family
+  challengerId    String   // الحي المُتحدّي
+  challengerName  String
+  challengedId    String?  // الحي المُتحدّى (null = مفتوح لكل الأحياء)
+  challengedName  String?
+  // أهداف المنافسة
+  goalDescription String   // "أكبر عدد مساهمات هذا الشهر"
+  metric          String   // "contributions" | "events" | "members" | "points"
+  targetValue     Int      @default(100)
+  challengerProgress  Int  @default(0)
+  challengedProgress  Int  @default(0)
+  // المدة
+  startsAt        DateTime @default(now())
+  endsAt          DateTime
+  // النتيجة
+  status          String   @default("active")  // active | completed | cancelled
+  winnerId        String?
+  winnerName      String?
+  // التحفيز
+  rewardPoints    Int      @default(0)
+  // الأحياء الأخرى المتحدّية (إذا كان عاماً)
+  participants    String   @default("[]")  // JSON array of district IDs
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+  @@index([endsAt])
+  @@index([type])
+}
+
+// FamilyPride — مؤشرات فخر العائلة
+model FamilyPride {
+  id                String   @id @default(cuid())
+  familyId          String   @unique
+  familyName        String
+  districtId        String?
+  districtName      String?
+  city              String?
+  // Composite Pride Score (0-1000)
+  prideScore        Int      @default(0)
+  prideLevel        String   @default("نشيط")  // نشيط | متضامن | بطل | أسطورة
+  // Sub-scores
+  solidarityScore   Int      @default(0)
+  activityScore     Int      @default(0)
+  achievementsScore Int      @default(0)
+  generationsScore  Int      @default(0)
+  // Achievements (JSON)
+  achievements      String   @default("[]")
+  // Ranking
+  districtRank      Int      @default(0)
+  cityRank          Int      @default(0)
+  nationalRank      Int      @default(0)
+  totalMembers      Int      @default(0)
+  weeksAsLeader     Int      @default(0)
+  streak            Int      @default(0)
+  lastActivityAt    DateTime?
+  updatedAt         DateTime @updatedAt
+
+  @@index([prideScore])
+  @@index([nationalRank])
+}
+
+// AchievementBadge — شارات إنجاز للأحياء والعائلات
+model AchievementBadge {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  name            String
+  nameAr          String
+  description     String?
+  icon            String   // emoji or icon name
+  color           String   @default("teal")   // teal | amber | rose | emerald | purple
+  category        String   // solidarity | activity | family | milestone | seasonal
+  // Requirements (JSON describing how to earn)
+  requirements    String
+  rarity          String   @default("common")  // common | rare | epic | legendary
+  pointsAwarded   Int      @default(10)
+  // Recipients (districts/families that have earned it)
+  awardedToDistricts String @default("[]")
+  awardedToFamilies String @default("[]")
+  createdAt        DateTime @default(now())
+
+  @@index([category])
+  @@index([rarity])
+}
+
+// NeighborhoodStory — قصص نجاح من الأحياء
+model NeighborhoodStory {
+  id              String   @id @default(cuid())
+  districtId      String
+  districtName    String
+  familyId        String?
+  familyName      String?
+  authorId        String?
+  authorName      String?
+  title           String
+  content         String
+  category        String   @default("general")  // success | solidarity | cultural | sports | education | ramadan
+  tags            String?
+  imageUrl        String?
+  // Pride boost
+  prideBoost      Int      @default(10)
+  // Engagement
+  likesCount      Int      @default(0)
+  commentsCount   Int      @default(0)
+  viewsCount      Int      @default(0)
+  isFeatured      Boolean  @default(false)
+  isApproved      Boolean  @default(true)
+  // Geographic reach
+  regionName      String?
+  provinceName    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([districtId])
+  @@index([category])
+  @@index([createdAt])
+  @@index([isFeatured])
+}

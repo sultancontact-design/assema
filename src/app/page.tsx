@@ -22,6 +22,7 @@ import {
   Github,
   Bot,
   Sparkles,
+  Trophy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -897,6 +898,42 @@ export default async function HomePage() {
           </p>
         </div>
         <HomePrinciples />
+      </section>
+
+      {/* ─────────── 5.5. v73 — منافسة الأحياء (Hero Section) ─────────── */}
+      <section className="bg-gradient-to-l from-purple-600 via-rose-500 to-amber-500 text-white" aria-labelledby="neighborhood-hero-heading">
+        <div className="container-fluid py-12 md:py-16">
+          <div className="max-w-4xl">
+            <Badge className="mb-4 bg-white/20 text-white border-white/30 hover:bg-white/30">
+              v73 — منافسة الأحياء والعائلات
+            </Badge>
+            <h2
+              id="neighborhood-hero-heading"
+              className="font-heading text-3xl md:text-5xl font-extrabold mb-3 leading-[1.05]"
+            >
+              من طنجة لكويرة — أحياء تتنافس شرفاً وفخراً
+            </h2>
+            <p className="text-lg md:text-xl text-white/90 leading-relaxed max-w-3xl mb-6">
+              كل حي مغربي له درجة فخر. كل عائلة لها تاريخ. تعارفوا، تنافسوا، تباهوا بأحيائكم وعائلاتكم — مرحٌ وتضامنٌ وتفاخرٌ وطني.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/neighborhoods"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-md bg-white text-purple-700 font-bold text-sm hover:bg-white/90 transition-colors"
+              >
+                <Trophy className="h-4 w-4" />
+                لوحة الأبطال
+              </Link>
+              <Link
+                href="/assistant"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-md bg-white/20 text-white border border-white/30 text-sm hover:bg-white/30 transition-colors"
+              >
+                <Bot className="h-4 w-4" />
+                اسأل وَصَّال
+              </Link>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* ─────────── 6.5. وَصَل — الشبكة الوطنية (v70.0 — 4 بطاقات) ─────────── */}
