@@ -4,10 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3000 2>&1 | tee dev.log",
+    "dev:local": "DATABASE_URL=file:/home/z/my-project/db/custom.db prisma generate --schema=prisma/schema.local.prisma && DATABASE_URL=file:/home/z/my-project/db/custom.db next dev -p 3000",
     "build": "next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
     "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
     "lint": "eslint .",
     "db:push": "prisma db push --accept-data-loss",
+    "db:push:local": "DATABASE_URL=file:/home/z/my-project/db/custom.db prisma db push --accept-data-loss --schema=prisma/schema.local.prisma",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset",
