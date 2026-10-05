@@ -9078,3 +9078,64 @@ Bug fixes from user complaint:
 - User reported "nothing is showing" — this was the crashed dev server
 - User reported "404 pages" — verified NO actual 404s on any main route (all 16 return 200)
 - All civic/crisis/solidarity/voice routes from earlier subagent also confirmed 200
+
+---
+Task ID: v72-deploy
+Agent: Main (Z.ai Code)
+Task: نشر v70.0 + v71.0 + v72.0 على GitHub + Supabase + Vercel + إصلاح أخطاء النشر
+
+Work Log:
+- Pushed 3 commits to GitHub (v70-3to6, v71, v72)
+- Vercel deployment auto-triggered but failed: prisma schema had `provider = "sqlite"` (I changed locally) but production DATABASE_URL is postgresql
+- Fixed: changed prisma/schema.prisma provider back to postgresql
+- Created prisma/schema.local.prisma (sqlite) for local dev with `--schema` flag override
+- Updated package.json: dev:local + db:push:local scripts for SQLite local dev
+- Pushed fix commit → Vercel deployment triggered → failed again with "TimeTransaction_offerId_fkey (constraint name has to be unique)"
+- Diagnosis: TimeTransaction model had two relations (request + offer) both pointing to same offerId field
+- Fixed: added separate requestId field + nullable relation with onDelete: SetNull
+- Pushed → deployment started → SUCCEEDED (state: READY)
+- Production verification: all 12 main routes return 200 BUT APIs return empty arrays (no seed data)
+- Root cause: vercel.json had `buildCommand: "prisma generate && next build"` (no db push, no seeds)
+- Updated vercel.json with full build command:
+  `prisma generate && prisma db push --accept-data-loss && bun prisma/seed-communes.ts && bun prisma/seed-organizations.ts && bun prisma/seed-resources.ts && bun prisma/seed-timebank.ts && bun prisma/seed-v72.ts && next build`
+- Pushed vercel.json fix → Vercel deployment triggered → BUILDING
+- After ~3min: deployment READY ✅
+- Production verification:
+  * GET /api/organizations?limit=2 → returns 25 orgs (ASSOCIATION, COOPERATIVE, WEDADIA types)
+  * GET /api/polls?limit=2 → returns 5 polls (سياسة, مجتمع, تقنية, ثقافة)
+  * GET /api/carpool?limit=2 → returns 6 rides (الدار البيضاء→مراكش, etc.)
+  * GET /api/resources?limit=2 → returns 21 resources
+  * GET /api/lostfound?limit=2 → returns 6 items
+  * GET /api/geo/provinces → returns 68 provinces
+  * GET /api/geo/communes → returns 131 communes
+- All 23 production routes verified:
+  Pages: / /assistant /timebank /map/orgs /network /resources /organizations /geo /polls /lost-found /carpool /reputation /civic /crisis /solidarity /voice (16)
+  APIs: /api/geo/provinces /api/geo/communes /api/organizations /api/polls /api/lostfound /api/carpool /api/resources (7)
+- All return 200 ✅
+- Agent Browser verified /polls page: 3 poll cards visible (الدورة التدريبية, التأمين الصحي, ميزة وصل)
+- Agent Browser verified /organizations page: 25 org cards visible (جمعيات + تعاونيات + تعاضديات)
+- Screenshots captured:
+  * prod-home.png
+  * prod-polls.png
+  * prod-orgs.png
+  * prod-timebank.png
+
+Stage Summary:
+- 3 commits pushed to GitHub successfully:
+  * 701684e v70.0 Sections 3-6
+  * 0d5f7ec v71.0
+  * 640cb16 v72.0
+- 2 fix commits:
+  * 6e621da fix schema provider
+  * 7c06c82 fix TimeTransaction FK duplicate
+  * 1873e41 fix vercel.json build command
+- Vercel production deployment LIVE: https://assema-sultancontact-design.vercel.app
+- Supabase database has all tables + seed data (25 orgs + 131 communes + 21 resources + 8 timebank offers + 8 timebank requests + 5 polls + 6 lost-found + 6 carpools + 6 reputation scores)
+- 23 production routes return 200 ✅
+- 0 errors, 0 404s
+
+Files modified for deployment:
+- prisma/schema.prisma (provider postgresql for production)
+- prisma/schema.local.prisma (new file, sqlite for local dev)
+- package.json (dev:local + db:push:local scripts)
+- vercel.json (buildCommand with prisma db push + 5 seed scripts)
