@@ -9139,3 +9139,82 @@ Files modified for deployment:
 - prisma/schema.local.prisma (new file, sqlite for local dev)
 - package.json (dev:local + db:push:local scripts)
 - vercel.json (buildCommand with prisma db push + 5 seed scripts)
+
+---
+Task ID: v73.0
+Agent: Main (Z.ai Code)
+Task: v73.0 — Neighborhood Pride & Competition System (منافسة الأحياء والعائلات) + 404 fixes
+
+Work Log:
+- Diagnosed user complaint: "nothing showing" was about dev server crash (fixed) + new features were standalone (user wants them INTEGRATED)
+- Identified 2 actual 404s: /complaints and /faq
+- Built the user's actual vision: شبكة اجتماعية مغربية شاملة — منافسة بين الأحياء والعائلات من طنجة لكويرة
+
+5 new Prisma models:
+- DistrictPride (composite pride score 0-1000 + 5 sub-scores + ranks + achievements + streak)
+- FamilyPride (per-family score + generations + districtRank)
+- DistrictChallenge (between two or more districts, with target metric + progress)
+- AchievementBadge (6 starter badges: solidarity, activity, family, ramadan, sports, milestone)
+- NeighborhoodStory (success stories with prideBoost)
+
+New /neighborhoods page with 5 tabs:
+- الأحياء (Districts) — 12 districts ranked by pride score with podium visualization
+- العائلات (Families) — 6 families with their district + pride level
+- التحدّيات (Challenges) — 4 active challenges with progress bars + countdown
+- قصص (Stories) — neighborhood success stories with likes + prideBoost
+- الشارات (Badges) — 6 achievement badges with rarity (common/rare/epic/legendary)
+
+Seeded data:
+- 12 district pride scores (سيدي يوسف بن علي #1 with 850pts, then حي النخيل, المدينة القديمة, حي الرياض, حي المعاريف, حي أكدال, حي باب الأحمر, حي آنفا, حي القشلة, حي العنق, حي الخميس, حي مولاي الحسن)
+- 6 family pride scores (بنشقرون #1 with 780pts as "أسطورة", then العلوي, بلحسن, المنصوري, وزان, السرغيني)
+- 4 active challenges:
+  * تحدّي رمضان — أكثر موائد إفطار (3 weeks left)
+  * تحدّي الصندوق — أكبر مساهمات هذا الشهر
+  * تحدّي الفعاليات — أكثر نشاط شبابي
+  * تحدّي القصص — حكايا الأحياء
+- 5 neighborhood stories (تضامن + ثقافة + رياضة + نجاح + رمضان)
+- 6 achievement badges (متضامن, منظّم, عائلة كبيرة, بطل رمضان, أبطال الشباب, حافظ القصص)
+
+Pride levels system (5 levels):
+- 🌱 جديد (0-299)
+- 🌿 نشيط (300-499)
+- 🤝 متضامن (500-699)
+- 🏆 بطل (700-899)
+- 👑 أسطورة (900+)
+
+Pride score sub-metrics (each 0-200):
+- Solidarity (تضامن) — contributions + charity work
+- Activity (نشاط) — events + posts + discussions
+- Engagement (تفاعل) — voting + following + reactions
+- Family Pride (عائلات) — family achievements
+- Growth (نمو) — new members + activity growth
+
+404 fixes:
+- /complaints page created with form + POST /api/complaints
+- /faq page created with 8 common Q&A accordion
+
+Home page hero update:
+- New "من طنجة لكويرة" hero section with purple-rose-amber gradient
+- Trophy icon imported
+- Two CTAs: لوحة الأبطال + اسأل وَصَّال
+
+Header dropdown:
+- 🏅 الأحياء المتنافسة added as first item
+
+Production deployment:
+- 2 commits pushed: b76cce6 (v73 main) + b881044 (vercel.json update)
+- Vercel deployment b8810448 READY ✅
+- All 30 main routes return 200 on production
+- /api/neighborhoods/leaderboard returns:
+  * 12 districts (top: سيدي يوسف بن علي 850pts)
+  * 6 families (top: بنشقرون 780pts as "أسطورة")
+  * 4 active challenges
+  * 6 achievement badges
+
+Stage Summary:
+- v73.0 — Neighborhood Pride & Competition system LIVE on production
+- 5 new models, 1 new page (/neighborhoods), 1 new API (/api/neighborhoods/leaderboard), 2 fixed pages (/faq, /complaints)
+- 12 districts ranked, 6 families ranked, 4 challenges running, 5 stories, 6 badges
+- Vision realized: "شبكة اجتماعية مغربية شاملة من طنجة لكويرة — أحياء وعائلات متنافسة شرفاً وتضامناً ومرحاً"
+- Production URL: https://assema-sultancontact-design.vercel.app/neighborhoods
+- 0 errors, 0 404s, all green
