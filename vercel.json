@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "prisma generate && next build",
+  "buildCommand": "prisma generate && prisma db push --accept-data-loss && bun prisma/seed-communes.ts && bun prisma/seed-organizations.ts && bun prisma/seed-resources.ts && bun prisma/seed-timebank.ts && bun prisma/seed-v72.ts && next build",
   "installCommand": "bun install",
   "framework": "nextjs",
   "regions": ["cdg1"],
