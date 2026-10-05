@@ -2996,3 +2996,159 @@ model TimeLedger {
   transactionCount Int @default(0)
   updatedAt     DateTime @updatedAt
 }
+
+// ===================================================================
+//  v72.0 — Social Intelligence Wave (Polls + LostFound + Carpool + VoiceComments + Reputation)
+// ===================================================================
+
+// CommunityPoll — Reddit-style polls with options + votes
+model CommunityPoll {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  category    String   @default("general")   // politics | sports | community | tech | culture | other
+  options     String                          // JSON array of {id, text, votes}
+  totalVotes  Int      @default(0)
+  duration    Int?                             // hours
+  expiresAt   DateTime?
+  isAnonymous Boolean  @default(false)
+  status      String   @default("active")      // active | closed | deleted
+  regionName  String?
+  votes       PollVote[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+  @@index([category])
+  @@index([createdAt])
+}
+
+// PollVote — single vote per user per poll
+model PollVote {
+  id          String   @id @default(cuid())
+  pollId      String
+  poll        CommunityPoll @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  userId      String?
+  voterName   String?
+  optionId    String                          // index or slug of the chosen option
+  createdAt   DateTime @default(now())
+
+  @@unique([pollId, userId])
+  @@index([pollId])
+}
+
+// LostFound — community board for lost & found items
+model LostFound {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String                            // "lost" | "found"
+  title       String
+  description String?
+  category    String   @default("other")        // pets | documents | electronics | keys | other
+  location    String?
+  regionName  String?
+  provinceName String?
+  imageUrl    String?
+  contactInfo String?
+  status      String   @default("open")          // open | resolved | cancelled
+  reward      Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([type])
+  @@index([status])
+  @@index([category])
+  @@index([createdAt])
+}
+
+// Carpool — community ride share
+model Carpool {
+  id           String   @id @default(cuid())
+  driverId     String
+  originCity   String                            // "طنجة"
+  destinationCity String                          // "الرباط"
+  departureTime DateTime
+  arrivalTime   DateTime?
+  seatsTotal    Int      @default(4)
+  seatsTaken    Int      @default(0)
+  pricePerSeat  Float    @default(0)             // MAD (0 = free)
+  notes         String?
+  contactInfo   String?
+  vehicleInfo   String?                           // "سيارة زرقاء - رينو"
+  regionName   String?
+  status       String   @default("active")        // active | full | completed | cancelled
+  bookings     CarpoolBooking[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([status])
+  @@index([departureTime])
+  @@index([originCity])
+  @@index([destinationCity])
+}
+
+// CarpoolBooking — passenger booking for a carpool
+model CarpoolBooking {
+  id          String   @id @default(cuid())
+  carpoolId   String
+  carpool     Carpool  @relation(fields: [carpoolId], references: [id], onDelete: Cascade)
+  passengerId String
+  seatsBooked  Int      @default(1)
+  status      String   @default("confirmed")    // confirmed | cancelled
+  createdAt   DateTime @default(now())
+
+  @@unique([carpoolId, passengerId])
+  @@index([carpoolId])
+}
+
+// VoiceComment — audio comments on blog posts
+model VoiceComment {
+  id          String   @id @default(cuid())
+  blogPostId  String?
+  userId      String?
+  commenterName String?
+  audioData   String                          // base64-encoded WAV (small files only)
+  duration    Int                              // seconds
+  transcription String?                       // ASR-transcribed text
+  language    String   @default("ar")
+  isApproved  Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@index([blogPostId])
+  @@index([createdAt])
+}
+
+// ReputationEvent — log of reputation-changing events
+model ReputationEvent {
+  id          String   @id @default(cuid())
+  userId      String
+  eventType   String                            // endorsement | transaction_completed | ledger_entry | poll_created | lost_found_resolved | carpool_completed | blog_published | verified_badge
+  delta       Int                                // points (e.g., +5, +10, -3)
+  description String?
+  refId       String?                            // id of the related entity
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ReputationScore — cached aggregate score per user
+model ReputationScore {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  score       Int      @default(0)
+  level       String   @default("newcomer")    // newcomer | contributor | trusted | expert | luminary
+  endorsementsReceived Int @default(0)
+  transactionsCompleted Int @default(0)
+  ledgerEntriesCount Int @default(0)
+  pollsCreated Int @default(0)
+  lostFoundResolved Int @default(0)
+  carpoolsCompleted Int @default(0)
+  blogsPublished Int @default(0)
+  daysActive  Int      @default(0)
+  updatedAt   DateTime @updatedAt
+}
+
+// Add relation from Carpool to bookings
+// (Carpool already has implicit reverse relation via CarpoolBooking.carpool)

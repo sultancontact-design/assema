@@ -155,6 +155,18 @@ export function SiteHeader() {
                   <Link href="/timebank" className="cursor-pointer">بنك الوقت</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
+                  <Link href="/polls" className="cursor-pointer">الاستطلاعات</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/lost-found" className="cursor-pointer">ضائع وموجود</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/carpool" className="cursor-pointer">كتّاكِل (رحلات)</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/reputation" className="cursor-pointer">لوحة الثقة</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link href="/assistant" className="cursor-pointer">المساعد الذكي وَصَّال</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
