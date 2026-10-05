@@ -2969,8 +2969,9 @@ model TimeRequest {
 model TimeTransaction {
   id            String    @id @default(cuid())
   offerId       String
-  request       TimeRequest @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  requestId     String?
   offer         TimeOffer   @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  request       TimeRequest? @relation(fields: [requestId], references: [id], onDelete: SetNull)
   giverId       String                            // userId of the offerer
   receiverId    String                            // userId of the requester
   hours         Float                              // actual hours exchanged
